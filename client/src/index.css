@@ -1,0 +1,537 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* iOS PWA Fixes */
+@supports (-webkit-touch-callout: none) {
+
+  /* iOS Safari specific styles */
+  body {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* Fix iOS Safari address bar hiding/showing */
+  .ios-pwa-viewport {
+    height: 100vh;
+    height: -webkit-fill-available;
+  }
+
+  /* iOS PWA status bar padding */
+  .ios-status-bar-padding {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Global layout fixes */
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  /* iOS PWA viewport fix */
+  height: 100vh;
+  height: -webkit-fill-available;
+}
+
+/* Main content container */
+.main-content {
+  min-height: 100vh;
+  background-color: #f9fafb;
+}
+
+/* Mobile-first responsive improvements */
+@media (max-width: 768px) {
+  .mobile-optimized {
+    padding: 0.5rem;
+  }
+
+  .mobile-compact {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  /* Ensure tables are horizontally scrollable on mobile */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Responsive form inputs */
+  input[type="datetime-local"] {
+    font-size: 16px;
+    /* Prevent zoom on iOS */
+  }
+
+  /* Responsive dialog content */
+  [data-radix-dialog-content] {
+    margin: 0.5rem;
+    max-height: calc(100vh - 1rem);
+  }
+
+  /* Responsive select content */
+  [data-radix-select-content] {
+    max-height: 60vh;
+  }
+}
+
+/* Mobile layout (screens < 1024px) */
+@media (max-width: 1023px) {
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  /* Header on mobile - account for mobile menu button */
+  header {
+    padding-left: 3.5rem !important;
+  }
+
+  /* Main content padding on mobile */
+  main {
+    margin-left: 0;
+    padding: 1rem;
+    width: 100%;
+  }
+
+  /* Dialog positioning on mobile */
+  .dialog-responsive {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    max-height: 90vh;
+    overflow-y: auto;
+    width: 95vw;
+    max-width: 28rem;
+  }
+}
+
+/* Ensure content doesn't get hidden behind mobile menu button */
+@media (max-width: 1024px) {
+  .main-content {
+    padding-left: 0;
+  }
+
+  .main-content.with-mobile-button {
+    padding-top: 1rem;
+  }
+
+  /* Add left margin to main content on mobile to accommodate menu button */
+  main {
+    margin-left: 0;
+  }
+}
+
+/* Desktop layout (screens >= 1024px) */
+@media (min-width: 1024px) {
+
+  /* Main content area - account for fixed sidebar */
+  .main-content {
+    margin-left: 16rem;
+    /* 256px sidebar width */
+    width: calc(100% - 16rem);
+    min-height: 100vh;
+  }
+
+  /* Header on desktop */
+  header {
+    margin-left: 0;
+    padding-left: 1.5rem !important;
+    width: 100%;
+  }
+
+  /* Main content padding on desktop */
+  main {
+    margin-left: 0;
+    padding: 2rem;
+    max-width: none;
+    width: 100%;
+  }
+
+  /* Content wrapper */
+  .content-wrapper {
+    width: 100%;
+    max-width: none;
+    padding: 0;
+  }
+
+  /* Ensure no content overflow */
+  .page-container {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+/* Additional responsive utilities */
+.content-wrapper {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Performance optimizations */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+
+  /* Ensure scrolling works on web */
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* Responsive base styles */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (min-width: 640px) {
+  .container {
+    padding: 0 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding: 0 2rem;
+  }
+}
+
+/* iOS PWA specific styles */
+.ios-pwa-standalone {
+  /* iOS PWA standalone mode styles */
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  /* Ensure scrolling works in PWA mode */
+  overflow-y: auto !important;
+  height: auto !important;
+  position: relative !important;
+}
+
+.ios-safari-browser {
+  /* iOS Safari browser mode styles */
+  -webkit-user-select: text;
+  overflow-y: auto;
+}
+
+/* iOS PWA safe area handling */
+@supports (padding: max(0px)) {
+  .ios-pwa-standalone {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 20 14.3% 4.1%;
+  --muted: 60 4.8% 95.9%;
+  --muted-foreground: 25 5.3% 44.7%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 20 14.3% 4.1%;
+  --card: 0 0% 100%;
+  --card-foreground: 20 14.3% 4.1%;
+  --border: 20 5.9% 90%;
+  --input: 20 5.9% 90%;
+  --primary: 207 90% 54%;
+  /* #1976D2 */
+  --primary-foreground: 211 100% 99%;
+  --secondary: 60 4.8% 95.9%;
+  --secondary-foreground: 24 9.8% 10%;
+  --accent: 60 4.8% 95.9%;
+  --accent-foreground: 24 9.8% 10%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 60 9.1% 97.8%;
+  --ring: 20 14.3% 4.1%;
+  --radius: 0.5rem;
+
+  /* Custom colors for hotel PMS */
+  --success: 123 46% 34%;
+  /* #4CAF50 */
+  --success-foreground: 0 0% 100%;
+  --warning: 36 100% 50%;
+  /* #FF9800 */
+  --warning-foreground: 0 0% 100%;
+  --error: 4 90% 58%;
+  /* #F44336 */
+  --error-foreground: 0 0% 100%;
+}
+
+.dark {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --primary: 207 90% 54%;
+  --primary-foreground: 211 100% 99%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 240 4.9% 83.9%;
+  --radius: 0.5rem;
+
+  /* Dark mode custom colors */
+  --success: 123 46% 34%;
+  --success-foreground: 0 0% 100%;
+  --warning: 36 100% 50%;
+  --warning-foreground: 0 0% 100%;
+  --error: 4 90% 58%;
+  --error-foreground: 0 0% 100%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  }
+}
+
+/* Custom utility classes for hotel PMS */
+@layer utilities {
+  .text-success {
+    color: hsl(var(--success));
+  }
+
+  .text-success-foreground {
+    color: hsl(var(--success-foreground));
+  }
+
+  .bg-success {
+    background-color: hsl(var(--success));
+  }
+
+  .bg-success-50 {
+    background-color: hsl(123 46% 94%);
+  }
+
+  .text-warning {
+    color: hsl(var(--warning));
+  }
+
+  .text-warning-foreground {
+    color: hsl(var(--warning-foreground));
+  }
+
+  .bg-warning {
+    background-color: hsl(var(--warning));
+  }
+
+  .bg-warning-50 {
+    background-color: hsl(36 100% 95%);
+  }
+
+  .text-error {
+    color: hsl(var(--error));
+  }
+
+  .text-error-foreground {
+    color: hsl(var(--error-foreground));
+  }
+
+  .bg-error {
+    background-color: hsl(var(--error));
+  }
+
+  .bg-error-50 {
+    background-color: hsl(4 90% 96%);
+  }
+
+  .w-280 {
+    width: 280px;
+  }
+
+  .bg-sidebar {
+    background: rgb(9, 9, 11);
+  }
+
+  .text-sidebar-foreground {
+    color: rgb(250, 250, 250);
+  }
+
+  /* Responsive grid utilities */
+  .grid-responsive {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4;
+  }
+
+  .grid-responsive-cards {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6;
+  }
+
+  .flex-responsive {
+    @apply flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4;
+  }
+
+  .dialog-responsive {
+    @apply w-[95vw] max-w-md mx-auto;
+  }
+
+  .dialog-responsive-lg {
+    @apply w-[95vw] max-w-2xl mx-auto max-h-[90vh] overflow-y-auto;
+  }
+
+  .button-responsive {
+    @apply w-full sm:w-auto;
+  }
+
+  .text-responsive-title {
+    @apply text-2xl lg:text-3xl font-bold;
+  }
+
+  .text-responsive-subtitle {
+    @apply text-lg lg:text-xl font-semibold;
+  }
+
+  .card-title-responsive {
+    @apply text-base lg:text-lg truncate;
+  }
+
+  .padding-responsive {
+    @apply p-4 lg:p-6 xl:p-8;
+  }
+
+  .space-responsive {
+    @apply space-y-4 lg:space-y-6;
+  }
+
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+}
+
+/* Hotel status indicators */
+.status-available {
+  @apply bg-success text-success-foreground;
+}
+
+.status-occupied {
+  @apply bg-primary text-primary-foreground;
+}
+
+.status-maintenance {
+  @apply bg-warning text-warning-foreground;
+}
+
+.status-housekeeping {
+  @apply bg-gray-500 text-white;
+}
+
+.status-out-of-order {
+  @apply bg-error text-error-foreground;
+}
+
+.status-reserved {
+  @apply bg-purple-500 text-white;
+}
+
+/* Reservation status indicators */
+.reservation-confirmed {
+  @apply bg-green-50 text-green-700 border border-green-200;
+}
+
+.reservation-pending {
+  @apply bg-yellow-50 text-yellow-700 border border-yellow-200;
+}
+
+.reservation-checked-in {
+  @apply bg-blue-50 text-blue-700 border border-blue-200;
+}
+
+.reservation-checked-out {
+  @apply bg-gray-50 text-gray-600 border border-gray-200;
+}
+
+.reservation-cancelled {
+  @apply bg-red-50 text-red-700 border border-red-200;
+}
+
+.reservation-no-show {
+  @apply bg-gray-100 text-gray-700 border border-gray-300;
+}
+
+/* Main content area adjustments for sidebar */
+.main-content {
+  @apply lg:ml-64;
+}
+
+/* Ensure proper spacing for pages with footer */
+.page-content {
+  @apply min-h-[calc(100vh-200px)];
+}
+
+/* iOS PWA Support */
+.ios-pwa-viewport {
+  /* iOS Safari viewport fix */
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  /* Dynamic viewport height for modern browsers */
+  overflow-x: hidden;
+}
+
+.ios-status-bar-padding {
+  /* iOS status bar safe area */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* iOS PWA Display Mode Detection */
+@media (display-mode: standalone) {
+  body {
+    /* Hide address bar in standalone mode */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  .ios-pwa-viewport {
+    /* Fix for iOS Safari */
+    min-height: -webkit-fill-available;
+  }
+}

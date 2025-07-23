@@ -5507,6 +5507,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Complete order update endpoint - handles all modifications including deletions
+  const updateOrderSchema = z.object({
+    order: insertRestaurantOrderSchema.omit({
+      id: true,
+      orderNumber: true,
+      createdById: true,
+    }).partial(),
+    items: z.array(
+      insertRestaurantOrderItemSchema.omit({
+        id: true,
+        orderId: true,
+      }),
+    ),
+  });
+
+  app.put("/api/restaurant/orders/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.session.user.id);
+      if (!user) return res.status(401).json({ message: "User not found" });
+
+      const orderId = req.params.id;
+      const { order: orderData, items: itemsData } = updateOrderSchema.parse(req.body);
+
+      // Get existing order to check permissions and modification rules
+      const existingOrder = await restaurantStorage.getRestaurantOrder(orderId);
+      if (!existingOrder) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
+      if (!checkBranchPermissions(user.role, user.branchId, existingOrder.branchId)) {
+        return res.status(403).json({ message: "Insufficient permissions for this order" });
+      }
+
+      // For room orders, check if reservation is still active
+      if (existingOrder.orderType === "room" && existingOrder.reservationId) {
+        const reservation = await storage.getReservation(existingOrder.reservationId);
+        if (!reservation || reservation.status !== "checked-in") {
+          return res.status(400).json({
+            message: "Cannot modify order - guest has checked out",
+          });
+        }
+      }
+
+      // Check if order can be modified (within 2 minutes or status is pending)
+      const orderAge = (new Date().getTime() - new Date(existingOrder.createdAt).getTime()) / (1000 * 60);
+      if (orderAge > 2 && existingOrder.status !== "pending") {
+        return res.status(400).json({
+          message: "Order cannot be modified after 2 minutes or if already confirmed",
+        });
+      }
+
+      // Calculate new total from all items
+      const dishes = await restaurantStorage.getMenuDishes(existingOrder.branchId);
+      let totalAmount = 0;
+      const validatedItems = itemsData.map((item: any) => {
+        const dish = dishes.find((d) => d.id === item.dishId);
+        if (!dish) throw new Error(`Dish ${item.dishId} not found`);
+
+        const itemTotal = parseFloat(dish.price) * item.quantity;
+        totalAmount += itemTotal;
+
+        return {
+          dishId: item.dishId,
+          quantity: item.quantity,
+          unitPrice: dish.price,
+          totalPrice: itemTotal.toString(),
+          specialInstructions: item.specialInstructions || "",
+          status: item.status || "pending",
+        };
+      });
+
+      // Update order with new totals
+      await restaurantStorage.updateRestaurantOrder(orderId, {
+        subtotal: totalAmount.toString(),
+        totalAmount: totalAmount.toString(),
+        notes: orderData.notes !== undefined ? orderData.notes : existingOrder.notes,
+      });
+
+      // Replace all order items (this handles additions, deletions, and modifications)
+      await restaurantStorage.replaceOrderItems(orderId, validatedItems);
+
+      // Get updated order with items
+      const updatedOrder = await restaurantStorage.getRestaurantOrder(orderId);
+      const updatedItems = await restaurantStorage.getRestaurantOrderItems(orderId);
+
+      // Broadcast order update
+      wsManager.broadcastDataUpdate(
+        "restaurant-orders",
+        existingOrder.branchId?.toString(),
+      );
+      wsManager.broadcastDataUpdate(
+        "restaurant-dashboard",
+        existingOrder.branchId?.toString(),
+      );
+
+      res.json({
+        ...updatedOrder,
+        items: updatedItems,
+        message: "Order updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating restaurant order:", error);
+      res.status(500).json({ message: "Failed to update restaurant order" });
+    }
+  });
+
   // Room Orders API
   app.post(
     "/api/restaurant/orders/room",

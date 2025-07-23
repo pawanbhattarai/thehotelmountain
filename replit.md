@@ -23,6 +23,12 @@ A comprehensive restaurant management system built with Node.js, Express, React,
 ## Recent Changes
 - **2025-07-23**: Successfully completed migration from Replit Agent to Replit environment
 - **Migration Status**: Complete - PostgreSQL database configured, all systems operational
+- **Order Deletion Bug Fixed**: Critical issue resolved where deleting items from orders couldn't be saved
+  - Problem: System only handled adding new items or increasing quantities, not deletions
+  - Solution: Created new PUT endpoint `/api/restaurant/orders/:id` for complete order updates
+  - Frontend now sends entire order state for updates instead of just new items
+  - Backend uses `replaceOrderItems()` to handle all modifications including deletions
+  - Users can now successfully delete items from orders and save changes
 - **DateTime Conversion Fix**: Fixed critical reservation datetime handling issue across all environments
   - Problem: User enters 7:30 AM but system saves different time due to timezone conversion
   - Root cause: Different server timezones (Replit=UTC, local dev=varies) caused inconsistent behavior

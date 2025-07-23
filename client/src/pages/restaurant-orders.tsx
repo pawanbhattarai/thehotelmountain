@@ -193,6 +193,49 @@ export default function RestaurantOrders() {
     },
   });
 
+  // New mutation for updating existing orders (handles deletions)
+  const updateOrderMutation = useMutation({
+    mutationFn: async ({ orderId, order, items }: { orderId: string; order: any; items: any[] }) => {
+      const response = await fetch(`/api/restaurant/orders/${orderId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order, items }),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to update order");
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/restaurant/orders"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/restaurant/dashboard/today-orders"],
+      });
+
+      toast({
+        title: "Order updated successfully!",
+        description: data.orderNumber
+          ? `Order ${data.orderNumber} has been updated`
+          : "Order has been updated!",
+      });
+
+      setSelectedTable(null);
+      setSelectedItems([]);
+      setOriginalItems([]);
+      setItemCounter(0);
+    },
+    onError: (error: any) => {
+      console.error("Order update failed:", error);
+      toast({
+        title: "Failed to update order",
+        description:
+          error.message || "An error occurred while updating the order",
+        variant: "destructive",
+      });
+    },
+  });
+
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const response = await fetch(`/api/restaurant/orders/${id}/status`, {
@@ -406,60 +449,89 @@ export default function RestaurantOrders() {
       paymentStatus: "pending" as const,
     };
 
-    // If there's an existing order, only send new items or items with changed quantities
-    let itemsToSend = selectedItems.filter((item) => !item.isExistingItem); // Start with genuinely new items
-
+    // Decide whether to create or update the order
     if (existingOrder) {
-      selectedItems.forEach((currentItem) => {
-        if (currentItem.isExistingItem) {
-          // Find the original item using its uniqueId
-          const originalItem = originalItems.find(
-            (orig) => orig.uniqueId === currentItem.uniqueId,
-          );
-          if (originalItem && currentItem.quantity > originalItem.quantity) {
-            const additionalQuantity =
-              currentItem.quantity - originalItem.quantity;
-            itemsToSend.push({
-              ...currentItem,
-              quantity: additionalQuantity,
-              isExistingItem: false, // Treat this difference as a new addition for the backend
-            });
-          }
+      // For existing orders, send all current items to replace the entire order
+      const allItemsData = selectedItems.map((item) => ({
+        dishId: item.dishId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: (parseFloat(item.unitPrice) * item.quantity).toString(),
+        specialInstructions: item.notes || "",
+        status: "pending" as const,
+      }));
+
+      // Recalculate totals based on all items (not just new ones)
+      const fullSubtotal = calculateSubtotal();
+      let fullTaxAmount = 0;
+      
+      if (orderTaxes) {
+        for (const tax of orderTaxes) {
+          fullTaxAmount += (fullSubtotal * parseFloat(tax.rate)) / 100;
         }
+      }
+
+      const fullTotal = fullSubtotal + fullTaxAmount;
+
+      const fullOrderData = {
+        tableId: selectedTable.id,
+        branchId: branchId,
+        subtotal: fullSubtotal.toString(),
+        taxAmount: fullTaxAmount.toString(),
+        totalAmount: fullTotal.toString(),
+        notes: data.notes || "",
+        status: "pending" as const,
+        orderType: "dine-in" as const,
+        paymentStatus: "pending" as const,
+      };
+
+      console.log("Updating existing order with data:", {
+        orderId: existingOrder.id,
+        order: fullOrderData,
+        items: allItemsData,
+        totalItems: allItemsData.length,
+        originalItemsCount: originalItems.length,
+      });
+
+      updateOrderMutation.mutate({
+        orderId: existingOrder.id,
+        order: fullOrderData,
+        items: allItemsData,
+      });
+    } else {
+      // For new orders, only send new items
+      let itemsToSend = selectedItems.filter((item) => !item.isExistingItem);
+
+      const itemsData = itemsToSend.map((item) => ({
+        dishId: item.dishId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: (parseFloat(item.unitPrice) * item.quantity).toString(),
+        specialInstructions: item.notes || "",
+        status: "pending" as const,
+      }));
+
+      // Validate that we have items to send
+      if (itemsData.length === 0) {
+        toast({
+          title: "No items to add",
+          description: "Please add at least one item to create an order",
+          variant: "default",
+        });
+        return;
+      }
+
+      console.log("Creating new order with data:", {
+        order: orderData,
+        items: itemsData,
+        itemsCount: itemsData.length,
+      });
+
+      createOrderMutation.mutate({
+        order: orderData,
+        items: itemsData,
       });
     }
-
-    const itemsData = itemsToSend.map((item) => ({
-      dishId: item.dishId,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      totalPrice: (parseFloat(item.unitPrice) * item.quantity).toString(),
-      specialInstructions: item.notes || "",
-      status: "pending" as const,
-    }));
-
-    // Validate that we have items to send
-    if (itemsData.length === 0) {
-      toast({
-        title: "No new items",
-        description: "No new items to add to the order",
-        variant: "default",
-      });
-      return;
-    }
-
-    console.log("Creating order with data:", {
-      order: orderData,
-      items: itemsData,
-      isUpdate: !!existingOrder,
-      itemsToSend: itemsToSend.length,
-      originalItemsCount: originalItems.length,
-    });
-
-    createOrderMutation.mutate({
-      order: orderData,
-      items: itemsData,
-    });
   };
 
   const addItem = (dish: any) => {

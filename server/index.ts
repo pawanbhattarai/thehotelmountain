@@ -127,7 +127,7 @@ app.use(
   // ALWAYS serve the app on port 5001
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = 5001;
+  const port = 5000;
 
   // Import low stock checker
   const { lowStockChecker } = await import("./low-stock-checker");

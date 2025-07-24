@@ -963,46 +963,54 @@ export default function RoomOrders() {
                             </TableHeader>
                             <TableBody>
                               {(() => {
-                                // Consolidate all items (previous orders + current editing) into one list
-                                const consolidatedItems = new Map();
+                                // Show ALL items separately - no consolidation
+                                const allItems = [];
                                 
-                                // Add previous order items
+                                // Add all previous order items
                                 if (selectedReservation) {
-                                  const previousItems = getAllReservationItems(selectedReservation.id);
-                                  previousItems.forEach((item) => {
-                                    consolidatedItems.set(item.dishId, {
-                                      ...item,
-                                      isFromPreviousOrder: true
-                                    });
+                                  const reservationOrders = getAllReservationOrders(selectedReservation.id);
+                                  reservationOrders.forEach((order) => {
+                                    if (order.items) {
+                                      order.items.forEach((item) => {
+                                        allItems.push({
+                                          ...item,
+                                          dishName: item.dishName || `Dish ${item.dishId}`,
+                                          isFromPreviousOrder: true,
+                                          orderId: order.id,
+                                          orderNumber: order.orderNumber,
+                                          uniqueKey: `previous-${order.id}-${item.dishId}-${item.id}`
+                                        });
+                                      });
+                                    }
                                   });
                                 }
                                 
-                                // Add/update with current editing items
+                                // Add current editing items (only if they're not updates to existing items)
                                 selectedItems.forEach((item) => {
-                                  const existing = consolidatedItems.get(item.dishId);
-                                  if (existing) {
-                                    // Update existing item with current editing values
-                                    consolidatedItems.set(item.dishId, {
-                                      ...existing,
-                                      quantity: item.quantity,
-                                      notes: item.notes || existing.notes,
-                                      isFromPreviousOrder: false, // Now being edited
-                                      dishName: item.dishName || existing.dishName
-                                    });
-                                  } else {
-                                    // Add new item
-                                    consolidatedItems.set(item.dishId, {
+                                  // Check if this item is an update to an existing order item
+                                  const isUpdateToExisting = allItems.some(existingItem => 
+                                    existingItem.dishId === item.dishId && existingItem.isFromPreviousOrder
+                                  );
+                                  
+                                  if (!isUpdateToExisting) {
+                                    allItems.push({
                                       ...item,
-                                      isFromPreviousOrder: false
+                                      isFromPreviousOrder: false,
+                                      uniqueKey: `current-${item.dishId}`
                                     });
                                   }
                                 });
                                 
-                                return Array.from(consolidatedItems.values()).map((item) => (
-                                  <TableRow key={item.dishId}>
+                                return allItems.map((item) => (
+                                  <TableRow key={item.uniqueKey}>
                                     <TableCell>
                                       <div>
                                         <div className="font-medium text-sm">{item.dishName}</div>
+                                        {item.isFromPreviousOrder && (
+                                          <div className="text-xs text-gray-500">
+                                            Order #{item.orderNumber}
+                                          </div>
+                                        )}
                                       </div>
                                     </TableCell>
                                     <TableCell className="text-center text-sm">
@@ -1054,7 +1062,8 @@ export default function RoomOrders() {
                                             removeItemFromOrder(item.dishId);
                                           }
                                         }}
-                                        className="h-6 w-6 p-0 text-red-500"
+                                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                        title="Delete item"
                                       >
                                         <Trash2 className="h-3 w-3" />
                                       </Button>
@@ -1069,42 +1078,41 @@ export default function RoomOrders() {
                         
 <div className="border-t pt-4 space-y-2">
                           {(() => {
-                            // Calculate totals using consolidated items (no duplicates)
-                            const consolidatedItems = new Map();
+                            // Calculate totals from ALL individual items (no consolidation)
+                            let allItemsTotal = 0;
+                            let totalItemCount = 0;
                             
-                            // Add previous order items
+                            // Add all previous order items
                             if (selectedReservation) {
-                              const previousItems = getAllReservationItems(selectedReservation.id);
-                              previousItems.forEach((item) => {
-                                consolidatedItems.set(item.dishId, {
-                                  ...item,
-                                  quantity: item.quantity,
-                                  unitPrice: parseFloat(item.unitPrice)
-                                });
+                              const reservationOrders = getAllReservationOrders(selectedReservation.id);
+                              reservationOrders.forEach((order) => {
+                                if (order.items) {
+                                  order.items.forEach((item) => {
+                                    allItemsTotal += parseFloat(item.unitPrice) * item.quantity;
+                                    totalItemCount += 1;
+                                  });
+                                }
                               });
                             }
                             
-                            // Add/update with current editing items
+                            // Add current editing items (only new ones, not updates)
                             selectedItems.forEach((item) => {
-                              consolidatedItems.set(item.dishId, {
-                                ...item,
-                                quantity: item.quantity,
-                                unitPrice: parseFloat(item.unitPrice)
-                              });
-                            });
-                            
-                            // Calculate total from consolidated items
-                            let allItemsTotal = 0;
-                            let totalItemCount = 0;
-                            Array.from(consolidatedItems.values()).forEach((item) => {
-                              allItemsTotal += item.unitPrice * item.quantity;
-                              totalItemCount += 1;
+                              // Check if this item is an update to an existing order item
+                              const isUpdateToExisting = selectedReservation && 
+                                getAllReservationItems(selectedReservation.id).some(existingItem => 
+                                  existingItem.dishId === item.dishId
+                                );
+                              
+                              if (!isUpdateToExisting) {
+                                allItemsTotal += parseFloat(item.unitPrice) * item.quantity;
+                                totalItemCount += 1;
+                              }
                             });
                             
                             let totalTaxAmount = 0;
                             const appliedTaxes = [];
 
-                            // Calculate taxes on consolidated total
+                            // Calculate taxes on total
                             if (orderTaxes) {
                               for (const tax of orderTaxes) {
                                 const taxAmount = (allItemsTotal * parseFloat(tax.rate)) / 100;

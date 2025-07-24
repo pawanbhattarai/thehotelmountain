@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Plus, Edit2, Trash2 } from "lucide-react";
+import { Plus, Edit2, Trash2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -46,6 +46,8 @@ import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import { useAuth } from "@/hooks/useAuth";
 import BulkOperations from "@/components/bulk-operations";
+import { usePagination } from "@/hooks/usePagination";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 
 const dishSchema = z.object({
   name: z.string().min(1, "Dish name is required"),
@@ -68,6 +70,7 @@ export default function RestaurantDishes() {
   const [isBulkDishDialogOpen, setIsBulkDishDialogOpen] = useState(false);
   const [editingDish, setEditingDish] = useState<any>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -81,6 +84,13 @@ export default function RestaurantDishes() {
 
   const { data: branches } = useQuery({
     queryKey: ["/api/branches"],
+  });
+
+  const pagination = usePagination({
+    data: dishes || [],
+    itemsPerPage: 10,
+    searchTerm,
+    searchFields: ["name", "category.name", "spiceLevel"] as any,
   });
 
   // Dish mutations
@@ -256,8 +266,17 @@ export default function RestaurantDishes() {
           }
         />
         <main className="p-6">
-          {/* Add Button Section for Dishes */}
-          <div className="mb-6">
+          {/* Search and Add Button Section for Dishes */}
+          <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search dishes..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
             <Dialog open={isDishDialogOpen} onOpenChange={setIsDishDialogOpen}>
               <DialogTrigger asChild>
                 <Button
@@ -568,8 +587,8 @@ export default function RestaurantDishes() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {dishes?.length ? (
-                      dishes.map((dish: any) => (
+                    {pagination.paginatedData?.length ? (
+                      pagination.paginatedData.map((dish: any) => (
                         <TableRow key={dish.id}>
                           <TableCell className="font-medium">
                             <div className="flex items-center space-x-2">
@@ -689,6 +708,11 @@ export default function RestaurantDishes() {
                     )}
                   </TableBody>
                 </Table>
+              )}
+              {dishes?.length > 0 && (
+                <div className="mt-4">
+                  <PaginationControls pagination={pagination} />
+                </div>
               )}
             </CardContent>
           </Card>

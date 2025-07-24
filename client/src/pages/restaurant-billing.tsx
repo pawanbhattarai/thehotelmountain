@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Eye, Receipt, CreditCard, Trash2, Printer } from "lucide-react";
+import { Eye, Receipt, CreditCard, Trash2, Printer, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -43,6 +43,8 @@ import { useToast } from "@/hooks/use-toast";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import { useAuth } from "@/hooks/useAuth";
+import { usePagination } from "@/hooks/usePagination";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 
 const checkoutSchema = z.object({
   paymentMethod: z.enum(["cash", "card", "Bank Transfer", "online"]),
@@ -60,6 +62,7 @@ export default function RestaurantBilling() {
   const [viewingBill, setViewingBill] = useState<any>(null);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -84,6 +87,17 @@ export default function RestaurantBilling() {
   const { data: hotelSettings } = useQuery({
     queryKey: ["/api/hotel-settings"],
     enabled: !!user,
+  });
+
+  const filteredBills = bills?.filter(
+    (bill: any) => bill.order?.orderType === "dine-in",
+  );
+
+  const pagination = usePagination({
+    data: filteredBills || [],
+    itemsPerPage: 10,
+    searchTerm,
+    searchFields: ["billNumber", "order.orderNumber", "customerName", "paymentMethod"] as any,
   });
 
   const deleteBillMutation = useMutation({
@@ -793,8 +807,17 @@ export default function RestaurantBilling() {
 
           {/* All Bills */}
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle>All Bills</CardTitle>
+              <div className="relative w-72">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search bills..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -816,12 +839,8 @@ export default function RestaurantBilling() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {bills?.length ? (
-                      bills
-                        .filter(
-                          (bill: any) => bill.order?.orderType === "dine-in",
-                        )
-                        .map((bill: any) => (
+                    {pagination.paginatedData?.length ? (
+                      pagination.paginatedData.map((bill: any) => (
                           <TableRow key={bill.id}>
                             <TableCell className="font-medium">
                               #{bill.billNumber}
@@ -893,6 +912,11 @@ export default function RestaurantBilling() {
                     )}
                   </TableBody>
                 </Table>
+              )}
+              {filteredBills?.length > 0 && (
+                <div className="mt-4">
+                  <PaginationControls pagination={pagination} />
+                </div>
               )}
             </CardContent>
           </Card>

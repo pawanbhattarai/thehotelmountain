@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Edit2, Trash2 } from "lucide-react";
+import { Plus, Edit2, Trash2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -17,6 +17,8 @@ import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import { useAuth } from "@/hooks/useAuth";
 import BulkOperations from "@/components/bulk-operations";
+import { usePagination } from "@/hooks/usePagination";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 
 const categorySchema = z.object({
   name: z.string().min(1, "Category name is required"),
@@ -32,6 +34,7 @@ export default function RestaurantCategories() {
   const [isBulkCategoryDialogOpen, setIsBulkCategoryDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
   const { data: categories, isLoading: categoriesLoading } = useQuery({
@@ -43,6 +46,13 @@ export default function RestaurantCategories() {
   });
 
   const { user } = useAuth();
+
+  const pagination = usePagination({
+    data: categories || [],
+    itemsPerPage: 10,
+    searchTerm,
+    searchFields: ["name", "menuType"] as any,
+  });
 
   // Category mutations
   const createCategoryMutation = useMutation({
@@ -146,8 +156,17 @@ export default function RestaurantCategories() {
           onMobileMenuToggle={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
         />
         <main className="p-6">
-          {/* Add Button Section for Categories */}
-          <div className="mb-6">
+          {/* Search and Add Button Section for Categories */}
+          <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search categories..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
             <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
               <DialogTrigger asChild>
                 <Button
@@ -290,8 +309,8 @@ export default function RestaurantCategories() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {categories?.length ? (
-                      categories.map((category: any) => (
+                    {pagination.paginatedData?.length ? (
+                      pagination.paginatedData.map((category: any) => (
                         <TableRow key={category.id}>
                           <TableCell className="font-medium">{category.name}</TableCell>
                           <TableCell>
@@ -337,6 +356,11 @@ export default function RestaurantCategories() {
                     )}
                   </TableBody>
                 </Table>
+              )}
+              {categories?.length > 0 && (
+                <div className="mt-4">
+                  <PaginationControls pagination={pagination} />
+                </div>
               )}
             </CardContent>
           </Card>

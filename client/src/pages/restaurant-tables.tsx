@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Edit2, Trash2, QrCode } from "lucide-react";
+import { Plus, Edit2, Trash2, QrCode, Search } from "lucide-react";
 import { QRCodeModal } from "@/components/qr-code-modal";
 import BulkOperations from "@/components/bulk-operations";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,8 @@ import { useToast } from "@/hooks/use-toast";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import { useAuth } from "@/hooks/useAuth";
+import { usePagination } from "@/hooks/usePagination";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 
 const tableSchema = z.object({
   name: z.string().min(1, "Table name is required"),
@@ -60,6 +62,7 @@ export default function RestaurantTables() {
   const [isBulkTableDialogOpen, setIsBulkTableDialogOpen] = useState(false);
   const [editingTable, setEditingTable] = useState<any>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -69,6 +72,13 @@ export default function RestaurantTables() {
 
   const { data: branches } = useQuery({
     queryKey: ["/api/branches"],
+  });
+
+  const pagination = usePagination({
+    data: tables || [],
+    itemsPerPage: 10,
+    searchTerm,
+    searchFields: ["name", "status"] as any,
   });
 
   const createMutation = useMutation({
@@ -199,8 +209,17 @@ export default function RestaurantTables() {
           }
         />
         <main className="p-6">
-          {/* Add Button Section */}
-          <div className="mb-6">
+          {/* Search and Add Button Section */}
+          <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search tables..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button
@@ -373,8 +392,8 @@ export default function RestaurantTables() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {tables?.length ? (
-                      tables.map((table: any) => (
+                    {pagination.paginatedData?.length ? (
+                      pagination.paginatedData.map((table: any) => (
                         <TableRow key={table.id}>
                           <TableCell className="font-medium">
                             {table.name}
@@ -429,6 +448,11 @@ export default function RestaurantTables() {
                     )}
                   </TableBody>
                 </Table>
+              )}
+              {tables?.length > 0 && (
+                <div className="mt-4">
+                  <PaginationControls pagination={pagination} />
+                </div>
               )}
             </CardContent>
           </Card>

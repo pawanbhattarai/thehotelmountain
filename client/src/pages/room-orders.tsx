@@ -79,6 +79,7 @@ export default function RoomOrders() {
   const [selectedReservation, setSelectedReservation] = useState<any>(null);
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
   const [originalItems, setOriginalItems] = useState<any[]>([]);
+  const [isCompleteOrderUpdate, setIsCompleteOrderUpdate] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedDietFilter, setSelectedDietFilter] = useState<string>("all");
   const [selectedMenuTypeFilter, setSelectedMenuTypeFilter] = useState<string>("all");
@@ -119,21 +120,40 @@ export default function RoomOrders() {
   const currencySymbol = settings?.currency || "Rs.";
 
   const createOrderMutation = useMutation({
-    mutationFn: async (data: { order: any; items: any[] }) => {
-      console.log("Sending room order creation request:", data);
-      const response = await fetch("/api/restaurant/orders/room", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
+    mutationFn: async (data: { order: any; items: any[]; isUpdate?: boolean; orderId?: string }) => {
+      console.log("Sending room order request:", data);
+      
+      if (data.isUpdate && data.orderId) {
+        // Use PUT endpoint for complete order updates (when items are deleted or modified)
+        const response = await fetch(`/api/restaurant/orders/${data.orderId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order: data.order, items: data.items }),
+        });
 
-      const responseData = await response.json();
-      console.log("Room order creation response:", responseData);
+        const responseData = await response.json();
+        console.log("Room order update response:", responseData);
 
-      if (!response.ok) {
-        throw new Error(responseData.message || "Failed to create room order");
+        if (!response.ok) {
+          throw new Error(responseData.message || "Failed to update room order");
+        }
+        return responseData;
+      } else {
+        // Use POST endpoint for new orders or adding items to existing orders
+        const response = await fetch("/api/restaurant/orders/room", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+
+        const responseData = await response.json();
+        console.log("Room order creation response:", responseData);
+
+        if (!response.ok) {
+          throw new Error(responseData.message || "Failed to create room order");
+        }
+        return responseData;
       }
-      return responseData;
     },
     onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/restaurant/orders/room"] });
@@ -281,7 +301,7 @@ export default function RoomOrders() {
       return;
     }
 
-    // For existing orders, only submit new items
+    // Check if there are changes to the order
     if (existingOrder && !hasOrderChanged()) {
       toast({
         title: "No changes",
@@ -299,12 +319,18 @@ export default function RoomOrders() {
       branchId = user?.branchId || 1;
     }
 
-    // For existing orders, only calculate subtotal for new items
+    // Determine if we need complete update or partial update
+    const useCompleteUpdate = existingOrder && needsCompleteUpdate();
     let itemsToSubmit = selectedItems;
     let subtotalForCalculation = 0;
-
-    if (existingOrder) {
-      // Only submit new items or items with increased quantity
+    
+    if (useCompleteUpdate) {
+      // Complete update: send all current items (handles deletions and modifications)
+      itemsToSubmit = selectedItems;
+      subtotalForCalculation = calculateSubtotal();
+      console.log("Using COMPLETE UPDATE mode - sending all items");
+    } else if (existingOrder) {
+      // Partial update: only send new items or items with increased quantity
       itemsToSubmit = selectedItems.filter((item) => {
         const originalItem = originalItems.find(
           (orig) => orig.dishId === item.dishId
@@ -340,12 +366,14 @@ export default function RoomOrders() {
         
         return item;
       });
+      console.log("Using PARTIAL UPDATE mode - sending only new/increased items");
     } else {
-      // For new orders, calculate full subtotal
+      // New order: calculate full subtotal
       subtotalForCalculation = calculateSubtotal();
+      console.log("Creating NEW ORDER");
     }
 
-    if (existingOrder && itemsToSubmit.length === 0) {
+    if (existingOrder && !useCompleteUpdate && itemsToSubmit.length === 0) {
       toast({
         title: "No new items",
         description: "No new items to add to the existing order",
@@ -399,8 +427,14 @@ export default function RoomOrders() {
     console.log("Submitting room order:", { order: orderData, items: itemsData });
     console.log("Items to submit:", itemsToSubmit);
     console.log("Existing order:", existingOrder ? "Yes" : "No");
+    console.log("Update mode:", useCompleteUpdate ? "COMPLETE" : "PARTIAL");
 
-    createOrderMutation.mutate({ order: orderData, items: itemsData });
+    createOrderMutation.mutate({ 
+      order: orderData, 
+      items: itemsData,
+      isUpdate: useCompleteUpdate,
+      orderId: useCompleteUpdate ? existingOrder.id : undefined
+    });
   };
 
   const calculateSubtotal = () => {
@@ -412,15 +446,34 @@ export default function RoomOrders() {
 
   const hasOrderChanged = () => {
     if (originalItems.length !== selectedItems.length) return true;
-    return selectedItems.some((item, index) => {
-      const originalItem = originalItems[index];
+    
+    // Check if any items were removed
+    const hasRemovedItems = originalItems.some(original => 
+      !selectedItems.find(selected => selected.dishId === original.dishId)
+    );
+    if (hasRemovedItems) return true;
+    
+    // Check if any items were added or modified
+    return selectedItems.some(selected => {
+      const originalItem = originalItems.find(orig => orig.dishId === selected.dishId);
       return (
         !originalItem ||
-        item.dishId !== originalItem.dishId ||
-        item.quantity !== originalItem.quantity ||
-        item.notes !== originalItem.notes
+        selected.quantity !== originalItem.quantity ||
+        selected.notes !== originalItem.notes
       );
     });
+  };
+
+  const needsCompleteUpdate = () => {
+    // Complete update needed if items were deleted or this is a major change
+    if (originalItems.length > selectedItems.length) return true;
+    
+    // Check if any items were removed
+    const hasRemovedItems = originalItems.some(original => 
+      !selectedItems.find(selected => selected.dishId === original.dishId)
+    );
+    
+    return hasRemovedItems;
   };
 
   const addItemToOrder = (dish: any) => {
@@ -846,51 +899,14 @@ export default function RoomOrders() {
                         
 <div className="border-t pt-4 space-y-2">
                           {(() => {
-                            const existingOrder = getReservationOrder(selectedReservation?.id);
-                            const newItemsSubtotal = calculateNewItemsSubtotal();
                             const totalSubtotal = calculateSubtotal();
-
-                            if (existingOrder && originalItems.length > 0) {
-                              const existingSubtotal = totalSubtotal - newItemsSubtotal;
-
-                              return (
-                                <>
-                                  {existingSubtotal > 0 && (
-                                    <div className="flex justify-between text-sm text-gray-600">
-                                      <span>Existing Items:</span>
-                                      <span>{currencySymbol} {existingSubtotal.toFixed(2)}</span>
-                                    </div>
-                                  )}
-                                  {newItemsSubtotal > 0 && (
-                                    <div className="flex justify-between text-sm text-green-600">
-                                      <span>New Items:</span>
-                                      <span>{currencySymbol} {newItemsSubtotal.toFixed(2)}</span>
-                                    </div>
-                                  )}
-                                  <div className="flex justify-between text-sm font-medium border-t pt-2">
-                                    <span>Order Subtotal:</span>
-                                    <span>{currencySymbol} {totalSubtotal.toFixed(2)}</span>
-                                  </div>
-                                </>
-                              );
-                            } else {
-                              return (
-                                <div className="flex justify-between text-sm">
-                                  <span>Subtotal:</span>
-                                  <span>{currencySymbol} {totalSubtotal.toFixed(2)}</span>
-                                </div>
-                              );
-                            }
-                          })()}
-
-                          {(() => {
-                            const subtotalForTax = calculateNewItemsSubtotal(); // Only tax new items
                             let totalTaxAmount = 0;
                             const appliedTaxes = [];
 
+                            // Calculate taxes on all items (not just new ones)
                             if (orderTaxes) {
                               for (const tax of orderTaxes) {
-                                const taxAmount = (subtotalForTax * parseFloat(tax.rate)) / 100;
+                                const taxAmount = (totalSubtotal * parseFloat(tax.rate)) / 100;
                                 totalTaxAmount += taxAmount;
                                 appliedTaxes.push({
                                   taxName: tax.taxName,
@@ -902,24 +918,25 @@ export default function RoomOrders() {
 
                             return (
                               <>
+                                {/* Show subtotal for all items */}
+                                <div className="flex justify-between text-sm font-medium">
+                                  <span>Subtotal ({selectedItems.length} items):</span>
+                                  <span>{currencySymbol} {totalSubtotal.toFixed(2)}</span>
+                                </div>
+
+                                {/* Show taxes if any */}
                                 {appliedTaxes.map((tax, index) => (
-                                  <div key={index} className="flex justify-between text-sm">
-                                    <span>{tax.taxName} ({tax.rate}%) - New Items:</span>
+                                  <div key={index} className="flex justify-between text-sm text-gray-600">
+                                    <span>{tax.taxName} ({tax.rate}%):</span>
                                     <span>{currencySymbol} {tax.amount.toFixed(2)}</span>
                                   </div>
                                 ))}
-                                {appliedTaxes.length === 0 && subtotalForTax > 0 && (
-                                  <div className="flex justify-between text-sm">
-                                    <span>Tax - New Items:</span>
-                                    <span>{currencySymbol} 0.00</span>
-                                  </div>
-                                )}
-                                {subtotalForTax > 0 && (
-                                  <div className="flex justify-between font-semibold text-lg border-t pt-2">
-                                    <span>New Items Total:</span>
-                                    <span className="text-green-600">{currencySymbol} {(subtotalForTax + totalTaxAmount).toFixed(2)}</span>
-                                  </div>
-                                )}
+
+                                {/* Show total */}
+                                <div className="flex justify-between font-semibold text-lg border-t pt-2">
+                                  <span>Total Amount:</span>
+                                  <span className="text-green-600">{currencySymbol} {(totalSubtotal + totalTaxAmount).toFixed(2)}</span>
+                                </div>
                               </>
                             );
                           })()}

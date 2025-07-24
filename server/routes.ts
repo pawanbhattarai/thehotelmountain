@@ -41,15 +41,17 @@ import {
   insertStockItemSchema,
   insertStockConsumptionSchema,
   insertDishIngredientSchema,
+  insertPrinterConfigurationSchema,
 } from "@shared/schema";
 import { QRService } from "./qr-service";
 import { uploadIdDocument } from "./fileUpload";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 import {
   restaurantOrderItems,
   restaurantOrders,
   reservations,
   guests,
+  printerConfigurations,
 } from "@shared/schema";
 import { db } from "./db";
 import { z } from "zod";
@@ -8001,6 +8003,224 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch audit logs" });
     }
   });
+
+  // Printer connection testing utility
+  async function testPrinterConnection(config: any): Promise<{ success: boolean; error?: string }> {
+    const net = require('net');
+    
+    return new Promise((resolve) => {
+      const client = new net.Socket();
+      let connected = false;
+      
+      // Set timeout
+      const timeout = setTimeout(() => {
+        if (!connected) {
+          client.destroy();
+          resolve({
+            success: false,
+            error: `Connection timeout after ${config.connectionTimeout || 5000}ms`
+          });
+        }
+      }, config.connectionTimeout || 5000);
+      
+      client.connect(config.port || 9100, config.ipAddress, () => {
+        connected = true;
+        clearTimeout(timeout);
+        
+        // Send a simple test command (ESC/POS paper feed)
+        client.write('\x1B\x64\x02'); // Feed 2 lines
+        
+        setTimeout(() => {
+          client.destroy();
+          resolve({ success: true });
+        }, 100);
+      });
+      
+      client.on('error', (err: any) => {
+        connected = true;
+        clearTimeout(timeout);
+        client.destroy();
+        resolve({
+          success: false,
+          error: `Connection failed: ${err.message}`
+        });
+      });
+    });
+  }
+
+  // Printer Configuration Management Endpoints
+  // Get all printer configurations for a branch
+  app.get(
+    "/api/printer-configurations",
+    isAuthenticated,
+    async (req: any, res) => {
+      try {
+        const user = await storage.getUser(req.session.user.id);
+        if (!user) return res.status(401).json({ message: "User not found" });
+
+        const branchId = user.role === "superadmin" ? 
+          (req.query.branchId ? parseInt(req.query.branchId as string) : user.branchId) : 
+          user.branchId;
+
+        if (!branchId) {
+          return res.status(400).json({ message: "Branch ID is required" });
+        }
+
+        const configurations = await db.select()
+          .from(printerConfigurations)
+          .where(eq(printerConfigurations.branchId, branchId));
+
+        res.json(configurations);
+      } catch (error) {
+        console.error("Error fetching printer configurations:", error);
+        res.status(500).json({ message: "Failed to fetch printer configurations" });
+      }
+    }
+  );
+
+  // Create or update printer configuration
+  app.post(
+    "/api/printer-configurations",
+    isAuthenticated,
+    async (req: any, res) => {
+      try {
+        const user = await storage.getUser(req.session.user.id);
+        if (!user) return res.status(401).json({ message: "User not found" });
+
+        const validatedData = insertPrinterConfigurationSchema.parse(req.body);
+        
+        // Ensure branch permissions
+        const branchId = user.role === "superadmin" ? 
+          validatedData.branchId : user.branchId;
+        
+        if (!branchId) {
+          return res.status(400).json({ message: "Branch ID is required" });
+        }
+
+        // Check if configuration already exists for this printer type and branch
+        const existingConfig = await db.select()
+          .from(printerConfigurations)
+          .where(
+            and(
+              eq(printerConfigurations.branchId, branchId),
+              eq(printerConfigurations.printerType, validatedData.printerType)
+            )
+          )
+          .limit(1);
+
+        let configuration;
+        if (existingConfig.length > 0) {
+          // Update existing configuration
+          [configuration] = await db.update(printerConfigurations)
+            .set({
+              ...validatedData,
+              branchId,
+              updatedAt: new Date(),
+            })
+            .where(eq(printerConfigurations.id, existingConfig[0].id))
+            .returning();
+        } else {
+          // Create new configuration
+          [configuration] = await db.insert(printerConfigurations)
+            .values({
+              ...validatedData,
+              branchId,
+            })
+            .returning();
+        }
+
+        broadcastDataChange("printer-configurations", "upserted", configuration);
+        res.status(201).json(configuration);
+      } catch (error) {
+        console.error("Error creating/updating printer configuration:", error);
+        res.status(500).json({ message: "Failed to save printer configuration" });
+      }
+    }
+  );
+
+  // Test printer connection
+  app.post(
+    "/api/printer-configurations/:id/test",
+    isAuthenticated,
+    async (req: any, res) => {
+      try {
+        const user = await storage.getUser(req.session.user.id);
+        if (!user) return res.status(401).json({ message: "User not found" });
+
+        const configId = parseInt(req.params.id);
+        const configuration = await db.select()
+          .from(printerConfigurations)
+          .where(eq(printerConfigurations.id, configId))
+          .limit(1);
+
+        if (!configuration.length) {
+          return res.status(404).json({ message: "Printer configuration not found" });
+        }
+
+        const config = configuration[0];
+
+        // Check branch permissions
+        if (user.role !== "superadmin" && config.branchId !== user.branchId) {
+          return res.status(403).json({ message: "Insufficient permissions" });
+        }
+
+        // Test printer connection (simplified TCP connection test)
+        const testResult = await testPrinterConnection(config);
+
+        // Update configuration with test results
+        await db.update(printerConfigurations)
+          .set({
+            lastTestPrint: new Date(),
+            connectionStatus: testResult.success ? "connected" : "error",
+            errorMessage: testResult.success ? null : testResult.error,
+            updatedAt: new Date(),
+          })
+          .where(eq(printerConfigurations.id, configId));
+
+        res.json(testResult);
+      } catch (error) {
+        console.error("Error testing printer connection:", error);
+        res.status(500).json({ message: "Failed to test printer connection" });
+      }
+    }
+  );
+
+  // Delete printer configuration
+  app.delete(
+    "/api/printer-configurations/:id",
+    isAuthenticated,
+    async (req: any, res) => {
+      try {
+        const user = await storage.getUser(req.session.user.id);
+        if (!user) return res.status(401).json({ message: "User not found" });
+
+        const configId = parseInt(req.params.id);
+        const configuration = await db.select()
+          .from(printerConfigurations)
+          .where(eq(printerConfigurations.id, configId))
+          .limit(1);
+
+        if (!configuration.length) {
+          return res.status(404).json({ message: "Printer configuration not found" });
+        }
+
+        // Check branch permissions
+        if (user.role !== "superadmin" && configuration[0].branchId !== user.branchId) {
+          return res.status(403).json({ message: "Insufficient permissions" });
+        }
+
+        await db.delete(printerConfigurations)
+          .where(eq(printerConfigurations.id, configId));
+
+        broadcastDataChange("printer-configurations", "deleted", { id: configId });
+        res.json({ message: "Printer configuration deleted successfully" });
+      } catch (error) {
+        console.error("Error deleting printer configuration:", error);
+        res.status(500).json({ message: "Failed to delete printer configuration" });
+      }
+    }
+  );
+
   const httpServer = createServer(app);
   return httpServer;
 }

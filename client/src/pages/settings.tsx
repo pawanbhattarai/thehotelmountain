@@ -1014,6 +1014,18 @@ export default function Settings() {
                           </p>
                         </div>
                       </div>
+
+                      <Separator className="my-6" />
+
+                      {/* Network Printer Configuration Section */}
+                      <div className="space-y-4">
+                        <h4 className="font-medium">Network Printer Configuration</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Configure KOT (Kitchen Order Ticket) and BOT (Beverage Order Ticket) network thermal printers
+                        </p>
+                        
+                        <PrinterConfigurationSection />
+                      </div>
                     </CardContent>
                   </Card>
                 </TabsContent>
@@ -1070,5 +1082,353 @@ export default function Settings() {
         </main>
       </div>
     </div>
+  );
+}
+
+// Printer Configuration Component
+function PrinterConfigurationSection() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [editingConfig, setEditingConfig] = useState<any>(null);
+  const [testingId, setTestingId] = useState<number | null>(null);
+
+  // Fetch printer configurations
+  const { data: configurations = [], isLoading } = useQuery({
+    queryKey: ["/api/printer-configurations"],
+    staleTime: 60000,
+  });
+
+  // Create/update printer configuration
+  const savePrinterConfig = useMutation({
+    mutationFn: async (data: any) => {
+      return apiRequest("/api/printer-configurations", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/printer-configurations"] });
+      setEditingConfig(null);
+      toast({
+        title: "Success",
+        description: "Printer configuration saved successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save printer configuration",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Test printer connection
+  const testPrinterConnection = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest(`/api/printer-configurations/${id}/test`, {
+        method: "POST",
+      });
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/printer-configurations"] });
+      toast({
+        title: data.success ? "Connection Successful" : "Connection Failed",
+        description: data.success 
+          ? "Printer is connected and ready" 
+          : data.error || "Unable to connect to printer",
+        variant: data.success ? "default" : "destructive",
+      });
+      setTestingId(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Test Failed",
+        description: error.message || "Failed to test printer connection",
+        variant: "destructive",
+      });
+      setTestingId(null);
+    },
+  });
+
+  // Delete printer configuration
+  const deletePrinterConfig = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest(`/api/printer-configurations/${id}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/printer-configurations"] });
+      toast({
+        title: "Success",
+        description: "Printer configuration deleted successfully",
+      });
+    },
+  });
+
+  const handleSaveConfig = (data: any) => {
+    savePrinterConfig.mutate(data);
+  };
+
+  const handleTestConnection = (id: number) => {
+    setTestingId(id);
+    testPrinterConnection.mutate(id);
+  };
+
+  const printerTypes = [
+    { value: "KOT", label: "KOT (Kitchen Order Ticket)" },
+    { value: "BOT", label: "BOT (Beverage Order Ticket)" },
+  ];
+
+  if (isLoading) {
+    return <div className="text-sm text-muted-foreground">Loading printer configurations...</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Existing Configurations */}
+      {configurations.map((config: any) => (
+        <Card key={config.id} className="border-l-4 border-l-blue-500">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Printer className="h-4 w-4" />
+                <CardTitle className="text-base">
+                  {config.printerType} Printer
+                </CardTitle>
+                <Badge variant={config.connectionStatus === "connected" ? "default" : "destructive"}>
+                  {config.connectionStatus || "unknown"}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleTestConnection(config.id)}
+                  disabled={testingId === config.id}
+                >
+                  {testingId === config.id ? "Testing..." : "Test"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setEditingConfig(config)}
+                >
+                  Edit
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => deletePrinterConfig.mutate(config.id)}
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <span className="font-medium">IP Address:</span> {config.ipAddress}
+              </div>
+              <div>
+                <span className="font-medium">Port:</span> {config.port}
+              </div>
+              <div>
+                <span className="font-medium">Direct Print:</span>{" "}
+                {config.directPrint ? "Enabled" : "Disabled"}
+              </div>
+            </div>
+            {config.lastTestPrint && (
+              <div className="mt-2 text-xs text-muted-foreground">
+                Last tested: {new Date(config.lastTestPrint).toLocaleString()}
+              </div>
+            )}
+            {config.errorMessage && (
+              <div className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded">
+                {config.errorMessage}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ))}
+
+      {/* Add New Configuration Form */}
+      {editingConfig === null && configurations.length < 2 && (
+        <Card className="border-dashed">
+          <CardContent className="pt-6">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setEditingConfig({})}
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Add Printer Configuration
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Configuration Form */}
+      {editingConfig !== null && (
+        <PrinterConfigForm
+          config={editingConfig}
+          onSave={handleSaveConfig}
+          onCancel={() => setEditingConfig(null)}
+          isSaving={savePrinterConfig.isPending}
+          printerTypes={printerTypes}
+          existingTypes={configurations.map((c: any) => c.printerType)}
+        />
+      )}
+    </div>
+  );
+}
+
+// Printer Configuration Form Component
+function PrinterConfigForm({
+  config,
+  onSave,
+  onCancel,
+  isSaving,
+  printerTypes,
+  existingTypes,
+}: {
+  config: any;
+  onSave: (data: any) => void;
+  onCancel: () => void;
+  isSaving: boolean;
+  printerTypes: Array<{ value: string; label: string }>;
+  existingTypes: string[];
+}) {
+  const [formData, setFormData] = useState({
+    printerType: config.printerType || "",
+    ipAddress: config.ipAddress || "",
+    port: config.port || 9100,
+    directPrint: config.directPrint || false,
+    connectionTimeout: config.connectionTimeout || 5000,
+    ...config,
+  });
+
+  const availableTypes = printerTypes.filter(
+    (type) => type.value === config.printerType || !existingTypes.includes(type.value)
+  );
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.printerType || !formData.ipAddress) {
+      return;
+    }
+    onSave(formData);
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">
+          {config.id ? "Edit" : "Add"} Printer Configuration
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="printerType">Printer Type *</Label>
+              <Select
+                value={formData.printerType}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, printerType: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select printer type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableTypes.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ipAddress">IP Address *</Label>
+              <Input
+                id="ipAddress"
+                value={formData.ipAddress}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, ipAddress: e.target.value }))
+                }
+                placeholder="192.168.1.100"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="port">Port</Label>
+              <Input
+                id="port"
+                type="number"
+                value={formData.port}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, port: parseInt(e.target.value) || 9100 }))
+                }
+                placeholder="9100"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="connectionTimeout">Timeout (ms)</Label>
+              <Input
+                id="connectionTimeout"
+                type="number"
+                value={formData.connectionTimeout}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    connectionTimeout: parseInt(e.target.value) || 5000,
+                  }))
+                }
+                placeholder="5000"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="directPrint"
+              checked={formData.directPrint}
+              onCheckedChange={(checked) =>
+                setFormData((prev) => ({ ...prev, directPrint: checked }))
+              }
+            />
+            <Label htmlFor="directPrint" className="text-sm">
+              Enable direct printing (automatically print when KOT/BOT is generated)
+            </Label>
+          </div>
+
+          <div className="bg-blue-50 p-3 rounded-lg text-sm">
+            <p className="font-medium text-blue-900 mb-1">Network Printer Setup:</p>
+            <ul className="text-blue-800 space-y-1 text-xs">
+              <li>• Ensure printer is connected to the same network</li>
+              <li>• Standard thermal printer port is 9100</li>
+              <li>• Test connection after configuration</li>
+              <li>• Enable direct print for automatic KOT/BOT printing</li>
+            </ul>
+          </div>
+
+          <div className="flex justify-end space-x-2">
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? "Saving..." : "Save Configuration"}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

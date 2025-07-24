@@ -1092,6 +1092,59 @@ export type InsertKotTicket = z.infer<typeof insertKotTicketSchema>;
 export type BotTicket = typeof botTickets.$inferSelect;
 export type InsertBotTicket = z.infer<typeof insertBotTicketSchema>;
 
+// Printer Configuration table for KOT/BOT printing settings
+export const printerConfigurations = pgTable("printer_configurations", {
+  id: serial("id").primaryKey(),
+  branchId: integer("branch_id").notNull(),
+  printerType: varchar("printer_type", {
+    enum: ["kot", "bot", "billing"],
+  }).notNull(),
+  printerName: varchar("printer_name", { length: 100 }).notNull(),
+  ipAddress: varchar("ip_address", { length: 15 }).notNull(),
+  port: integer("port").default(9100),
+  isEnabled: boolean("is_enabled").default(true),
+  autoDirectPrint: boolean("auto_direct_print").default(false),
+  paperWidth: integer("paper_width").default(80), // in mm
+  characterEncoding: varchar("character_encoding", { length: 20 }).default("UTF-8"),
+  connectionTimeout: integer("connection_timeout").default(5000), // in milliseconds
+  retryAttempts: integer("retry_attempts").default(3),
+  lastTestPrint: timestamp("last_test_print"),
+  lastSuccessfulPrint: timestamp("last_successful_print"),
+  connectionStatus: varchar("connection_status", {
+    enum: ["connected", "disconnected", "error"],
+  }).default("disconnected"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Printer Configuration Relations
+export const printerConfigurationsRelations = relations(
+  printerConfigurations,
+  ({ one }) => ({
+    branch: one(branches, {
+      fields: [printerConfigurations.branchId],
+      references: [branches.id],
+    }),
+  }),
+);
+
+// Printer Configuration Insert Schema
+export const insertPrinterConfigurationSchema = createInsertSchema(
+  printerConfigurations,
+).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastTestPrint: true,
+  lastSuccessfulPrint: true,
+  connectionStatus: true,
+  errorMessage: true,
+});
+
+export type PrinterConfiguration = typeof printerConfigurations.$inferSelect;
+export type InsertPrinterConfiguration = z.infer<typeof insertPrinterConfigurationSchema>;
+
 // Tax/Charges Schemas and Types
 export const insertTaxSchema = createInsertSchema(taxes)
   .omit({

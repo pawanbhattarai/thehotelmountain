@@ -5550,11 +5550,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Check if order can be modified (within 30 minutes or status is pending)
-      const orderAge = (new Date().getTime() - new Date(existingOrder.createdAt).getTime()) / (1000 * 60);
-      if (orderAge > 30 && existingOrder.status !== "pending") {
+      // Check if order can be modified (only prevent if status is completed/cancelled)
+      if (existingOrder.status === "completed" || existingOrder.status === "cancelled") {
         return res.status(400).json({
-          message: "Order cannot be modified after 30 minutes or if already confirmed",
+          message: "Cannot modify completed or cancelled orders",
         });
       }
 

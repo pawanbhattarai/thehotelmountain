@@ -28,6 +28,8 @@ A comprehensive restaurant management system built with Node.js, Express, React,
   - Solution: Created new PUT endpoint `/api/restaurant/orders/:id` for complete order updates
   - Frontend now sends entire order state for updates instead of just new items
   - Backend uses `replaceOrderItems()` to handle all modifications including deletions
+  - Removed time restrictions - users can now add/delete items from orders anytime
+  - Only prevents modification of completed or cancelled orders
   - Users can now successfully delete items from orders and save changes
 - **DateTime Conversion Fix**: Fixed critical reservation datetime handling issue across all environments
   - Problem: User enters 7:30 AM but system saves different time due to timezone conversion

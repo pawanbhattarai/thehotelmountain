@@ -524,6 +524,52 @@ export default function RoomOrders() {
     return orders?.find((order: any) => order.reservationId === reservationId);
   };
 
+  // Get ALL orders for a reservation
+  const getAllReservationOrders = (reservationId: string) => {
+    return orders?.filter((order: any) => order.reservationId === reservationId) || [];
+  };
+
+  // Get ALL items from ALL orders for a reservation 
+  const getAllReservationItems = (reservationId: string) => {
+    const reservationOrders = getAllReservationOrders(reservationId);
+    const allItems: any[] = [];
+    
+    reservationOrders.forEach((order: any) => {
+      if (order.items) {
+        order.items.forEach((item: any) => {
+          // Check if we already have this dish in our combined list
+          const existingItemIndex = allItems.findIndex(
+            (existing) => existing.dishId === item.dishId
+          );
+          
+          if (existingItemIndex >= 0) {
+            // Add quantities if same dish exists
+            allItems[existingItemIndex].quantity += item.quantity;
+            allItems[existingItemIndex].totalPrice = 
+              (parseFloat(allItems[existingItemIndex].unitPrice) * allItems[existingItemIndex].quantity).toFixed(2);
+          } else {
+            // Add new item
+            allItems.push({
+              ...item,
+              dishName: item.dishName || `Dish ${item.dishId}`,
+            });
+          }
+        });
+      }
+    });
+    
+    return allItems;
+  };
+
+  // Calculate total for ALL reservation orders
+  const calculateAllReservationTotal = (reservationId: string) => {
+    const allItems = getAllReservationItems(reservationId);
+    return allItems.reduce(
+      (sum, item) => sum + parseFloat(item.unitPrice) * item.quantity,
+      0
+    );
+  };
+
   const getStatusColor = (status: string) => {
     const colors = {
       pending: "bg-yellow-100 text-yellow-800",
@@ -832,7 +878,7 @@ export default function RoomOrders() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {selectedItems.length === 0 ? (
+                    {selectedItems.length === 0 && (!selectedReservation || getAllReservationItems(selectedReservation.id).length === 0) ? (
                       <div className="text-center py-8">
                         <ShoppingCart className="h-12 w-12 mx-auto text-gray-400 mb-2" />
                         <p className="text-gray-500">No items selected</p>
@@ -840,10 +886,11 @@ export default function RoomOrders() {
                     ) : (
                       <>
                         <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
-                          {selectedItems.map((item, index) => (
+                          {/* Show ALL previous order items for this reservation */}
+                          {selectedReservation && getAllReservationItems(selectedReservation.id).map((item, index) => (
                             <div
-                              key={`dish-${item.dishId}`}
-                              className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                              key={`all-items-${item.dishId}`}
+                              className="flex items-center justify-between p-2 bg-blue-50 rounded border-l-4 border-blue-400"
                             >
                               <div className="flex-1">
                                 <h4 className="font-medium text-sm">
@@ -851,6 +898,32 @@ export default function RoomOrders() {
                                 </h4>
                                 <p className="text-xs text-gray-600">
                                   {currencySymbol} {item.unitPrice} each
+                                </p>
+                                <p className="text-xs text-blue-600 font-medium">
+                                  Previous Orders
+                                </p>
+                              </div>
+                              <div className="text-sm font-medium">
+                                Qty: {item.quantity}
+                              </div>
+                            </div>
+                          ))}
+
+                          {/* Show current order items being edited */}
+                          {selectedItems.map((item, index) => (
+                            <div
+                              key={`current-${item.dishId}`}
+                              className="flex items-center justify-between p-2 bg-green-50 rounded border-l-4 border-green-400"
+                            >
+                              <div className="flex-1">
+                                <h4 className="font-medium text-sm">
+                                  {item.dishName}
+                                </h4>
+                                <p className="text-xs text-gray-600">
+                                  {currencySymbol} {item.unitPrice} each
+                                </p>
+                                <p className="text-xs text-green-600 font-medium">
+                                  Current Order
                                 </p>
                               </div>
                               <div className="flex items-center space-x-2">
@@ -899,14 +972,18 @@ export default function RoomOrders() {
                         
 <div className="border-t pt-4 space-y-2">
                           {(() => {
-                            const totalSubtotal = calculateSubtotal();
+                            // Calculate totals for ALL items (previous + current)
+                            const previousOrdersTotal = selectedReservation ? calculateAllReservationTotal(selectedReservation.id) : 0;
+                            const currentOrderTotal = calculateSubtotal();
+                            const allItemsTotal = previousOrdersTotal + currentOrderTotal;
+                            
                             let totalTaxAmount = 0;
                             const appliedTaxes = [];
 
-                            // Calculate taxes on all items (not just new ones)
+                            // Calculate taxes on all items (previous + current)
                             if (orderTaxes) {
                               for (const tax of orderTaxes) {
-                                const taxAmount = (totalSubtotal * parseFloat(tax.rate)) / 100;
+                                const taxAmount = (allItemsTotal * parseFloat(tax.rate)) / 100;
                                 totalTaxAmount += taxAmount;
                                 appliedTaxes.push({
                                   taxName: tax.taxName,
@@ -916,12 +993,31 @@ export default function RoomOrders() {
                               }
                             }
 
+                            const allItems = selectedReservation ? getAllReservationItems(selectedReservation.id) : [];
+                            const totalItemCount = allItems.length + selectedItems.length;
+
                             return (
                               <>
-                                {/* Show subtotal for all items */}
-                                <div className="flex justify-between text-sm font-medium">
-                                  <span>Subtotal ({selectedItems.length} items):</span>
-                                  <span>{currencySymbol} {totalSubtotal.toFixed(2)}</span>
+                                {/* Show breakdown if there are previous orders */}
+                                {previousOrdersTotal > 0 && (
+                                  <div className="flex justify-between text-sm text-blue-600">
+                                    <span>Previous Orders ({allItems.length} items):</span>
+                                    <span>{currencySymbol} {previousOrdersTotal.toFixed(2)}</span>
+                                  </div>
+                                )}
+
+                                {/* Show current order if any */}
+                                {currentOrderTotal > 0 && (
+                                  <div className="flex justify-between text-sm text-green-600">
+                                    <span>Current Order ({selectedItems.length} items):</span>
+                                    <span>{currencySymbol} {currentOrderTotal.toFixed(2)}</span>
+                                  </div>
+                                )}
+
+                                {/* Show combined subtotal */}
+                                <div className="flex justify-between text-sm font-medium border-t pt-2">
+                                  <span>Combined Subtotal ({totalItemCount} items):</span>
+                                  <span>{currencySymbol} {allItemsTotal.toFixed(2)}</span>
                                 </div>
 
                                 {/* Show taxes if any */}
@@ -934,8 +1030,8 @@ export default function RoomOrders() {
 
                                 {/* Show total */}
                                 <div className="flex justify-between font-semibold text-lg border-t pt-2">
-                                  <span>Total Amount:</span>
-                                  <span className="text-green-600">{currencySymbol} {(totalSubtotal + totalTaxAmount).toFixed(2)}</span>
+                                  <span>Total Amount (All Orders):</span>
+                                  <span className="text-green-600">{currencySymbol} {(allItemsTotal + totalTaxAmount).toFixed(2)}</span>
                                 </div>
                               </>
                             );

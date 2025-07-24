@@ -917,21 +917,54 @@ export default function RoomOrders() {
                             </TableHeader>
                             <TableBody>
                               {(() => {
-                                // Show only the items in the current order being built
-                                if (selectedItems.length === 0) {
+                                // Show ALL orders for this reservation
+                                const allReservationItems = selectedReservation ? getAllReservationItems(selectedReservation.id) : [];
+                                const allDisplayItems = [...allReservationItems];
+
+                                // Add new items being built for current order
+                                selectedItems.forEach(newItem => {
+                                  const existingIndex = allDisplayItems.findIndex(item => item.dishId === newItem.dishId);
+                                  if (existingIndex >= 0) {
+                                    // Combine quantities if same dish exists
+                                    allDisplayItems[existingIndex] = {
+                                      ...allDisplayItems[existingIndex],
+                                      quantity: allDisplayItems[existingIndex].quantity + newItem.quantity,
+                                      totalPrice: (parseFloat(allDisplayItems[existingIndex].unitPrice) * 
+                                        (allDisplayItems[existingIndex].quantity + newItem.quantity)).toFixed(2),
+                                      isNewItem: true // Mark as new to show different styling
+                                    };
+                                  } else {
+                                    // Add as new item
+                                    allDisplayItems.push({
+                                      ...newItem,
+                                      isNewItem: true,
+                                      totalPrice: (parseFloat(newItem.unitPrice) * newItem.quantity).toFixed(2)
+                                    });
+                                  }
+                                });
+
+                                if (allDisplayItems.length === 0) {
                                   return (
                                     <TableRow>
                                       <TableCell colSpan={4} className="text-center py-8 text-gray-500">
-                                        No items selected for new order
+                                        No orders placed yet
                                       </TableCell>
                                     </TableRow>
                                   );
                                 }
 
-                                return selectedItems.map((item, index) => (
-                                  <TableRow key={`item-${item.dishId}-${index}`}>
+                                return allDisplayItems.map((item, index) => (
+                                  <TableRow 
+                                    key={`all-item-${item.dishId}-${index}`}
+                                    className={item.isNewItem ? "bg-blue-50" : ""}
+                                  >
                                     <TableCell>
-                                      <div className="font-medium text-sm">{item.dishName}</div>
+                                      <div className="font-medium text-sm">
+                                        {item.dishName}
+                                        {item.isNewItem && (
+                                          <Badge variant="secondary" className="ml-2 text-xs">New</Badge>
+                                        )}
+                                      </div>
                                     </TableCell>
                                     <TableCell className="text-center text-sm">
                                       {currencySymbol} {item.unitPrice}
@@ -942,8 +975,18 @@ export default function RoomOrders() {
                                           size="sm"
                                           variant="outline"
                                           onClick={() => {
-                                            const newQuantity = Math.max(1, item.quantity - 1);
-                                            updateItemQuantity(item.dishId, newQuantity);
+                                            if (item.isNewItem) {
+                                              // Handle new item quantity change
+                                              const currentSelectedItem = selectedItems.find(si => si.dishId === item.dishId);
+                                              if (currentSelectedItem) {
+                                                const newQuantity = Math.max(1, currentSelectedItem.quantity - 1);
+                                                updateItemQuantity(item.dishId, newQuantity);
+                                              }
+                                            } else {
+                                              // Handle existing item quantity change
+                                              const newQuantity = Math.max(0, item.quantity - 1);
+                                              updatePreviousOrderItem(item.dishId, newQuantity);
+                                            }
                                           }}
                                           className="h-6 w-6 p-0"
                                         >
@@ -956,8 +999,18 @@ export default function RoomOrders() {
                                           size="sm"
                                           variant="outline"
                                           onClick={() => {
-                                            const newQuantity = item.quantity + 1;
-                                            updateItemQuantity(item.dishId, newQuantity);
+                                            if (item.isNewItem) {
+                                              // Handle new item quantity change
+                                              const currentSelectedItem = selectedItems.find(si => si.dishId === item.dishId);
+                                              if (currentSelectedItem) {
+                                                const newQuantity = currentSelectedItem.quantity + 1;
+                                                updateItemQuantity(item.dishId, newQuantity);
+                                              }
+                                            } else {
+                                              // Handle existing item quantity change
+                                              const newQuantity = item.quantity + 1;
+                                              updatePreviousOrderItem(item.dishId, newQuantity);
+                                            }
                                           }}
                                           className="h-6 w-6 p-0"
                                         >
@@ -969,7 +1022,15 @@ export default function RoomOrders() {
                                       <Button
                                         size="sm"
                                         variant="ghost"
-                                        onClick={() => removeItemFromOrder(item.dishId)}
+                                        onClick={() => {
+                                          if (item.isNewItem) {
+                                            // Remove from current order
+                                            removeItemFromOrder(item.dishId);
+                                          } else {
+                                            // Remove from previous orders
+                                            removePreviousOrderItem(item.dishId);
+                                          }
+                                        }}
                                         className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
                                         title="Remove from order"
                                       >
@@ -986,22 +1047,36 @@ export default function RoomOrders() {
 
 <div className="border-t pt-4 space-y-2">
                           {(() => {
-                            // Calculate total based only on new order items
-                            let subtotal = 0;
-                            let itemCount = 0;
+                            // Calculate totals for ALL orders (existing + new)
+                            const allReservationItems = selectedReservation ? getAllReservationItems(selectedReservation.id) : [];
+                            let allOrdersSubtotal = 0;
+                            let allOrdersItemCount = 0;
                             
-                            selectedItems.forEach(item => {
-                              subtotal += parseFloat(item.unitPrice) * item.quantity;
-                              itemCount += item.quantity;
+                            // Add existing orders total
+                            allReservationItems.forEach(item => {
+                              allOrdersSubtotal += parseFloat(item.unitPrice) * item.quantity;
+                              allOrdersItemCount += item.quantity;
                             });
 
-                            // Calculate taxes
+                            // Calculate new order items total separately
+                            let newOrderSubtotal = 0;
+                            let newOrderItemCount = 0;
+                            
+                            selectedItems.forEach(item => {
+                              newOrderSubtotal += parseFloat(item.unitPrice) * item.quantity;
+                              newOrderItemCount += item.quantity;
+                            });
+
+                            const combinedSubtotal = allOrdersSubtotal + newOrderSubtotal;
+                            const combinedItemCount = allOrdersItemCount + newOrderItemCount;
+
+                            // Calculate taxes on combined total
                             let totalTaxAmount = 0;
                             const appliedTaxes = [];
 
                             if (orderTaxes) {
                               for (const tax of orderTaxes) {
-                                const taxAmount = (subtotal * parseFloat(tax.rate)) / 100;
+                                const taxAmount = (combinedSubtotal * parseFloat(tax.rate)) / 100;
                                 totalTaxAmount += taxAmount;
                                 appliedTaxes.push({
                                   taxName: tax.taxName,
@@ -1011,13 +1086,27 @@ export default function RoomOrders() {
                               }
                             }
 
-                            const total = subtotal + totalTaxAmount;
+                            const combinedTotal = combinedSubtotal + totalTaxAmount;
 
                             return (
                               <>
+                                {allOrdersSubtotal > 0 && (
+                                  <div className="flex justify-between text-sm text-gray-600">
+                                    <span>Previous Orders ({allOrdersItemCount} items):</span>
+                                    <span>{currencySymbol} {allOrdersSubtotal.toFixed(2)}</span>
+                                  </div>
+                                )}
+                                
+                                {newOrderSubtotal > 0 && (
+                                  <div className="flex justify-between text-sm text-blue-600">
+                                    <span>New Order ({newOrderItemCount} items):</span>
+                                    <span>{currencySymbol} {newOrderSubtotal.toFixed(2)}</span>
+                                  </div>
+                                )}
+
                                 <div className="flex justify-between text-sm font-medium">
-                                  <span>Subtotal ({itemCount} items):</span>
-                                  <span>{currencySymbol} {subtotal.toFixed(2)}</span>
+                                  <span>Total Items ({combinedItemCount}):</span>
+                                  <span>{currencySymbol} {combinedSubtotal.toFixed(2)}</span>
                                 </div>
 
                                 {appliedTaxes.map((tax, index) => (
@@ -1028,8 +1117,8 @@ export default function RoomOrders() {
                                 ))}
 
                                 <div className="flex justify-between font-semibold text-lg border-t pt-2">
-                                  <span>New Order Total:</span>
-                                  <span className="text-green-600">{currencySymbol} {total.toFixed(2)}</span>
+                                  <span>Grand Total:</span>
+                                  <span className="text-green-600">{currencySymbol} {combinedTotal.toFixed(2)}</span>
                                 </div>
                               </>
                             );

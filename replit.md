@@ -21,8 +21,14 @@ A comprehensive restaurant management system built with Node.js, Express, React,
 - File upload capabilities
 
 ## Recent Changes
-- **2025-07-23**: Successfully completed migration from Replit Agent to Replit environment
+- **2025-07-24**: Successfully completed migration from Replit Agent to Replit environment
 - **Migration Status**: Complete - PostgreSQL database configured, all systems operational
+- **Room Orders Summary Fixed**: Resolved issue where only latest order items were visible
+  - Now shows ALL order items from ALL orders for each reservation
+  - Previous and new order items displayed together in unified table
+  - Visual distinction with blue highlighting for new items being added
+  - Comprehensive billing showing previous orders + new orders + grand total
+  - Full CRUD operations available for all items from any order
 - **Room Service Orders System Complete Overhaul**: Fixed all critical issues with comprehensive solution
   - Problem: Could only see latest order items, couldn't edit previous order items
   - Solution: Implemented full CRUD operations for ALL orders in a reservation

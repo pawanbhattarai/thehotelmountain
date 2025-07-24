@@ -8,6 +8,7 @@ import {
   taxes,
   kotTickets,
   botTickets,
+  printerConfigurations,
   hotelSettings,
   rooms,
   roomTypes,
@@ -36,6 +37,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, ilike, count, sum, gte, lt, isNotNull, inArray } from "drizzle-orm";
+import { printerService } from "./printer-service";
 
 export class RestaurantStorage {
   // Restaurant Tables
@@ -1041,48 +1043,151 @@ export class RestaurantStorage {
           .where(eq(restaurantOrders.id, orderId));
       }
 
-      // Check if Direct Print KOT/BOT is enabled and auto-print
-      const [settings] = await tx
-        .select({ directPrintKotBot: hotelSettings.directPrintKotBot })
-        .from(hotelSettings)
-        .where(eq(hotelSettings.branchId, order.branchId))
-        .limit(1);
+      // Auto-print to configured printers if tickets were generated
+      let autoPrintResults: { kotPrinted: boolean; botPrinted: boolean; printErrors: string[] } = {
+        kotPrinted: false,
+        botPrinted: false,
+        printErrors: []
+      };
 
-      if (settings?.directPrintKotBot) {
-        // Auto-print KOT ticket
-        if (kotGenerated && kotData?.kotTicket) {
-          await tx
-            .update(kotTickets)
-            .set({ 
-              isPrinted: true,
-              printedAt: sql`NOW()`
-            })
-            .where(eq(kotTickets.id, kotData.kotTicket.id));
+      // Get all enabled printer configurations for this branch
+      const enabledPrinters = await tx
+        .select()
+        .from(printerConfigurations)
+        .where(and(
+          eq(printerConfigurations.branchId, order.branchId),
+          eq(printerConfigurations.isEnabled, true),
+          eq(printerConfigurations.autoDirectPrint, true)
+        ));
+
+      // Auto-print KOT to KOT printers
+      if (kotGenerated && kotData?.kotTicket) {
+        const kotPrinters = enabledPrinters.filter(p => p.printerType === 'kot');
+        
+        for (const printer of kotPrinters) {
+          try {
+            console.log(`📄 Auto-printing KOT ${kotData.kotNumber} to ${printer.printerName} (${printer.ipAddress}:${printer.port})`);
+            
+            // Generate KOT ticket content
+            const kotContent = this.generateKOTContent({
+              kotNumber: kotData.kotNumber,
+              orderNumber: order.orderNumber,
+              customerName: kotData.kotTicket.customerName,
+              tableNumber: order.tableId ? `Table ${order.tableId}` : undefined,
+              roomNumber: order.roomId && order.room?.number ? `Room ${order.room.number}` : undefined,
+              items: kotData.kotItems.map(item => ({
+                name: item.dish.name,
+                quantity: item.quantity,
+                specialInstructions: item.specialInstructions || undefined
+              })),
+              notes: order.notes || undefined,
+              timestamp: new Date()
+            });
+
+            const printResult = await printerService.processPrintJob({
+              printerType: 'kot',
+              content: kotContent,
+              branchId: order.branchId
+            });
+            
+            if (printResult.success) {
+              // Mark KOT as printed
+              await tx
+                .update(kotTickets)
+                .set({ 
+                  printedAt: sql`NOW()`
+                })
+                .where(eq(kotTickets.id, kotData.kotTicket.id));
+
+              autoPrintResults.kotPrinted = true;
+              console.log(`✅ KOT ${kotData.kotNumber} printed successfully to ${printer.printerName}`);
+            } else {
+              autoPrintResults.printErrors.push(`KOT print failed to ${printer.printerName}: ${printResult.message}`);
+              console.error(`❌ KOT print failed to ${printer.printerName}:`, printResult.message);
+            }
+          } catch (error: any) {
+            autoPrintResults.printErrors.push(`KOT print error to ${printer.printerName}: ${error.message}`);
+            console.error(`❌ KOT print error to ${printer.printerName}:`, error);
+          }
         }
+      }
 
-        // Auto-print BOT ticket
-        if (botGenerated && botData?.botTicket) {
-          await tx
-            .update(botTickets)
-            .set({ 
-              isPrinted: true,
-              printedAt: sql`NOW()`
-            })
-            .where(eq(botTickets.id, botData.botTicket.id));
+      // Auto-print BOT to BOT printers
+      if (botGenerated && botData?.botTicket) {
+        const botPrinters = enabledPrinters.filter(p => p.printerType === 'bot');
+        
+        for (const printer of botPrinters) {
+          try {
+            console.log(`🍸 Auto-printing BOT ${botData.botNumber} to ${printer.printerName} (${printer.ipAddress}:${printer.port})`);
+            
+            // Generate BOT ticket content
+            const botContent = this.generateBOTContent({
+              botNumber: botData.botNumber,
+              orderNumber: order.orderNumber,
+              customerName: botData.botTicket.customerName,
+              tableNumber: order.tableId ? `Table ${order.tableId}` : undefined,
+              roomNumber: order.roomId && order.room?.number ? `Room ${order.room.number}` : undefined,
+              items: botData.botItems.map(item => ({
+                name: item.dish.name,
+                quantity: item.quantity,
+                specialInstructions: item.specialInstructions || undefined
+              })),
+              notes: order.notes || undefined,
+              timestamp: new Date()
+            });
+
+            const printResult = await printerService.processPrintJob({
+              printerType: 'bot',
+              content: botContent,
+              branchId: order.branchId
+            });
+            
+            if (printResult.success) {
+              // Mark BOT as printed
+              await tx
+                .update(botTickets)
+                .set({ 
+                  printedAt: sql`NOW()`
+                })
+                .where(eq(botTickets.id, botData.botTicket.id));
+
+              autoPrintResults.botPrinted = true;
+              console.log(`✅ BOT ${botData.botNumber} printed successfully to ${printer.printerName}`);
+            } else {
+              autoPrintResults.printErrors.push(`BOT print failed to ${printer.printerName}: ${printResult.message}`);
+              console.error(`❌ BOT print failed to ${printer.printerName}:`, printResult.message);
+            }
+          } catch (error: any) {
+            autoPrintResults.printErrors.push(`BOT print error to ${printer.printerName}: ${error.message}`);
+            console.error(`❌ BOT print error to ${printer.printerName}:`, error);
+          }
         }
       }
 
       let message = '';
-      const autoPrintSuffix = settings?.directPrintKotBot ? ' and auto-printed' : '';
+      let printingSummary = '';
+
+      // Build printing summary
+      if (autoPrintResults.kotPrinted || autoPrintResults.botPrinted) {
+        const printedItems = [];
+        if (autoPrintResults.kotPrinted) printedItems.push('KOT auto-printed to kitchen');
+        if (autoPrintResults.botPrinted) printedItems.push('BOT auto-printed to bar');
+        printingSummary = ` (${printedItems.join(', ')})`;
+      }
 
       if (kotGenerated && botGenerated) {
-        message = `Both KOT and BOT generated successfully${autoPrintSuffix}`;
+        message = `Both KOT and BOT generated successfully${printingSummary}`;
       } else if (kotGenerated) {
-        message = `KOT generated successfully for food items${autoPrintSuffix}`;
+        message = `KOT generated successfully for food items${printingSummary}`;
       } else if (botGenerated) {
-        message = `BOT generated successfully for bar items${autoPrintSuffix}`;
+        message = `BOT generated successfully for bar items${printingSummary}`;
       } else {
         message = 'No items available for KOT/BOT generation';
+      }
+
+      // Add error information if there were print failures
+      if (autoPrintResults.printErrors.length > 0) {
+        message += ` (Print warnings: ${autoPrintResults.printErrors.join(', ')})`;
       }
 
       return { 
@@ -1091,7 +1196,8 @@ export class RestaurantStorage {
         kotData,
         botData,
         message,
-        autoPrinted: settings?.directPrintKotBot || false
+        autoPrinted: autoPrintResults.kotPrinted || autoPrintResults.botPrinted,
+        printResults: autoPrintResults
       };
     });
   }
@@ -2088,6 +2194,99 @@ export class RestaurantStorage {
       console.error("❌ Error fetching active reservation taxes:", error);
       return [];
     }
+  }
+
+  // Helper methods for generating print content
+  private generateKOTContent(data: {
+    kotNumber: string;
+    orderNumber: string;
+    customerName: string;
+    tableNumber?: string;
+    roomNumber?: string;
+    items: Array<{ name: string; quantity: number; specialInstructions?: string }>;
+    notes?: string;
+    timestamp: Date;
+  }): string {
+    const separator = '================================';
+    const location = data.tableNumber || data.roomNumber || 'Takeaway';
+    
+    let content = `${separator}\n`;
+    content += `           KOT - KITCHEN\n`;
+    content += `${separator}\n`;
+    content += `KOT Number: ${data.kotNumber}\n`;
+    content += `Order: ${data.orderNumber}\n`;
+    content += `Location: ${location}\n`;
+    content += `Customer: ${data.customerName}\n`;
+    content += `Time: ${data.timestamp.toLocaleString()}\n`;
+    content += `${separator}\n`;
+    content += `ITEMS:\n`;
+    content += `${separator}\n`;
+
+    data.items.forEach(item => {
+      content += `${item.quantity}x ${item.name}\n`;
+      if (item.specialInstructions) {
+        content += `   Note: ${item.specialInstructions}\n`;
+      }
+      content += `\n`;
+    });
+
+    if (data.notes) {
+      content += `${separator}\n`;
+      content += `SPECIAL NOTES:\n`;
+      content += `${data.notes}\n`;
+    }
+
+    content += `${separator}\n`;
+    content += `Total Items: ${data.items.reduce((sum, item) => sum + item.quantity, 0)}\n`;
+    content += `${separator}\n\n`;
+
+    return content;
+  }
+
+  private generateBOTContent(data: {
+    botNumber: string;
+    orderNumber: string;
+    customerName: string;
+    tableNumber?: string;
+    roomNumber?: string;
+    items: Array<{ name: string; quantity: number; specialInstructions?: string }>;
+    notes?: string;
+    timestamp: Date;
+  }): string {
+    const separator = '================================';
+    const location = data.tableNumber || data.roomNumber || 'Takeaway';
+    
+    let content = `${separator}\n`;
+    content += `            BOT - BAR\n`;
+    content += `${separator}\n`;
+    content += `BOT Number: ${data.botNumber}\n`;
+    content += `Order: ${data.orderNumber}\n`;
+    content += `Location: ${location}\n`;
+    content += `Customer: ${data.customerName}\n`;
+    content += `Time: ${data.timestamp.toLocaleString()}\n`;
+    content += `${separator}\n`;
+    content += `BEVERAGES:\n`;
+    content += `${separator}\n`;
+
+    data.items.forEach(item => {
+      content += `${item.quantity}x ${item.name}\n`;
+      if (item.specialInstructions) {
+        content += `   Note: ${item.specialInstructions}\n`;
+      }
+      content += `\n`;
+    });
+
+    if (data.notes) {
+      content += `${separator}\n`;
+      content += `SPECIAL NOTES:\n`;
+      content += `${data.notes}\n`;
+    }
+
+    content += `${separator}\n`;
+    content += `Total Items: ${data.items.reduce((sum, item) => sum + item.quantity, 0)}\n`;
+    content += `${separator}\n\n`;
+
+    return content;
   }
 }
 

@@ -1141,7 +1141,7 @@ export const insertPrinterConfigurationSchema = createInsertSchema(
   connectionStatus: true,
   errorMessage: true,
 }).extend({
-  printerType: z.enum(["KOT", "BOT", "billing"]),
+  printerType: z.enum(["kot", "bot", "billing"]),
   branchId: z.number().min(1),
   port: z.number().min(1).max(65535).default(9100),
   paperWidth: z.number().min(10).max(500).default(80),

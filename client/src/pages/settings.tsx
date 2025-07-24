@@ -50,6 +50,18 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { NotificationManager } from "@/components/NotificationManager";
 
+const printerConfigSchema = z.object({
+  printerName: z.string().min(1, "Printer name is required"),
+  printerType: z.enum(["KOT", "BOT", "billing"]),
+  ipAddress: z.string().min(1, "IP address is required").regex(/^(\d{1,3}\.){3}\d{1,3}$/, "Invalid IP address format"),
+  port: z.number().min(1).max(65535).default(9100),
+  isEnabled: z.boolean().default(true),
+  autoDirectPrint: z.boolean().default(false),
+  paperWidth: z.number().min(10).max(500).default(80),
+  connectionTimeout: z.number().min(1000).max(60000).default(5000),
+  retryAttempts: z.number().min(1).max(10).default(3),
+});
+
 const hotelSettingsSchema = z.object({
   branchId: z.number().optional(),
   hotelName: z.string().min(1, "Hotel name is required"),
@@ -267,6 +279,125 @@ export default function Settings() {
     },
   });
 
+  // Printer Configuration state and queries
+  const [editingPrinter, setEditingPrinter] = useState<any>(null);
+  const [showPrinterForm, setShowPrinterForm] = useState(false);
+
+  const { data: printerConfigs, isLoading: printersLoading } = useQuery({
+    queryKey: ["/api/printer-configurations"],
+  });
+
+  const printerForm = useForm({
+    resolver: zodResolver(printerConfigSchema),
+    defaultValues: {
+      printerName: "",
+      printerType: "KOT" as const,
+      ipAddress: "",
+      port: 9100,
+      isEnabled: true,
+      autoDirectPrint: false,
+      paperWidth: 80,
+      connectionTimeout: 5000,
+      retryAttempts: 3,
+    },
+  });
+
+  const createPrinterMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return apiRequest("/api/printer-configurations", {
+        method: "POST",
+        body: data,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/printer-configurations"] });
+      setShowPrinterForm(false);
+      printerForm.reset();
+      toast({
+        title: "Success",
+        description: "Printer configuration created successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create printer configuration",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updatePrinterMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      return apiRequest(`/api/printer-configurations/${id}`, {
+        method: "PUT",
+        body: data,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/printer-configurations"] });
+      setEditingPrinter(null);
+      setShowPrinterForm(false);
+      printerForm.reset();
+      toast({
+        title: "Success", 
+        description: "Printer configuration updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update printer configuration",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deletePrinterMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest(`/api/printer-configurations/${id}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/printer-configurations"] });
+      toast({
+        title: "Success",
+        description: "Printer configuration deleted successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete printer configuration",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const testPrinterMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest(`/api/printer-configurations/${id}/test`, {
+        method: "POST",
+      });
+    },
+    onSuccess: (result: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/printer-configurations"] });
+      toast({
+        title: result.success ? "Connection Successful" : "Connection Failed",
+        description: result.message,
+        variant: result.success ? "default" : "destructive",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Test Failed",
+        description: error.message || "Failed to test printer connection",
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = (data: HotelSettingsForm) => {
     saveSettingsMutation.mutate(data);
   };
@@ -277,6 +408,36 @@ export default function Settings() {
       const formData = form.getValues();
       onSubmit(formData);
     }
+  };
+
+  const handlePrinterSubmit = (data: any) => {
+    if (editingPrinter) {
+      updatePrinterMutation.mutate({ id: editingPrinter.id, data });
+    } else {
+      createPrinterMutation.mutate(data);
+    }
+  };
+
+  const handleEditPrinter = (printer: any) => {
+    setEditingPrinter(printer);
+    printerForm.reset({
+      printerName: printer.printerName,
+      printerType: printer.printerType.toUpperCase(),
+      ipAddress: printer.ipAddress,
+      port: printer.port,
+      isEnabled: printer.isEnabled,
+      autoDirectPrint: printer.autoDirectPrint,
+      paperWidth: printer.paperWidth,
+      connectionTimeout: printer.connectionTimeout,
+      retryAttempts: printer.retryAttempts,
+    });
+    setShowPrinterForm(true);
+  };
+
+  const handleAddPrinter = () => {
+    setEditingPrinter(null);
+    printerForm.reset();
+    setShowPrinterForm(true);
   };
 
   if (isLoading) {
@@ -325,7 +486,7 @@ export default function Settings() {
             onValueChange={setActiveTab}
             className="space-y-6"
           >
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="general" className="flex items-center gap-2">
                 <Building className="h-4 w-4" />
                 <span className="hidden sm:inline">General</span>
@@ -336,6 +497,10 @@ export default function Settings() {
               >
                 <Clock className="h-4 w-4" />
                 <span className="hidden sm:inline">Operations</span>
+              </TabsTrigger>
+              <TabsTrigger value="printers" className="flex items-center gap-2">
+                <Printer className="h-4 w-4" />
+                <span className="hidden sm:inline">Printers</span>
               </TabsTrigger>
               <TabsTrigger value="billing" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
@@ -827,6 +992,358 @@ export default function Settings() {
                   </Card>
                 </TabsContent>
 
+                <TabsContent value="printers" className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Printer className="h-5 w-5" />
+                        KOT/BOT Printer Configuration
+                      </CardTitle>
+                      <CardDescription>
+                        Configure network thermal printers for Kitchen Order Tickets (KOT) and Beverage Order Tickets (BOT)
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      {/* Printer List */}
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium">Configured Printers</h4>
+                          <Button
+                            onClick={handleAddPrinter}
+                            className="flex items-center gap-2"
+                          >
+                            <Printer className="h-4 w-4" />
+                            Add Printer
+                          </Button>
+                        </div>
+
+                        {printersLoading ? (
+                          <div className="space-y-2">
+                            <div className="h-16 bg-gray-200 rounded animate-pulse"></div>
+                            <div className="h-16 bg-gray-200 rounded animate-pulse"></div>
+                          </div>
+                        ) : printerConfigs && printerConfigs.length > 0 ? (
+                          <div className="space-y-4">
+                            {printerConfigs.map((printer: any) => (
+                              <div
+                                key={printer.id}
+                                className="border rounded-lg p-4 space-y-3"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <h5 className="font-medium">{printer.printerName}</h5>
+                                      <Badge
+                                        variant={
+                                          printer.printerType === 'kot' ? 'default' : 
+                                          printer.printerType === 'bot' ? 'secondary' : 'outline'
+                                        }
+                                      >
+                                        {printer.printerType.toUpperCase()}
+                                      </Badge>
+                                      <Badge
+                                        variant={
+                                          printer.connectionStatus === 'connected' ? 'default' :
+                                          printer.connectionStatus === 'disconnected' ? 'secondary' : 'destructive'
+                                        }
+                                      >
+                                        {printer.connectionStatus || 'unknown'}
+                                      </Badge>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">
+                                      {printer.ipAddress}:{printer.port} • {printer.paperWidth}mm paper
+                                    </p>
+                                    {printer.errorMessage && (
+                                      <p className="text-xs text-red-600">
+                                        Error: {printer.errorMessage}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => testPrinterMutation.mutate(printer.id)}
+                                      disabled={testPrinterMutation.isPending}
+                                    >
+                                      {testPrinterMutation.isPending ? "Testing..." : "Test"}
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleEditPrinter(printer)}
+                                    >
+                                      Edit
+                                    </Button>
+                                    <Button
+                                      variant="destructive"
+                                      size="sm"
+                                      onClick={() => deletePrinterMutation.mutate(printer.id)}
+                                      disabled={deletePrinterMutation.isPending}
+                                    >
+                                      Delete
+                                    </Button>
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                  <div>
+                                    <span className="text-muted-foreground">Enabled:</span>{" "}
+                                    {printer.isEnabled ? "Yes" : "No"}
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">Auto Print:</span>{" "}
+                                    {printer.autoDirectPrint ? "Yes" : "No"}
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">Timeout:</span>{" "}
+                                    {printer.connectionTimeout}ms
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">Last Test:</span>{" "}
+                                    {printer.lastTestPrint ? new Date(printer.lastTestPrint).toLocaleString() : "Never"}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <Printer className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                            <p>No printers configured yet</p>
+                            <p className="text-sm">Add a KOT or BOT printer to get started</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Printer Form Modal */}
+                      {showPrinterForm && (
+                        <div className="border rounded-lg p-6 bg-gray-50">
+                          <h4 className="font-medium mb-4">
+                            {editingPrinter ? "Edit Printer Configuration" : "Add New Printer"}
+                          </h4>
+                          <Form {...printerForm}>
+                            <form onSubmit={printerForm.handleSubmit(handlePrinterSubmit)} className="space-y-4">
+                              <div className="grid gap-4 md:grid-cols-2">
+                                <FormField
+                                  control={printerForm.control}
+                                  name="printerName"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Printer Name</FormLabel>
+                                      <FormControl>
+                                        <Input placeholder="Kitchen Printer 1" {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={printerForm.control}
+                                  name="printerType"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Printer Type</FormLabel>
+                                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Select printer type" />
+                                          </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                          <SelectItem value="KOT">KOT (Kitchen Order Ticket)</SelectItem>
+                                          <SelectItem value="BOT">BOT (Beverage Order Ticket)</SelectItem>
+                                          <SelectItem value="billing">Billing Printer</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+
+                              <div className="grid gap-4 md:grid-cols-2">
+                                <FormField
+                                  control={printerForm.control}
+                                  name="ipAddress"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>IP Address</FormLabel>
+                                      <FormControl>
+                                        <Input placeholder="192.168.1.100" {...field} />
+                                      </FormControl>
+                                      <FormDescription>
+                                        Network IP address of the thermal printer
+                                      </FormDescription>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={printerForm.control}
+                                  name="port"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Port</FormLabel>
+                                      <FormControl>
+                                        <Input 
+                                          type="number"
+                                          placeholder="9100" 
+                                          {...field}
+                                          onChange={(e) => field.onChange(Number(e.target.value))}
+                                        />
+                                      </FormControl>
+                                      <FormDescription>
+                                        TCP port (usually 9100 for thermal printers)
+                                      </FormDescription>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+
+                              <div className="grid gap-4 md:grid-cols-3">
+                                <FormField
+                                  control={printerForm.control}
+                                  name="paperWidth"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Paper Width (mm)</FormLabel>
+                                      <FormControl>
+                                        <Input 
+                                          type="number"
+                                          placeholder="80" 
+                                          {...field}
+                                          onChange={(e) => field.onChange(Number(e.target.value))}
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={printerForm.control}
+                                  name="connectionTimeout"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Timeout (ms)</FormLabel>
+                                      <FormControl>
+                                        <Input 
+                                          type="number"
+                                          placeholder="5000" 
+                                          {...field}
+                                          onChange={(e) => field.onChange(Number(e.target.value))}
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={printerForm.control}
+                                  name="retryAttempts"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Retry Attempts</FormLabel>
+                                      <FormControl>
+                                        <Input 
+                                          type="number"
+                                          placeholder="3" 
+                                          {...field}
+                                          onChange={(e) => field.onChange(Number(e.target.value))}
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+
+                              <div className="space-y-4">
+                                <FormField
+                                  control={printerForm.control}
+                                  name="isEnabled"
+                                  render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                      <div className="space-y-0.5">
+                                        <FormLabel className="text-base">Enable Printer</FormLabel>
+                                        <FormDescription>
+                                          Allow this printer to receive print jobs
+                                        </FormDescription>
+                                      </div>
+                                      <FormControl>
+                                        <Switch
+                                          checked={field.value}
+                                          onCheckedChange={field.onChange}
+                                        />
+                                      </FormControl>
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={printerForm.control}
+                                  name="autoDirectPrint"
+                                  render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                      <div className="space-y-0.5">
+                                        <FormLabel className="text-base">Auto Direct Print</FormLabel>
+                                        <FormDescription>
+                                          Automatically print when KOT/BOT is generated
+                                        </FormDescription>
+                                      </div>
+                                      <FormControl>
+                                        <Switch
+                                          checked={field.value}
+                                          onCheckedChange={field.onChange}
+                                        />
+                                      </FormControl>
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+
+                              <div className="flex justify-end gap-3">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setShowPrinterForm(false);
+                                    setEditingPrinter(null);
+                                    printerForm.reset();
+                                  }}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  type="submit"
+                                  disabled={createPrinterMutation.isPending || updatePrinterMutation.isPending}
+                                >
+                                  {createPrinterMutation.isPending || updatePrinterMutation.isPending
+                                    ? "Saving..."
+                                    : editingPrinter
+                                    ? "Update Printer"
+                                    : "Add Printer"}
+                                </Button>
+                              </div>
+                            </form>
+                          </Form>
+                        </div>
+                      )}
+
+                      <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                        <h5 className="font-medium text-blue-900 mb-2">Setup Instructions:</h5>
+                        <div className="space-y-1 text-sm text-blue-800">
+                          <p>• Ensure your thermal printer is connected to the network</p>
+                          <p>• Configure the printer IP address to be static</p>
+                          <p>• Use port 9100 for most thermal printers</p>
+                          <p>• Test the connection before enabling auto-print</p>
+                          <p>• KOT printers should be placed in the kitchen area</p>
+                          <p>• BOT printers should be placed in the bar/beverage area</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
                 <TabsContent value="billing" className="space-y-6">
                   <Card>
                     <CardHeader>
@@ -1023,7 +1540,11 @@ export default function Settings() {
                           Configure KOT (Kitchen Order Ticket) and BOT (Beverage Order Ticket) network thermal printers
                         </p>
 
-                        <PrinterConfigurationSection />
+                        <div className="p-4 bg-gray-50 rounded-lg">
+                          <p className="text-sm text-muted-foreground">
+                            Network printer configuration has been moved to the dedicated "Printers" tab above for better organization.
+                          </p>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>

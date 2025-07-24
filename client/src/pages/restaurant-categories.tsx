@@ -48,10 +48,10 @@ export default function RestaurantCategories() {
   const { user } = useAuth();
 
   const pagination = usePagination({
-    data: categories || [],
+    data: Array.isArray(categories) ? categories : [],
     itemsPerPage: 10,
     searchTerm,
-    searchFields: ["name", "menuType"] as any,
+    searchFields: ["name", "menuType"],
   });
 
   // Category mutations

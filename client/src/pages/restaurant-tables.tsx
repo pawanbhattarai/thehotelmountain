@@ -75,10 +75,10 @@ export default function RestaurantTables() {
   });
 
   const pagination = usePagination({
-    data: tables || [],
+    data: Array.isArray(tables) ? tables : [],
     itemsPerPage: 10,
     searchTerm,
-    searchFields: ["name", "status"] as any,
+    searchFields: ["name", "status"],
   });
 
   const createMutation = useMutation({

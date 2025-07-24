@@ -9,7 +9,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -87,10 +86,10 @@ export default function RestaurantDishes() {
   });
 
   const pagination = usePagination({
-    data: dishes || [],
+    data: Array.isArray(dishes) ? dishes : [],
     itemsPerPage: 10,
     searchTerm,
-    searchFields: ["name", "category.name", "spiceLevel"] as any,
+    searchFields: ["name", "category.name"],
   });
 
   // Dish mutations

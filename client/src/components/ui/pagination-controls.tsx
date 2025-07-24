@@ -20,13 +20,13 @@ export function PaginationControls({
 }: PaginationControlsProps) {
   const handlePrevious = () => {
     if (currentPage > 1) {
-      onPageChange(currentPage - 1);
+      onPageChange(Math.max(1, currentPage - 1));
     }
   };
 
   const handleNext = () => {
     if (currentPage < totalPages) {
-      onPageChange(currentPage + 1);
+      onPageChange(Math.min(totalPages, currentPage + 1));
     }
   };
 
@@ -44,19 +44,19 @@ export function PaginationControls({
           variant="outline"
           size="sm"
           onClick={handlePrevious}
-          disabled={currentPage <= 1}
+          disabled={currentPage <= 1 || totalPages <= 1}
         >
           <ChevronLeft className="h-4 w-4" />
           Previous
         </Button>
         <div className="text-sm font-medium">
-          Page {currentPage} of {totalPages}
+          Page {Math.max(1, currentPage)} of {Math.max(1, totalPages)}
         </div>
         <Button
           variant="outline"
           size="sm"
           onClick={handleNext}
-          disabled={currentPage >= totalPages}
+          disabled={currentPage >= totalPages || totalPages <= 1}
         >
           Next
           <ChevronRight className="h-4 w-4" />

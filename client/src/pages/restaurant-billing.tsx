@@ -94,7 +94,7 @@ export default function RestaurantBilling() {
   );
 
   const pagination = usePagination({
-    data: filteredBills || [],
+    data: Array.isArray(bills) ? bills : [],
     itemsPerPage: 10,
     searchTerm,
     searchFields: ["billNumber", "order.orderNumber", "customerName", "paymentMethod"] as any,

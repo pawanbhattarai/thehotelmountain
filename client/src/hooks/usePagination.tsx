@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 interface UsePaginationProps {
   data: any[];
@@ -44,17 +44,23 @@ export function usePagination({
   );
 
   // Reset to first page when search term changes
-  useMemo(() => {
+  useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
+  // Ensure current page is within valid bounds
+  const validCurrentPage = Math.min(Math.max(1, currentPage), totalPages || 1);
+  
   return {
-    currentPage,
-    setCurrentPage,
-    totalPages,
+    currentPage: validCurrentPage,
+    setCurrentPage: (page: number) => {
+      const validPage = Math.min(Math.max(1, page), totalPages || 1);
+      setCurrentPage(validPage);
+    },
+    totalPages: totalPages || 1,
     totalItems,
-    startIndex: startIndex + 1, // 1-based indexing for display
-    endIndex,
+    startIndex: totalItems > 0 ? startIndex + 1 : 0, // 1-based indexing for display
+    endIndex: totalItems > 0 ? endIndex : 0,
     paginatedData,
     filteredData,
   };

@@ -1506,27 +1506,6 @@ export const insertStockConsumptionSchema = createInsertSchema(stockConsumption)
       .optional(),
   });
 
-// Inventory Types
-export type MeasuringUnit = typeof measuringUnits.$inferSelect;
-export type InsertMeasuringUnit = z.infer<typeof insertMeasuringUnitSchema>;
-
-export type StockCategory = typeof stockCategories.$inferSelect;
-export type InsertStockCategory = z.infer<typeof insertStockCategorySchema>;
-
-export type Supplier = typeof suppliers.$inferSelect;
-export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
-
-export type StockItem = typeof stockItems.$inferSelect;
-export type InsertStockItem = z.infer<typeof insertStockItemSchema>;
-
-export type DishIngredient = typeof dishIngredients.$inferSelect;
-export type InsertDishIngredient = z.infer<typeof insertDishIngredientSchema>;
-
-export type StockConsumption = typeof stockConsumption.$inferSelect;
-export type InsertStockConsumption = z.infer<
-  typeof insertStockConsumptionSchema
->;
-
 // Purchase Orders
 export const purchaseOrders = pgTable("purchase_orders", {
   id: serial("id").primaryKey(),
@@ -1808,23 +1787,16 @@ export const insertStockCostHistorySchema = createInsertSchema(stockCostHistory)
 // Inventory Types
 export type MeasuringUnit = typeof measuringUnits.$inferSelect;
 export type InsertMeasuringUnit = z.infer<typeof insertMeasuringUnitSchema>;
-
 export type StockCategory = typeof stockCategories.$inferSelect;
 export type InsertStockCategory = z.infer<typeof insertStockCategorySchema>;
-
 export type Supplier = typeof suppliers.$inferSelect;
 export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
-
 export type StockItem = typeof stockItems.$inferSelect;
 export type InsertStockItem = z.infer<typeof insertStockItemSchema>;
-
 export type DishIngredient = typeof dishIngredients.$inferSelect;
 export type InsertDishIngredient = z.infer<typeof insertDishIngredientSchema>;
-
 export type StockConsumption = typeof stockConsumption.$inferSelect;
-export type InsertStockConsumption = z.infer<
-  typeof insertStockConsumptionSchema
->;
+export type InsertStockConsumption = z.infer<typeof insertStockConsumptionSchema>;
 
 // Purchase Order Types
 export type PurchaseOrder = typeof purchaseOrders.$inferSelect;

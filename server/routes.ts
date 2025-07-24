@@ -42,7 +42,6 @@ import {
   insertStockConsumptionSchema,
   insertDishIngredientSchema,
   insertPrinterConfigurationSchema,
-  printerConfigurations,
 } from "@shared/schema";
 import { QRService } from "./qr-service";
 import { uploadIdDocument } from "./fileUpload";

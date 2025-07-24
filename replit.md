@@ -23,6 +23,12 @@ A comprehensive restaurant management system built with Node.js, Express, React,
 ## Recent Changes
 - **2025-07-24**: Successfully completed migration from Replit Agent to Replit environment
 - **Migration Status**: Complete - PostgreSQL database configured, all systems operational
+- **Printer Configuration System**: Implementing comprehensive KOT/BOT printer configuration with IP addresses
+  - Added printer service for thermal printer communication via TCP/IP
+  - Network connectivity testing and error handling
+  - Automatic printing when Direct KOT/BOT print toggle is enabled
+  - Support for KOT (Kitchen Order Ticket) and BOT (Beverage Order Ticket) printers
+  - Configurable IP addresses, ports, and connection settings per branch
 - **Room Orders Summary Fixed**: Resolved issue where only latest order items were visible
   - Now shows ALL order items from ALL orders for each reservation
   - Previous and new order items displayed together in unified table

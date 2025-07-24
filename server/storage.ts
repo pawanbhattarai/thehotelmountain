@@ -15,6 +15,7 @@ import {
   notificationHistory,
   auditLogs,
   taxes,
+  printerConfigurations,
   type User,
   type Branch,
   type RoomType,
@@ -27,6 +28,7 @@ import {
   type PushSubscription,
   type NotificationHistory,
   type Tax,
+  type PrinterConfiguration,
   type InsertUser,
   type InsertBranch,
   type InsertRoomType,
@@ -39,6 +41,7 @@ import {
   type InsertPushSubscription,
   type InsertNotificationHistory,
   type InsertTax,
+  type InsertPrinterConfiguration,
 } from "@shared/schema";
 
 // Import roleStorage for custom role management
@@ -235,6 +238,15 @@ export interface IStorage {
   createPayment(payment: InsertPayment): Promise<Payment>;
   updatePaymentStatus(paymentId: number, status: string): Promise<Payment>;
   getReservationWithPayments(reservationId: string): Promise<(Reservation & { payments: Payment[] }) | undefined>;
+
+  // Printer Configuration operations
+  getPrinterConfigurations(branchId?: number): Promise<PrinterConfiguration[]>;
+  getPrinterConfiguration(id: number): Promise<PrinterConfiguration | undefined>;
+  getPrinterConfigurationByType(branchId: number, printerType: string): Promise<PrinterConfiguration | undefined>;
+  createPrinterConfiguration(config: InsertPrinterConfiguration): Promise<PrinterConfiguration>;
+  updatePrinterConfiguration(id: number, config: Partial<InsertPrinterConfiguration>): Promise<PrinterConfiguration>;
+  deletePrinterConfiguration(id: number): Promise<void>;
+  testPrinterConnection(id: number): Promise<{ success: boolean; message: string }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2072,6 +2084,116 @@ export class DatabaseStorage implements IStorage {
       ...reservation[0],
       payments: reservationPayments,
     };
+  }
+
+  // Printer Configuration operations
+  async getPrinterConfigurations(branchId?: number): Promise<PrinterConfiguration[]> {
+    let query = db.select().from(printerConfigurations);
+    
+    if (branchId) {
+      query = query.where(eq(printerConfigurations.branchId, branchId));
+    }
+    
+    return await query.orderBy(printerConfigurations.printerType, printerConfigurations.createdAt);
+  }
+
+  async getPrinterConfiguration(id: number): Promise<PrinterConfiguration | undefined> {
+    const result = await db
+      .select()
+      .from(printerConfigurations)
+      .where(eq(printerConfigurations.id, id))
+      .limit(1);
+    
+    return result[0];
+  }
+
+  async getPrinterConfigurationByType(branchId: number, printerType: string): Promise<PrinterConfiguration | undefined> {
+    const result = await db
+      .select()
+      .from(printerConfigurations)
+      .where(
+        and(
+          eq(printerConfigurations.branchId, branchId),
+          eq(printerConfigurations.printerType, printerType),
+          eq(printerConfigurations.isEnabled, true)
+        )
+      )
+      .limit(1);
+    
+    return result[0];
+  }
+
+  async createPrinterConfiguration(config: InsertPrinterConfiguration): Promise<PrinterConfiguration> {
+    const result = await db
+      .insert(printerConfigurations)
+      .values({
+        ...config,
+        printerType: config.printerType.toLowerCase() as 'kot' | 'bot' | 'billing',
+      })
+      .returning();
+    
+    return result[0];
+  }
+
+  async updatePrinterConfiguration(id: number, config: Partial<InsertPrinterConfiguration>): Promise<PrinterConfiguration> {
+    const result = await db
+      .update(printerConfigurations)
+      .set({
+        ...config,
+        printerType: config.printerType ? config.printerType.toLowerCase() as 'kot' | 'bot' | 'billing' : undefined,
+        updatedAt: new Date(),
+      })
+      .where(eq(printerConfigurations.id, id))
+      .returning();
+    
+    return result[0];
+  }
+
+  async deletePrinterConfiguration(id: number): Promise<void> {
+    await db
+      .delete(printerConfigurations)
+      .where(eq(printerConfigurations.id, id));
+  }
+
+  async testPrinterConnection(id: number): Promise<{ success: boolean; message: string }> {
+    const config = await this.getPrinterConfiguration(id);
+    
+    if (!config) {
+      return { success: false, message: 'Printer configuration not found' };
+    }
+
+    // Import printer service dynamically to avoid circular imports
+    const { printerService } = await import('./printer-service');
+    
+    try {
+      const isConnected = await printerService.testPrinterConnection(
+        config.ipAddress, 
+        config.port || 9100, 
+        config.connectionTimeout || 5000
+      );
+      
+      if (isConnected) {
+        await this.updatePrinterConfiguration(id, {
+          connectionStatus: 'connected',
+          errorMessage: null,
+          lastTestPrint: new Date(),
+        });
+        return { success: true, message: 'Printer connection successful' };
+      } else {
+        await this.updatePrinterConfiguration(id, {
+          connectionStatus: 'disconnected',
+          errorMessage: 'Connection timeout or refused',
+        });
+        return { success: false, message: 'Cannot connect to printer' };
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      await this.updatePrinterConfiguration(id, {
+        connectionStatus: 'error',
+        errorMessage,
+      });
+      return { success: false, message: `Connection error: ${errorMessage}` };
+    }
   }
 }
 

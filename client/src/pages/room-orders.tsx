@@ -122,7 +122,7 @@ export default function RoomOrders() {
   const createOrderMutation = useMutation({
     mutationFn: async (data: { order: any; items: any[]; isUpdate?: boolean; orderId?: string }) => {
       console.log("Sending room order request:", data);
-      
+
       if (data.isUpdate && data.orderId) {
         // Use PUT endpoint for complete order updates (when items are deleted or modified)
         const response = await fetch(`/api/restaurant/orders/${data.orderId}`, {
@@ -323,7 +323,7 @@ export default function RoomOrders() {
     const useCompleteUpdate = existingOrder && needsCompleteUpdate();
     let itemsToSubmit = selectedItems;
     let subtotalForCalculation = 0;
-    
+
     if (useCompleteUpdate) {
       // Complete update: send all current items (handles deletions and modifications)
       itemsToSubmit = selectedItems;
@@ -335,7 +335,7 @@ export default function RoomOrders() {
         const originalItem = originalItems.find(
           (orig) => orig.dishId === item.dishId
         );
-        
+
         if (!originalItem) {
           // This is a completely new item
           subtotalForCalculation += parseFloat(item.unitPrice) * item.quantity;
@@ -346,7 +346,7 @@ export default function RoomOrders() {
           subtotalForCalculation += parseFloat(item.unitPrice) * additionalQuantity;
           return true;
         }
-        
+
         return false; // Don't submit unchanged items
       });
 
@@ -355,7 +355,7 @@ export default function RoomOrders() {
         const originalItem = originalItems.find(
           (orig) => orig.dishId === item.dishId
         );
-        
+
         if (originalItem && item.quantity > originalItem.quantity) {
           const additionalQuantity = item.quantity - originalItem.quantity;
           return {
@@ -363,7 +363,7 @@ export default function RoomOrders() {
             quantity: additionalQuantity
           };
         }
-        
+
         return item;
       });
       console.log("Using PARTIAL UPDATE mode - sending only new/increased items");
@@ -446,13 +446,13 @@ export default function RoomOrders() {
 
   const hasOrderChanged = () => {
     if (originalItems.length !== selectedItems.length) return true;
-    
+
     // Check if any items were removed
     const hasRemovedItems = originalItems.some(original => 
       !selectedItems.find(selected => selected.dishId === original.dishId)
     );
     if (hasRemovedItems) return true;
-    
+
     // Check if any items were added or modified
     return selectedItems.some(selected => {
       const originalItem = originalItems.find(orig => orig.dishId === selected.dishId);
@@ -467,12 +467,12 @@ export default function RoomOrders() {
   const needsCompleteUpdate = () => {
     // Complete update needed if items were deleted or this is a major change
     if (originalItems.length > selectedItems.length) return true;
-    
+
     // Check if any items were removed
     const hasRemovedItems = originalItems.some(original => 
       !selectedItems.find(selected => selected.dishId === original.dishId)
     );
-    
+
     return hasRemovedItems;
   };
 
@@ -533,7 +533,7 @@ export default function RoomOrders() {
   const getAllReservationItems = (reservationId: string) => {
     const reservationOrders = getAllReservationOrders(reservationId);
     const allItems: any[] = [];
-    
+
     reservationOrders.forEach((order: any) => {
       if (order.items) {
         order.items.forEach((item: any) => {
@@ -541,7 +541,7 @@ export default function RoomOrders() {
           const existingItemIndex = allItems.findIndex(
             (existing) => existing.dishId === item.dishId
           );
-          
+
           if (existingItemIndex >= 0) {
             // Add quantities if same dish exists
             allItems[existingItemIndex].quantity += item.quantity;
@@ -557,7 +557,7 @@ export default function RoomOrders() {
         });
       }
     });
-    
+
     return allItems;
   };
 
@@ -573,9 +573,9 @@ export default function RoomOrders() {
   // Update quantity for a previous order item
   const updatePreviousOrderItem = async (dishId: number, newQuantity: number) => {
     if (!selectedReservation) return;
-    
+
     const reservationOrders = getAllReservationOrders(selectedReservation.id);
-    
+
     // Find which order contains this dish
     for (const order of reservationOrders) {
       if (order.items) {
@@ -583,7 +583,7 @@ export default function RoomOrders() {
         if (itemIndex >= 0) {
           // Update the item in this order
           const updatedItems = [...order.items];
-          
+
           if (newQuantity <= 0) {
             // Remove the item if quantity is 0
             updatedItems.splice(itemIndex, 1);
@@ -595,11 +595,11 @@ export default function RoomOrders() {
               totalPrice: (parseFloat(updatedItems[itemIndex].unitPrice) * newQuantity).toFixed(2)
             };
           }
-          
+
           // Calculate new order totals
           const newSubtotal = updatedItems.reduce((sum, item) => sum + parseFloat(item.unitPrice) * item.quantity, 0);
           const newTotalAmount = newSubtotal; // Add tax calculation if needed
-          
+
           // Update the order via API
           try {
             const response = await fetch(`/api/restaurant/orders/${order.id}`, {
@@ -614,7 +614,7 @@ export default function RoomOrders() {
                 items: updatedItems
               })
             });
-            
+
             if (response.ok) {
               // Refresh orders data
               queryClient.invalidateQueries(["/api/restaurant/orders/room"]);
@@ -623,7 +623,7 @@ export default function RoomOrders() {
           } catch (error) {
             toast({ title: "Error", description: "Failed to update order", variant: "destructive" });
           }
-          
+
           break; // Exit loop once we found and updated the item
         }
       }
@@ -965,7 +965,7 @@ export default function RoomOrders() {
                               {(() => {
                                 // Show ALL items separately - no consolidation
                                 const allItems = [];
-                                
+
                                 // Add all previous order items
                                 if (selectedReservation) {
                                   const reservationOrders = getAllReservationOrders(selectedReservation.id);
@@ -984,14 +984,14 @@ export default function RoomOrders() {
                                     }
                                   });
                                 }
-                                
+
                                 // Add current editing items (only if they're not updates to existing items)
                                 selectedItems.forEach((item) => {
                                   // Check if this item is an update to an existing order item
                                   const isUpdateToExisting = allItems.some(existingItem => 
                                     existingItem.dishId === item.dishId && existingItem.isFromPreviousOrder
                                   );
-                                  
+
                                   if (!isUpdateToExisting) {
                                     allItems.push({
                                       ...item,
@@ -1000,7 +1000,7 @@ export default function RoomOrders() {
                                     });
                                   }
                                 });
-                                
+
                                 return allItems.map((item) => (
                                   <TableRow key={item.uniqueKey}>
                                     <TableCell>
@@ -1057,13 +1057,15 @@ export default function RoomOrders() {
                                         variant="ghost"
                                         onClick={() => {
                                           if (item.isFromPreviousOrder) {
-                                            removePreviousOrderItem(item.dishId);
+                                            // For previous order items, just mark as deleted locally
+                                            setSelectedItems(prev => prev.filter(selected => selected.dishId !== item.dishId));
                                           } else {
+                                            // For current items, remove from selected items
                                             removeItemFromOrder(item.dishId);
                                           }
                                         }}
                                         className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                                        title="Delete item"
+                                        title="Remove from order"
                                       >
                                         <Trash2 className="h-3 w-3" />
                                       </Button>
@@ -1075,13 +1077,13 @@ export default function RoomOrders() {
                           </Table>
                         </div>
 
-                        
+
 <div className="border-t pt-4 space-y-2">
                           {(() => {
                             // Calculate totals from ALL individual items (no consolidation)
                             let allItemsTotal = 0;
                             let totalItemCount = 0;
-                            
+
                             // Add all previous order items
                             if (selectedReservation) {
                               const reservationOrders = getAllReservationOrders(selectedReservation.id);
@@ -1094,7 +1096,7 @@ export default function RoomOrders() {
                                 }
                               });
                             }
-                            
+
                             // Add current editing items (only new ones, not updates)
                             selectedItems.forEach((item) => {
                               // Check if this item is an update to an existing order item
@@ -1102,13 +1104,13 @@ export default function RoomOrders() {
                                 getAllReservationItems(selectedReservation.id).some(existingItem => 
                                   existingItem.dishId === item.dishId
                                 );
-                              
+
                               if (!isUpdateToExisting) {
                                 allItemsTotal += parseFloat(item.unitPrice) * item.quantity;
                                 totalItemCount += 1;
                               }
                             });
-                            
+
                             let totalTaxAmount = 0;
                             const appliedTaxes = [];
 
@@ -1429,7 +1431,7 @@ export default function RoomOrders() {
         // Calculate subtotal only for new items or additional quantities
         return selectedItems.reduce((sum, item) => {
             const originalItem = originalItems.find(orig => orig.dishId === item.dishId);
-            
+
             if (!originalItem) {
                 // Completely new item
                 return sum + parseFloat(item.unitPrice) * item.quantity;
@@ -1438,7 +1440,7 @@ export default function RoomOrders() {
                 const additionalQuantity = item.quantity - originalItem.quantity;
                 return sum + parseFloat(item.unitPrice) * additionalQuantity;
             }
-            
+
             // No change or decreased quantity - don't count
             return sum;
         }, 0);

@@ -451,7 +451,9 @@ export default function RestaurantTables() {
               )}
               {tables?.length > 0 && (
                 <div className="mt-4">
-                  <PaginationControls pagination={pagination} />
+                  <PaginationControls
+                    pagination={pagination}
+                  />
                 </div>
               )}
             </CardContent>

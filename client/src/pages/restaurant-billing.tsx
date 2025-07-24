@@ -94,7 +94,7 @@ export default function RestaurantBilling() {
   );
 
   const pagination = usePagination({
-    data: Array.isArray(bills) ? bills : [],
+    data: Array.isArray(filteredBills) ? filteredBills : [],
     itemsPerPage: 10,
     searchTerm,
     searchFields: ["billNumber", "order.orderNumber", "customerName", "paymentMethod"] as any,
@@ -913,7 +913,7 @@ export default function RestaurantBilling() {
                   </TableBody>
                 </Table>
               )}
-              {filteredBills?.length > 0 && (
+              {pagination.totalItems > 0 && (
                 <div className="mt-4">
                   <PaginationControls pagination={pagination} />
                 </div>
@@ -947,8 +947,7 @@ export default function RestaurantBilling() {
                           <FormLabel>Customer Name (Optional)</FormLabel>
                           <FormControl>
                             <Input {...field} placeholder="Customer name" />
-                          </FormControl>
-                          <FormMessage />
+                          </FormControl                          <FormMessage />
                         </FormItem>
                       )}
                     />

@@ -284,43 +284,45 @@ export default function RoomOrders() {
       return;
     }
 
-    // Always create new orders - never update existing ones for room service
-    // This ensures each order is separate for billing purposes
+    // For room service, only create orders with NEW items that have been added
+    // Don't include existing items or deleted items
     
-    // Get all current valid items (from existing orders + new items - deleted items)
-    const allExistingItems = selectedReservation ? getAllReservationItems(selectedReservation.id) : [];
-    const itemsMap = new Map();
+    // Get only NEW items that are not marked for deletion and have quantity > 0
+    const newItemsOnly = selectedItems.filter(item => 
+      !item.markedForDeletion && 
+      item.quantity > 0 &&
+      !getAllReservationItems(selectedReservation.id).some(existing => existing.dishId === item.dishId)
+    );
 
-    // Add all existing items to the map
-    allExistingItems.forEach((item) => {
-      itemsMap.set(item.dishId, {
-        dishId: item.dishId,
-        dishName: item.dishName || item.dish?.name || `Dish ${item.dishId}`,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        notes: item.specialInstructions || "",
-      });
-    });
-
-    // Apply modifications from selectedItems
-    selectedItems.forEach((selectedItem) => {
-      if (selectedItem.markedForDeletion) {
-        // Remove completely if marked for deletion
-        itemsMap.delete(selectedItem.dishId);
-      } else {
-        // Update or add the item with new quantity
-        itemsMap.set(selectedItem.dishId, {
-          dishId: selectedItem.dishId,
-          dishName: selectedItem.dishName || `Dish ${selectedItem.dishId}`,
-          quantity: selectedItem.quantity,
-          unitPrice: selectedItem.unitPrice,
-          notes: selectedItem.notes || "",
-        });
+    // Also include modified existing items (quantity changes)
+    const modifiedExistingItems = selectedItems.filter(item => {
+      if (item.markedForDeletion) return false;
+      if (item.quantity <= 0) return false;
+      
+      // Check if this is a modification of an existing item
+      const existingItem = getAllReservationItems(selectedReservation.id).find(existing => existing.dishId === item.dishId);
+      if (existingItem && existingItem.quantity !== item.quantity) {
+        // Calculate the difference - only order the additional quantity
+        const additionalQuantity = item.quantity - existingItem.quantity;
+        if (additionalQuantity > 0) {
+          return true;
+        }
       }
+      return false;
     });
 
-    // Filter out items with 0 quantity and get final items
-    const finalItems = Array.from(itemsMap.values()).filter(item => item.quantity > 0);
+    // Prepare final items for the new order
+    const finalItems = [
+      ...newItemsOnly,
+      ...modifiedExistingItems.map(item => {
+        const existingItem = getAllReservationItems(selectedReservation.id).find(existing => existing.dishId === item.dishId);
+        const additionalQuantity = item.quantity - (existingItem?.quantity || 0);
+        return {
+          ...item,
+          quantity: additionalQuantity > 0 ? additionalQuantity : item.quantity
+        };
+      })
+    ];
 
     if (finalItems.length === 0) {
       toast({
@@ -471,38 +473,9 @@ export default function RoomOrders() {
   };
 
   const removeItemFromOrder = (dishId: number) => {
-    // Check if this item exists in previous orders
-    const existsInPreviousOrders = selectedReservation && 
-      getAllReservationItems(selectedReservation.id).some(item => item.dishId === dishId);
-    
-    if (existsInPreviousOrders) {
-      // Mark for deletion if it exists in previous orders
-      const existingSelectedItemIndex = selectedItems.findIndex(item => item.dishId === dishId);
-      if (existingSelectedItemIndex >= 0) {
-        setSelectedItems(prev => prev.map((item, index) => 
-          index === existingSelectedItemIndex
-            ? { ...item, quantity: 0, markedForDeletion: true }
-            : item
-        ));
-      } else {
-        // Find the item details from previous orders
-        const previousItem = getAllReservationItems(selectedReservation.id).find(item => item.dishId === dishId);
-        if (previousItem) {
-          const markedItem = {
-            dishId,
-            dishName: previousItem.dishName || previousItem.dish?.name || `Dish ${dishId}`,
-            quantity: 0,
-            unitPrice: previousItem.unitPrice,
-            notes: previousItem.specialInstructions || "",
-            markedForDeletion: true
-          };
-          setSelectedItems(prev => [...prev, markedItem]);
-        }
-      }
-    } else {
-      // Remove completely if it's a new item (not in previous orders)
-      setSelectedItems(prev => prev.filter(item => item.dishId !== dishId));
-    }
+    // Simply remove the item from the current order selection
+    // This doesn't affect existing orders - only the current order being built
+    setSelectedItems(prev => prev.filter(item => item.dishId !== dishId));
   };
 
   const updateItemNotes = (dishId: number, notes: string) => {
@@ -944,57 +917,19 @@ export default function RoomOrders() {
                             </TableHeader>
                             <TableBody>
                               {(() => {
-                                // Get all items from existing orders
-                                const allExistingItems = selectedReservation ? getAllReservationItems(selectedReservation.id) : [];
-                                
-                                // Create a map to track final quantities for each dish
-                                const itemsMap = new Map();
-
-                                // Add all existing items to the map
-                                allExistingItems.forEach((item) => {
-                                  itemsMap.set(item.dishId, {
-                                    dishId: item.dishId,
-                                    dishName: item.dishName || item.dish?.name || `Dish ${item.dishId}`,
-                                    quantity: item.quantity,
-                                    unitPrice: item.unitPrice,
-                                    notes: item.specialInstructions || "",
-                                    isFromPreviousOrder: true
-                                  });
-                                });
-
-                                // Apply modifications from selectedItems
-                                selectedItems.forEach((selectedItem) => {
-                                  if (selectedItem.markedForDeletion) {
-                                    // Remove completely if marked for deletion
-                                    itemsMap.delete(selectedItem.dishId);
-                                  } else {
-                                    // Update or add the item with new quantity
-                                    itemsMap.set(selectedItem.dishId, {
-                                      dishId: selectedItem.dishId,
-                                      dishName: selectedItem.dishName || `Dish ${selectedItem.dishId}`,
-                                      quantity: selectedItem.quantity,
-                                      unitPrice: selectedItem.unitPrice,
-                                      notes: selectedItem.notes || "",
-                                      isFromPreviousOrder: itemsMap.has(selectedItem.dishId)
-                                    });
-                                  }
-                                });
-
-                                // Convert to array and filter out 0 quantity items
-                                const finalItems = Array.from(itemsMap.values()).filter(item => item.quantity > 0);
-
-                                if (finalItems.length === 0) {
+                                // Show only the items in the current order being built
+                                if (selectedItems.length === 0) {
                                   return (
                                     <TableRow>
                                       <TableCell colSpan={4} className="text-center py-8 text-gray-500">
-                                        No items in order
+                                        No items selected for new order
                                       </TableCell>
                                     </TableRow>
                                   );
                                 }
 
-                                return finalItems.map((item) => (
-                                  <TableRow key={`item-${item.dishId}`}>
+                                return selectedItems.map((item, index) => (
+                                  <TableRow key={`item-${item.dishId}-${index}`}>
                                     <TableCell>
                                       <div className="font-medium text-sm">{item.dishName}</div>
                                     </TableCell>
@@ -1007,7 +942,7 @@ export default function RoomOrders() {
                                           size="sm"
                                           variant="outline"
                                           onClick={() => {
-                                            const newQuantity = Math.max(0, item.quantity - 1);
+                                            const newQuantity = Math.max(1, item.quantity - 1);
                                             updateItemQuantity(item.dishId, newQuantity);
                                           }}
                                           className="h-6 w-6 p-0"
@@ -1051,39 +986,13 @@ export default function RoomOrders() {
 
 <div className="border-t pt-4 space-y-2">
                           {(() => {
-                            // Calculate total based on current state of all items
-                            const allExistingItems = selectedReservation ? getAllReservationItems(selectedReservation.id) : [];
-                            const itemsMap = new Map();
-
-                            // Add all existing items
-                            allExistingItems.forEach((item) => {
-                              itemsMap.set(item.dishId, {
-                                quantity: item.quantity,
-                                unitPrice: parseFloat(item.unitPrice)
-                              });
-                            });
-
-                            // Apply modifications from selectedItems
-                            selectedItems.forEach((selectedItem) => {
-                              if (selectedItem.markedForDeletion) {
-                                itemsMap.delete(selectedItem.dishId);
-                              } else {
-                                itemsMap.set(selectedItem.dishId, {
-                                  quantity: selectedItem.quantity,
-                                  unitPrice: parseFloat(selectedItem.unitPrice)
-                                });
-                              }
-                            });
-
-                            // Calculate subtotal from final items
+                            // Calculate total based only on new order items
                             let subtotal = 0;
                             let itemCount = 0;
                             
-                            Array.from(itemsMap.values()).forEach(item => {
-                              if (item.quantity > 0) {
-                                subtotal += item.unitPrice * item.quantity;
-                                itemCount += item.quantity;
-                              }
+                            selectedItems.forEach(item => {
+                              subtotal += parseFloat(item.unitPrice) * item.quantity;
+                              itemCount += item.quantity;
                             });
 
                             // Calculate taxes
@@ -1119,7 +1028,7 @@ export default function RoomOrders() {
                                 ))}
 
                                 <div className="flex justify-between font-semibold text-lg border-t pt-2">
-                                  <span>Total Amount:</span>
+                                  <span>New Order Total:</span>
                                   <span className="text-green-600">{currencySymbol} {total.toFixed(2)}</span>
                                 </div>
                               </>

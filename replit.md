@@ -47,6 +47,13 @@ A comprehensive restaurant management system built with Node.js, Express, React,
   - Uses Date.UTC() constructor to completely bypass timezone interpretation
   - Added detailed logging to track datetime conversions for debugging
   - Bulletproof approach that works identically regardless of server timezone
+- **Room Orders Display Fix**: Fixed reservation cards showing only latest order total instead of cumulative total
+  - Problem: Reservation cards showed "Rs. 120.00, 1 items" for individual orders, not total for all orders
+  - Root cause: Frontend only displayed details from single order instead of calculating totals across all reservation orders
+  - Solution: Updated reservation card logic to calculate cumulative totals for ALL orders per reservation
+  - Now shows proper total amount and item count across multiple orders for each reservation
+  - Enhanced display to show order count when multiple orders exist (e.g., "3 Orders (Latest: #RM58202979)")
+  - Fixed both server-side dish name flattening and frontend cumulative calculations
 - **Previous Fixes Maintained**:
   - Order System: Single bill per table until checkout
   - Bill Printing: Complete item details display

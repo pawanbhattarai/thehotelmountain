@@ -1219,14 +1219,28 @@ export default function RoomOrders() {
           {/* Reservations Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {checkedInReservations.map((reservation: any) => {
-              // Check if room has existing order linked to this reservation
-              const hasOrder = orders?.some(order => 
+              // Get ALL orders for this reservation to calculate cumulative totals
+              const reservationOrders = orders?.filter(order => 
                 order.reservationId === reservation.id
-              );
-
-              const existingOrder = orders?.find(order => 
-                order.reservationId === reservation.id
-              );              return (
+              ) || [];
+              
+              const hasOrder = reservationOrders.length > 0;
+              
+              // Calculate cumulative totals for ALL orders
+              let totalAmount = 0;
+              let totalItems = 0;
+              let latestOrderNumber = '';
+              let latestStatus = 'pending';
+              
+              reservationOrders.forEach(order => {
+                totalAmount += parseFloat(order.totalAmount || '0');
+                totalItems += order.items?.length || 0;
+                // Use the latest order's details for display
+                if (!latestOrderNumber || new Date(order.createdAt) > new Date(latestOrderNumber)) {
+                  latestOrderNumber = order.orderNumber;
+                  latestStatus = order.status;
+                }
+              });              return (
                 <Card
                   key={reservation.id}
                   className={`cursor-pointer transition-all hover:shadow-lg ${
@@ -1257,9 +1271,9 @@ export default function RoomOrders() {
                           <Users className="h-4 w-4 mr-2" />
                           <span>Room: {reservation.reservationRooms?.[0]?.room?.number || "N/A"}</span>
                         </div>
-                        {hasOrder && existingOrder && (
-                          <Badge className={getStatusColor(existingOrder.status)}>
-                            {existingOrder.status}
+                        {hasOrder && (
+                          <Badge className={getStatusColor(latestStatus)}>
+                            {latestStatus}
                           </Badge>
                         )}
                       </div>
@@ -1273,17 +1287,20 @@ export default function RoomOrders() {
                         </p>
                       </div>
 
-                      {hasOrder && existingOrder && (
+                      {hasOrder && (
                         <div className="space-y-1">
                           <p className="text-sm text-gray-600">
-                            Order #{existingOrder.orderNumber}
+                            {reservationOrders.length === 1 
+                              ? `Order #${latestOrderNumber}`
+                              : `${reservationOrders.length} Orders (Latest: #${latestOrderNumber})`
+                            }
                           </p>
                           <div className="flex items-center justify-between">
                             <p className="text-sm font-semibold text-green-600">
-                              {currencySymbol} {existingOrder.totalAmount}
+                              {currencySymbol} {totalAmount.toFixed(2)}
                             </p>
                             <p className="text-xs text-gray-500">
-                              {existingOrder.items?.length || 0} items
+                              {totalItems} items total
                             </p>
                           </div>
                         </div>

@@ -516,7 +516,7 @@ export default function RoomOrders() {
             // Add new item
             allItems.push({
               ...item,
-              dishName: item.dishName || `Dish ${item.dishId}`,
+              dishName: item.dishName || item.dish?.name || `Dish ${item.dishId}`,
             });
           }
         });

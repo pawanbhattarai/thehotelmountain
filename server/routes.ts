@@ -5194,13 +5194,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Filter for room orders only
         const roomOrders = orders.filter((order) => order.orderType === "room");
 
-        // Get items for each order
+        // Get items for each order and flatten dish names
         const ordersWithItems = await Promise.all(
           roomOrders.map(async (order) => {
             const items = await restaurantStorage.getRestaurantOrderItems(
               order.id,
             );
-            return { ...order, items };
+            // Flatten dish name from nested dish object
+            const itemsWithDishNames = items.map(item => ({
+              ...item,
+              dishName: item.dish?.name || `Dish ${item.dishId}`
+            }));
+            return { ...order, items: itemsWithDishNames };
           }),
         );
 
@@ -5227,11 +5232,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Filter for room orders only
       const roomOrders = orders.filter((order) => order.orderType === "room");
 
-      // Get items for each order
+      // Get items for each order and flatten dish names
       const ordersWithItems = await Promise.all(
         roomOrders.map(async (order) => {
           const items = await restaurantStorage.getRestaurantOrderItems(order.id);
-          return { ...order, items };
+          // Flatten dish name from nested dish object
+          const itemsWithDishNames = items.map(item => ({
+            ...item,
+            dishName: item.dish?.name || `Dish ${item.dishId}`
+          }));
+          return { ...order, items: itemsWithDishNames };
         }),
       );
 

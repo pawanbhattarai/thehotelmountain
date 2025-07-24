@@ -139,7 +139,7 @@ export default function RoomOrders() {
         }
         return responseData;
       } else {
-        // Use POST endpoint for new orders or adding items to existing orders
+        // Use POST endpoint for new orders
         const response = await fetch("/api/restaurant/orders/room", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -157,12 +157,9 @@ export default function RoomOrders() {
     },
     onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/restaurant/orders/room"] });
-      const existingOrder = selectedReservation
-        ? getReservationOrder(selectedReservation.id)
-        : null;
 
-      // Automatically generate KOT/BOT for new orders
-      if (!existingOrder && data?.id) {
+      // Always generate KOT/BOT for new orders
+      if (data?.id) {
         try {
           await generateKOTBOTMutation.mutateAsync(data.id);
           toast({
@@ -178,15 +175,12 @@ export default function RoomOrders() {
         }
       } else {
         toast({
-          title: existingOrder
-            ? "Order updated successfully"
-            : "Room order created successfully",
-          description: existingOrder
-            ? "Items have been added to the order!"
-            : "Your order has been placed!",
+          title: "Room order created successfully",
+          description: "Your order has been placed!",
         });
       }
 
+      // Clear the form and go back to reservations list
       setSelectedReservation(null);
       setSelectedItems([]);
       setOriginalItems([]);
@@ -281,8 +275,6 @@ export default function RoomOrders() {
     console.log("Selected items:", selectedItems);
     console.log("Selected reservation:", selectedReservation);
 
-    const existingOrder = getReservationOrder(selectedReservation.id);
-
     if (!selectedReservation) {
       toast({
         title: "Error",
@@ -292,12 +284,17 @@ export default function RoomOrders() {
       return;
     }
 
-    // Check if there are changes to the order
-    if (existingOrder && !hasOrderChanged()) {
+    // Always create new orders - never update existing ones for room service
+    // This ensures each order is separate for billing purposes
+    
+    // Filter out items marked for deletion and items with 0 quantity
+    const finalItems = selectedItems.filter(item => !item.markedForDeletion && item.quantity > 0);
+
+    if (finalItems.length === 0) {
       toast({
-        title: "No changes",
-        description: "No changes detected in the order",
-        variant: "default",
+        title: "Error",
+        description: "Please add at least one item to the order",
+        variant: "destructive",
       });
       return;
     }
@@ -310,28 +307,13 @@ export default function RoomOrders() {
       branchId = user?.branchId || 1;
     }
 
-    // For existing orders, always use complete update to handle all changes properly
-    const useCompleteUpdate = !!existingOrder;
-    
-    // Filter out items marked for deletion and items with 0 quantity
-    const finalItems = selectedItems.filter(item => !item.markedForDeletion && item.quantity > 0);
-
-    if (finalItems.length === 0 && !existingOrder) {
-      toast({
-        title: "Error",
-        description: "Please add at least one item to the order",
-        variant: "destructive",
-      });
-      return;
-    }
-
     // Calculate subtotal from final items
     const subtotalForCalculation = finalItems.reduce(
       (sum, item) => sum + parseFloat(item.unitPrice) * item.quantity,
       0
     );
 
-    console.log("Using", useCompleteUpdate ? "COMPLETE UPDATE" : "NEW ORDER", "mode");
+    console.log("Creating NEW ORDER");
     console.log("Final items count:", finalItems.length);
     console.log("Subtotal:", subtotalForCalculation);
 
@@ -377,15 +359,15 @@ export default function RoomOrders() {
       specialInstructions: item.notes || null,
     }));
 
-    console.log("Submitting room order:", { order: orderData, items: itemsData });
+    console.log("Submitting NEW room order:", { order: orderData, items: itemsData });
     console.log("Items to submit:", finalItems);
-    console.log("Existing order:", existingOrder ? "Yes" : "No");
 
+    // Always create new order - never update existing ones
     createOrderMutation.mutate({ 
       order: orderData, 
       items: itemsData,
-      isUpdate: useCompleteUpdate,
-      orderId: useCompleteUpdate ? existingOrder.id : undefined
+      isUpdate: false,
+      orderId: undefined
     });
   };
 
@@ -396,37 +378,9 @@ export default function RoomOrders() {
     );
   };
 
-  const hasOrderChanged = () => {
-    if (originalItems.length !== selectedItems.length) return true;
+  
 
-    // Check if any items were removed
-    const hasRemovedItems = originalItems.some(original => 
-      !selectedItems.find(selected => selected.dishId === original.dishId)
-    );
-    if (hasRemovedItems) return true;
-
-    // Check if any items were added or modified
-    return selectedItems.some(selected => {
-      const originalItem = originalItems.find(orig => orig.dishId === selected.dishId);
-      return (
-        !originalItem ||
-        selected.quantity !== originalItem.quantity ||
-        selected.notes !== originalItem.notes
-      );
-    });
-  };
-
-  const needsCompleteUpdate = () => {
-    // Complete update needed if items were deleted or this is a major change
-    if (originalItems.length > selectedItems.length) return true;
-
-    // Check if any items were removed
-    const hasRemovedItems = originalItems.some(original => 
-      !selectedItems.find(selected => selected.dishId === original.dishId)
-    );
-
-    return hasRemovedItems;
-  };
+  
 
   const addItemToOrder = (dish: any) => {
     const existingItemIndex = selectedItems.findIndex(
@@ -694,19 +648,8 @@ export default function RoomOrders() {
     setOriginalItems([]);
     setSelectedCategory("all");
 
-    // If reservation has an existing order, load its items
-    const existingOrder = getReservationOrder(reservation.id);
-    if (existingOrder && existingOrder.items) {
-      const orderItems = existingOrder.items.map((item: any) => ({
-        dishId: item.dishId,
-        dishName: item.dish?.name || "Unknown Dish",
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        notes: item.specialInstructions || "",
-      }));
-      setSelectedItems(orderItems);
-      setOriginalItems(JSON.parse(JSON.stringify(orderItems))); // Deep copy for comparison
-    }
+    // Always start with an empty order form for room service
+    // This ensures each order is separate for billing purposes
   };
 
   if (reservationsLoading) {
@@ -1179,22 +1122,16 @@ export default function RoomOrders() {
                               className="w-full"
                               disabled={
                                 createOrderMutation.isPending ||
-                                selectedItems.length === 0 ||
-                                (getReservationOrder(selectedReservation?.id) &&
-                                  !hasOrderChanged())
+                                selectedItems.length === 0
                               }
                             >
                               {createOrderMutation.isPending ? (
                                 <div className="flex items-center">
                                   <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                                  {getReservationOrder(selectedReservation?.id)
-                                    ? "Updating..."
-                                    : "Creating..."}
+                                  Creating...
                                 </div>
-                              ) : getReservationOrder(selectedReservation?.id) ? (
-                                "Update Order"
                               ) : (
-                                "Create Order"
+                                "Create New Order"
                               )}
                             </Button>
                           </form>

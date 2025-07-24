@@ -947,7 +947,8 @@ export default function RestaurantBilling() {
                           <FormLabel>Customer Name (Optional)</FormLabel>
                           <FormControl>
                             <Input {...field} placeholder="Customer name" />
-                          </FormControl                          <FormMessage />
+                          </FormControl>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />

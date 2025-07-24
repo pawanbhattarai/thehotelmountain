@@ -365,7 +365,7 @@ export class RestaurantStorage {
   ): Promise<RestaurantOrder> {
     return await db.transaction(async (tx) => {
       console.log("Adding items to existing order:", orderId);
-      
+
       // Add the new items
       const itemsWithOrderId = items.map((item) => ({
         ...item,
@@ -455,58 +455,25 @@ export class RestaurantStorage {
     });
   }
 
-  async updateRestaurantOrderStatus(id: string, status: string, userId?: string): Promise<RestaurantOrder> {
-    return await db.transaction(async (tx) => {
-      // Get order details first to access tableId
-      const [order] = await tx.select().from(restaurantOrders).where(eq(restaurantOrders.id, id));
-      if (!order) throw new Error('Order not found');
+  async updateRestaurantOrderStatus(
+    id: string,
+    status: string,
+  ): Promise<RestaurantOrder> {
+    const [result] = await db
+      .update(restaurantOrders)
+      .set({ status, updatedAt: sql`NOW()` })
+      .where(eq(restaurantOrders.id, id))
+      .returning();
+    return result;
+  }
 
-      const updateData: any = { status, updatedAt: sql`NOW()` };
+  async deleteRestaurantOrder(id: string): Promise<void> {
+    await db.transaction(async (tx) => {
+      // Delete order items first
+      await tx.delete(restaurantOrderItems).where(eq(restaurantOrderItems.orderId, id));
 
-      if (status === 'served') {
-        updateData.servedAt = sql`NOW()`;
-      } else if (status === 'completed') {
-        updateData.completedAt = sql`NOW()`;
-
-        // Set table status back to open when order is completed
-        await tx
-          .update(restaurantTables)
-          .set({ status: 'open', updatedAt: sql`NOW()` })
-          .where(eq(restaurantTables.id, order.tableId));
-
-        // Update all KOT tickets for this order to served status
-        await tx
-          .update(kotTickets)
-          .set({ 
-            status: 'served', 
-            servedAt: sql`NOW()`,
-            updatedAt: sql`NOW()` 
-          })
-          .where(and(
-            eq(kotTickets.orderId, id),
-            sql`${kotTickets.status} != 'served'`
-          ));
-
-        // Update all BOT tickets for this order to served status
-        await tx
-          .update(botTickets)
-          .set({ 
-            status: 'served', 
-            servedAt: sql`NOW()`,
-            updatedAt: sql`NOW()` 
-          })
-          .where(and(
-            eq(botTickets.orderId, id),
-            sql`${botTickets.status} != 'served'`
-          ));
-      }
-
-      const [result] = await tx
-        .update(restaurantOrders)
-        .set(updateData)
-        .where(eq(restaurantOrders.id, id))
-        .returning();
-      return result;
+      // Delete the order
+      await tx.delete(restaurantOrders).where(eq(restaurantOrders.id, id));
     });
   }
 
@@ -543,7 +510,7 @@ export class RestaurantStorage {
 
           if (orderResults.length > 0) {
             order = orderResults[0];
-            
+
             // Get order items with dish details
             try {
               const items = await this.getRestaurantOrderItems(order.id);

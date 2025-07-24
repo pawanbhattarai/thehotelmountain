@@ -503,14 +503,66 @@ export default function RoomOrders() {
       return;
     }
 
-    const updatedItems = selectedItems.map((item) =>
-      item.dishId === dishId ? { ...item, quantity } : item,
-    );
-    setSelectedItems(updatedItems);
+    // Find the dish details for creating new items
+    const dish = dishes?.find((d: any) => d.id === dishId);
+    const dishName = dish?.name || `Dish ${dishId}`;
+    const unitPrice = dish?.price || "0.00";
+
+    // Check if this item already exists in selectedItems
+    const existingSelectedItem = selectedItems.find(item => item.dishId === dishId);
+    
+    if (existingSelectedItem) {
+      // Update existing selected item
+      setSelectedItems(prev => prev.map(item => 
+        item.dishId === dishId 
+          ? { ...item, quantity, markedForDeletion: false }
+          : item
+      ));
+    } else {
+      // Add new item to selectedItems
+      setSelectedItems(prev => [...prev, {
+        dishId,
+        dishName,
+        quantity,
+        unitPrice,
+        notes: "",
+        markedForDeletion: false
+      }]);
+    }
   };
 
   const removeItemFromOrder = (dishId: number) => {
-    setSelectedItems(selectedItems.filter((item) => item.dishId !== dishId));
+    // Check if this item exists in previous orders
+    const existsInPreviousOrders = selectedReservation && 
+      getAllReservationItems(selectedReservation.id).some(item => item.dishId === dishId);
+    
+    if (existsInPreviousOrders) {
+      // Mark for deletion if it exists in previous orders
+      const existingSelectedItem = selectedItems.find(item => item.dishId === dishId);
+      if (existingSelectedItem) {
+        setSelectedItems(prev => prev.map(item => 
+          item.dishId === dishId 
+            ? { ...item, quantity: 0, markedForDeletion: true }
+            : item
+        ));
+      } else {
+        // Find the item details from previous orders
+        const previousItem = getAllReservationItems(selectedReservation.id).find(item => item.dishId === dishId);
+        if (previousItem) {
+          setSelectedItems(prev => [...prev, {
+            dishId,
+            dishName: previousItem.dishName || previousItem.dish?.name || `Dish ${dishId}`,
+            quantity: 0,
+            unitPrice: previousItem.unitPrice,
+            notes: previousItem.specialInstructions || "",
+            markedForDeletion: true
+          }]);
+        }
+      }
+    } else {
+      // Remove completely if it's a new item
+      setSelectedItems(prev => prev.filter(item => item.dishId !== dishId));
+    }
   };
 
   const updateItemNotes = (dishId: number, notes: string) => {
@@ -963,75 +1015,59 @@ export default function RoomOrders() {
                             </TableHeader>
                             <TableBody>
                               {(() => {
-                                // Consolidate items by dishId to avoid duplicates
-                                const consolidatedItems = new Map();
+                                // Get all items from existing orders
+                                const allExistingItems = selectedReservation ? getAllReservationItems(selectedReservation.id) : [];
+                                
+                                // Create a map to track final quantities for each dish
+                                const itemsMap = new Map();
 
-                                // Process all previous order items
-                                if (selectedReservation) {
-                                  const reservationOrders = getAllReservationOrders(selectedReservation.id);
-                                  reservationOrders.forEach((order) => {
-                                    if (order.items) {
-                                      order.items.forEach((item) => {
-                                        const key = item.dishId;
-                                        
-                                        if (consolidatedItems.has(key)) {
-                                          // Add quantities if dish already exists
-                                          const existing = consolidatedItems.get(key);
-                                          existing.quantity += item.quantity;
-                                          existing.totalPrice = (parseFloat(existing.unitPrice) * existing.quantity).toFixed(2);
-                                        } else {
-                                          // Add new item
-                                          consolidatedItems.set(key, {
-                                            ...item,
-                                            dishName: item.dishName || `Dish ${item.dishId}`,
-                                            isFromPreviousOrder: true,
-                                            orderId: order.id,
-                                            orderNumber: order.orderNumber,
-                                            uniqueKey: `consolidated-${item.dishId}`
-                                          });
-                                        }
-                                      });
-                                    }
+                                // Add all existing items to the map
+                                allExistingItems.forEach((item) => {
+                                  itemsMap.set(item.dishId, {
+                                    dishId: item.dishId,
+                                    dishName: item.dishName || item.dish?.name || `Dish ${item.dishId}`,
+                                    quantity: item.quantity,
+                                    unitPrice: item.unitPrice,
+                                    notes: item.specialInstructions || "",
+                                    isFromPreviousOrder: true
                                   });
-                                }
+                                });
 
-                                // Apply local modifications from selectedItems
+                                // Apply modifications from selectedItems
                                 selectedItems.forEach((selectedItem) => {
-                                  const key = selectedItem.dishId;
-                                  
                                   if (selectedItem.markedForDeletion) {
-                                    // Remove item completely if marked for deletion
-                                    consolidatedItems.delete(key);
-                                  } else if (consolidatedItems.has(key)) {
-                                    // Update existing item with new quantity
-                                    const existing = consolidatedItems.get(key);
-                                    existing.quantity = selectedItem.quantity;
-                                    existing.totalPrice = (parseFloat(existing.unitPrice) * existing.quantity).toFixed(2);
-                                    existing.notes = selectedItem.notes || existing.specialInstructions || "";
+                                    // Remove completely if marked for deletion
+                                    itemsMap.delete(selectedItem.dishId);
                                   } else {
-                                    // Add new item
-                                    consolidatedItems.set(key, {
-                                      ...selectedItem,
-                                      isFromPreviousOrder: false,
-                                      uniqueKey: `new-${selectedItem.dishId}`
+                                    // Update or add the item with new quantity
+                                    itemsMap.set(selectedItem.dishId, {
+                                      dishId: selectedItem.dishId,
+                                      dishName: selectedItem.dishName || `Dish ${selectedItem.dishId}`,
+                                      quantity: selectedItem.quantity,
+                                      unitPrice: selectedItem.unitPrice,
+                                      notes: selectedItem.notes || "",
+                                      isFromPreviousOrder: itemsMap.has(selectedItem.dishId)
                                     });
                                   }
                                 });
 
-                                // Filter out items with 0 quantity and convert to array
-                                const finalItems = Array.from(consolidatedItems.values()).filter(item => item.quantity > 0);
+                                // Convert to array and filter out 0 quantity items
+                                const finalItems = Array.from(itemsMap.values()).filter(item => item.quantity > 0);
+
+                                if (finalItems.length === 0) {
+                                  return (
+                                    <TableRow>
+                                      <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                                        No items in order
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                }
 
                                 return finalItems.map((item) => (
-                                  <TableRow key={item.uniqueKey}>
+                                  <TableRow key={`item-${item.dishId}`}>
                                     <TableCell>
-                                      <div>
-                                        <div className="font-medium text-sm">{item.dishName}</div>
-                                        {item.isFromPreviousOrder && (
-                                          <div className="text-xs text-gray-500">
-                                            Order #{item.orderNumber}
-                                          </div>
-                                        )}
-                                      </div>
+                                      <div className="font-medium text-sm">{item.dishName}</div>
                                     </TableCell>
                                     <TableCell className="text-center text-sm">
                                       {currencySymbol} {item.unitPrice}
@@ -1043,48 +1079,7 @@ export default function RoomOrders() {
                                           variant="outline"
                                           onClick={() => {
                                             const newQuantity = Math.max(0, item.quantity - 1);
-                                            if (newQuantity === 0) {
-                                              // Mark for deletion or remove if new item
-                                              if (item.isFromPreviousOrder) {
-                                                const existingSelectedItem = selectedItems.find(selected => selected.dishId === item.dishId);
-                                                if (existingSelectedItem) {
-                                                  setSelectedItems(prev => prev.map(selected => 
-                                                    selected.dishId === item.dishId 
-                                                      ? { ...selected, quantity: 0, markedForDeletion: true }
-                                                      : selected
-                                                  ));
-                                                } else {
-                                                  setSelectedItems(prev => [...prev, {
-                                                    dishId: item.dishId,
-                                                    dishName: item.dishName,
-                                                    quantity: 0,
-                                                    unitPrice: item.unitPrice,
-                                                    notes: item.specialInstructions || "",
-                                                    markedForDeletion: true
-                                                  }]);
-                                                }
-                                              } else {
-                                                removeItemFromOrder(item.dishId);
-                                              }
-                                            } else {
-                                              // Update quantity
-                                              const existingSelectedItem = selectedItems.find(selected => selected.dishId === item.dishId);
-                                              if (existingSelectedItem) {
-                                                setSelectedItems(prev => prev.map(selected => 
-                                                  selected.dishId === item.dishId 
-                                                    ? { ...selected, quantity: newQuantity, markedForDeletion: false }
-                                                    : selected
-                                                ));
-                                              } else {
-                                                setSelectedItems(prev => [...prev, {
-                                                  dishId: item.dishId,
-                                                  dishName: item.dishName,
-                                                  quantity: newQuantity,
-                                                  unitPrice: item.unitPrice,
-                                                  notes: item.specialInstructions || ""
-                                                }]);
-                                              }
-                                            }
+                                            updateItemQuantity(item.dishId, newQuantity);
                                           }}
                                           className="h-6 w-6 p-0"
                                         >
@@ -1098,23 +1093,7 @@ export default function RoomOrders() {
                                           variant="outline"
                                           onClick={() => {
                                             const newQuantity = item.quantity + 1;
-                                            const existingSelectedItem = selectedItems.find(selected => selected.dishId === item.dishId);
-                                            
-                                            if (existingSelectedItem) {
-                                              setSelectedItems(prev => prev.map(selected => 
-                                                selected.dishId === item.dishId 
-                                                  ? { ...selected, quantity: newQuantity, markedForDeletion: false }
-                                                  : selected
-                                              ));
-                                            } else {
-                                              setSelectedItems(prev => [...prev, {
-                                                dishId: item.dishId,
-                                                dishName: item.dishName,
-                                                quantity: newQuantity,
-                                                unitPrice: item.unitPrice,
-                                                notes: item.specialInstructions || ""
-                                              }]);
-                                            }
+                                            updateItemQuantity(item.dishId, newQuantity);
                                           }}
                                           className="h-6 w-6 p-0"
                                         >
@@ -1126,31 +1105,7 @@ export default function RoomOrders() {
                                       <Button
                                         size="sm"
                                         variant="ghost"
-                                        onClick={() => {
-                                          if (item.isFromPreviousOrder) {
-                                            // Mark for deletion
-                                            const existingSelectedItem = selectedItems.find(selected => selected.dishId === item.dishId);
-                                            if (existingSelectedItem) {
-                                              setSelectedItems(prev => prev.map(selected => 
-                                                selected.dishId === item.dishId 
-                                                  ? { ...selected, quantity: 0, markedForDeletion: true }
-                                                  : selected
-                                              ));
-                                            } else {
-                                              setSelectedItems(prev => [...prev, {
-                                                dishId: item.dishId,
-                                                dishName: item.dishName,
-                                                quantity: 0,
-                                                unitPrice: item.unitPrice,
-                                                notes: item.specialInstructions || "",
-                                                markedForDeletion: true
-                                              }]);
-                                            }
-                                          } else {
-                                            // Remove new item completely
-                                            removeItemFromOrder(item.dishId);
-                                          }
-                                        }}
+                                        onClick={() => removeItemFromOrder(item.dishId)}
                                         className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
                                         title="Remove from order"
                                       >
@@ -1167,44 +1122,48 @@ export default function RoomOrders() {
 
 <div className="border-t pt-4 space-y-2">
                           {(() => {
-                            // Calculate totals from ALL individual items (no consolidation)
-                            let allItemsTotal = 0;
-                            let totalItemCount = 0;
+                            // Calculate total based on current state of all items
+                            const allExistingItems = selectedReservation ? getAllReservationItems(selectedReservation.id) : [];
+                            const itemsMap = new Map();
 
-                            // Add all previous order items
-                            if (selectedReservation) {
-                              const reservationOrders = getAllReservationOrders(selectedReservation.id);
-                              reservationOrders.forEach((order) => {
-                                if (order.items) {
-                                  order.items.forEach((item) => {
-                                    allItemsTotal += parseFloat(item.unitPrice) * item.quantity;
-                                    totalItemCount += 1;
-                                  });
-                                }
+                            // Add all existing items
+                            allExistingItems.forEach((item) => {
+                              itemsMap.set(item.dishId, {
+                                quantity: item.quantity,
+                                unitPrice: parseFloat(item.unitPrice)
                               });
-                            }
+                            });
 
-                            // Add current editing items (only new ones, not updates)
-                            selectedItems.forEach((item) => {
-                              // Check if this item is an update to an existing order item
-                              const isUpdateToExisting = selectedReservation && 
-                                getAllReservationItems(selectedReservation.id).some(existingItem => 
-                                  existingItem.dishId === item.dishId
-                                );
-
-                              if (!isUpdateToExisting) {
-                                allItemsTotal += parseFloat(item.unitPrice) * item.quantity;
-                                totalItemCount += 1;
+                            // Apply modifications from selectedItems
+                            selectedItems.forEach((selectedItem) => {
+                              if (selectedItem.markedForDeletion) {
+                                itemsMap.delete(selectedItem.dishId);
+                              } else {
+                                itemsMap.set(selectedItem.dishId, {
+                                  quantity: selectedItem.quantity,
+                                  unitPrice: parseFloat(selectedItem.unitPrice)
+                                });
                               }
                             });
 
+                            // Calculate subtotal from final items
+                            let subtotal = 0;
+                            let itemCount = 0;
+                            
+                            Array.from(itemsMap.values()).forEach(item => {
+                              if (item.quantity > 0) {
+                                subtotal += item.unitPrice * item.quantity;
+                                itemCount += item.quantity;
+                              }
+                            });
+
+                            // Calculate taxes
                             let totalTaxAmount = 0;
                             const appliedTaxes = [];
 
-                            // Calculate taxes on total
                             if (orderTaxes) {
                               for (const tax of orderTaxes) {
-                                const taxAmount = (allItemsTotal * parseFloat(tax.rate)) / 100;
+                                const taxAmount = (subtotal * parseFloat(tax.rate)) / 100;
                                 totalTaxAmount += taxAmount;
                                 appliedTaxes.push({
                                   taxName: tax.taxName,
@@ -1214,15 +1173,15 @@ export default function RoomOrders() {
                               }
                             }
 
+                            const total = subtotal + totalTaxAmount;
+
                             return (
                               <>
-                                {/* Show subtotal */}
                                 <div className="flex justify-between text-sm font-medium">
-                                  <span>Subtotal ({totalItemCount} items):</span>
-                                  <span>{currencySymbol} {allItemsTotal.toFixed(2)}</span>
+                                  <span>Subtotal ({itemCount} items):</span>
+                                  <span>{currencySymbol} {subtotal.toFixed(2)}</span>
                                 </div>
 
-                                {/* Show taxes if any */}
                                 {appliedTaxes.map((tax, index) => (
                                   <div key={index} className="flex justify-between text-sm text-gray-600">
                                     <span>{tax.taxName} ({tax.rate}%):</span>
@@ -1230,10 +1189,9 @@ export default function RoomOrders() {
                                   </div>
                                 ))}
 
-                                {/* Show total */}
                                 <div className="flex justify-between font-semibold text-lg border-t pt-2">
                                   <span>Total Amount:</span>
-                                  <span className="text-green-600">{currencySymbol} {(allItemsTotal + totalTaxAmount).toFixed(2)}</span>
+                                  <span className="text-green-600">{currencySymbol} {total.toFixed(2)}</span>
                                 </div>
                               </>
                             );

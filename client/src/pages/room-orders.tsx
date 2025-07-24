@@ -966,27 +966,40 @@ export default function RoomOrders() {
                                 // Show ALL items separately - no consolidation
                                 const allItems = [];
 
-                                // Add all previous order items
+                                // Add all previous order items with potential modifications
                                 if (selectedReservation) {
                                   const reservationOrders = getAllReservationOrders(selectedReservation.id);
                                   reservationOrders.forEach((order) => {
                                     if (order.items) {
                                       order.items.forEach((item) => {
+                                        // Check if this item has local modifications
+                                        const selectedModification = selectedItems.find(selected => selected.dishId === item.dishId);
+                                        
+                                        // Skip items marked for deletion
+                                        if (selectedModification && selectedModification.markedForDeletion) {
+                                          return;
+                                        }
+
                                         allItems.push({
                                           ...item,
                                           dishName: item.dishName || `Dish ${item.dishId}`,
                                           isFromPreviousOrder: true,
                                           orderId: order.id,
                                           orderNumber: order.orderNumber,
-                                          uniqueKey: `previous-${order.id}-${item.dishId}-${item.id}`
+                                          uniqueKey: `previous-${order.id}-${item.dishId}-${item.id}`,
+                                          // Override quantity if there's a local modification
+                                          quantity: selectedModification && !selectedModification.markedForDeletion ? selectedModification.quantity : item.quantity
                                         });
                                       });
                                     }
                                   });
                                 }
 
-                                // Add current editing items (only if they're not updates to existing items)
+                                // Add current editing items (only if they're completely new items)
                                 selectedItems.forEach((item) => {
+                                  // Skip items marked for deletion
+                                  if (item.markedForDeletion) return;
+                                  
                                   // Check if this item is an update to an existing order item
                                   const isUpdateToExisting = allItems.some(existingItem => 
                                     existingItem.dishId === item.dishId && existingItem.isFromPreviousOrder
@@ -1023,7 +1036,46 @@ export default function RoomOrders() {
                                           variant="outline"
                                           onClick={() => {
                                             if (item.isFromPreviousOrder) {
-                                              updatePreviousOrderItem(item.dishId, item.quantity - 1);
+                                              // For previous order items, update in selectedItems for local tracking
+                                              const existingSelectedItem = selectedItems.find(selected => selected.dishId === item.dishId);
+                                              if (existingSelectedItem) {
+                                                // Update existing selected item
+                                                const newQuantity = Math.max(0, existingSelectedItem.quantity - 1);
+                                                if (newQuantity === 0) {
+                                                  setSelectedItems(prev => prev.map(selected => 
+                                                    selected.dishId === item.dishId 
+                                                      ? { ...selected, quantity: 0, markedForDeletion: true }
+                                                      : selected
+                                                  ));
+                                                } else {
+                                                  setSelectedItems(prev => prev.map(selected => 
+                                                    selected.dishId === item.dishId 
+                                                      ? { ...selected, quantity: newQuantity }
+                                                      : selected
+                                                  ));
+                                                }
+                                              } else {
+                                                // Add to selectedItems with modified quantity
+                                                const newQuantity = Math.max(0, item.quantity - 1);
+                                                if (newQuantity === 0) {
+                                                  setSelectedItems(prev => [...prev, {
+                                                    dishId: item.dishId,
+                                                    dishName: item.dishName,
+                                                    quantity: 0,
+                                                    unitPrice: item.unitPrice,
+                                                    notes: item.specialInstructions || "",
+                                                    markedForDeletion: true
+                                                  }]);
+                                                } else {
+                                                  setSelectedItems(prev => [...prev, {
+                                                    dishId: item.dishId,
+                                                    dishName: item.dishName,
+                                                    quantity: newQuantity,
+                                                    unitPrice: item.unitPrice,
+                                                    notes: item.specialInstructions || ""
+                                                  }]);
+                                                }
+                                              }
                                             } else {
                                               updateItemQuantity(item.dishId, item.quantity - 1);
                                             }
@@ -1033,14 +1085,38 @@ export default function RoomOrders() {
                                           <Minus className="h-3 w-3" />
                                         </Button>
                                         <span className="w-8 text-center text-sm font-medium">
-                                          {item.quantity}
+                                          {(() => {
+                                            if (item.isFromPreviousOrder) {
+                                              const selectedItem = selectedItems.find(selected => selected.dishId === item.dishId);
+                                              return selectedItem ? selectedItem.quantity : item.quantity;
+                                            }
+                                            return item.quantity;
+                                          })()}
                                         </span>
                                         <Button
                                           size="sm"
                                           variant="outline"
                                           onClick={() => {
                                             if (item.isFromPreviousOrder) {
-                                              updatePreviousOrderItem(item.dishId, item.quantity + 1);
+                                              // For previous order items, update in selectedItems for local tracking
+                                              const existingSelectedItem = selectedItems.find(selected => selected.dishId === item.dishId);
+                                              if (existingSelectedItem) {
+                                                // Update existing selected item
+                                                setSelectedItems(prev => prev.map(selected => 
+                                                  selected.dishId === item.dishId 
+                                                    ? { ...selected, quantity: selected.quantity + 1, markedForDeletion: false }
+                                                    : selected
+                                                ));
+                                              } else {
+                                                // Add to selectedItems with modified quantity
+                                                setSelectedItems(prev => [...prev, {
+                                                  dishId: item.dishId,
+                                                  dishName: item.dishName,
+                                                  quantity: item.quantity + 1,
+                                                  unitPrice: item.unitPrice,
+                                                  notes: item.specialInstructions || ""
+                                                }]);
+                                              }
                                             } else {
                                               updateItemQuantity(item.dishId, item.quantity + 1);
                                             }
@@ -1057,8 +1133,22 @@ export default function RoomOrders() {
                                         variant="ghost"
                                         onClick={() => {
                                           if (item.isFromPreviousOrder) {
-                                            // For previous order items, just mark as deleted locally
-                                            setSelectedItems(prev => prev.filter(selected => selected.dishId !== item.dishId));
+                                            // For previous order items, find the original item and add it to selectedItems with quantity 0 to mark for deletion
+                                            const existingSelectedItem = selectedItems.find(selected => selected.dishId === item.dishId);
+                                            if (existingSelectedItem) {
+                                              // If already in selectedItems, remove it (this cancels the deletion)
+                                              setSelectedItems(prev => prev.filter(selected => selected.dishId !== item.dishId));
+                                            } else {
+                                              // Add to selectedItems with quantity 0 to mark for deletion
+                                              setSelectedItems(prev => [...prev, {
+                                                dishId: item.dishId,
+                                                dishName: item.dishName,
+                                                quantity: 0, // 0 quantity means delete
+                                                unitPrice: item.unitPrice,
+                                                notes: item.specialInstructions || "",
+                                                markedForDeletion: true
+                                              }]);
+                                            }
                                           } else {
                                             // For current items, remove from selected items
                                             removeItemFromOrder(item.dishId);
@@ -1193,7 +1283,7 @@ export default function RoomOrders() {
                                     : "Creating..."}
                                 </div>
                               ) : getReservationOrder(selectedReservation?.id) ? (
-                                "Add Items to Order"
+                                "Update Order"
                               ) : (
                                 "Create Order"
                               )}

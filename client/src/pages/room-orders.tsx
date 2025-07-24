@@ -164,22 +164,6 @@ export default function RoomOrders() {
     onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/restaurant/orders/room"] });
 
-      // Check if order was deleted (when all items were removed)
-      if (data?.deleted) {
-        toast({
-          title: "Order deleted",
-          description: "All items were removed, so the order has been deleted.",
-        });
-        
-        // Clear the form and go back to reservations list
-        setSelectedReservation(null);
-        setSelectedItems([]);
-        setOriginalItems([]);
-        setPendingUpdates(new Map());
-        setHasUnsavedChanges(false);
-        return;
-      }
-
       // Always generate KOT/BOT for new orders
       if (data?.id) {
         try {
@@ -197,26 +181,22 @@ export default function RoomOrders() {
         }
       } else {
         toast({
-          title: "Room order updated successfully",
-          description: "Your order has been updated!",
+          title: "Room order created successfully",
+          description: "Your order has been placed!",
         });
       }
 
-      // Clear the form and go back to reservations list for new orders
-      if (!data?.deleted) {
-        setSelectedReservation(null);
-        setSelectedItems([]);
-        setOriginalItems([]);
-        setPendingUpdates(new Map());
-        setHasUnsavedChanges(false);
-      }
+      // Clear the form and go back to reservations list
+      setSelectedReservation(null);
+      setSelectedItems([]);
+      setOriginalItems([]);
     },
     onError: (error: any) => {
-      console.error("Room order operation failed:", error);
+      console.error("Room order creation failed:", error);
       toast({
-        title: "Failed to process room order",
+        title: "Failed to create room order",
         description:
-          error.message || "An error occurred while processing the order",
+          error.message || "An error occurred while creating the order",
         variant: "destructive",
       });
     },
@@ -617,9 +597,6 @@ export default function RoomOrders() {
         });
       }
 
-      let deletedOrders = 0;
-      let updatedOrders = 0;
-
       // Apply updates to each order
       for (const [orderId, updates] of updatesByOrder.entries()) {
         const order = orders?.find((o: any) => o.id === orderId);
@@ -662,39 +639,16 @@ export default function RoomOrders() {
         if (!response.ok) {
           throw new Error(`Failed to update order ${orderId}`);
         }
-
-        const responseData = await response.json();
-        
-        // Check if order was deleted due to all items being removed
-        if (responseData.deleted) {
-          deletedOrders++;
-        } else {
-          updatedOrders++;
-        }
       }
 
       // Clear pending updates and refresh data
       setPendingUpdates(new Map());
       setHasUnsavedChanges(false);
       queryClient.invalidateQueries(["/api/restaurant/orders/room"]);
-      
-      // Show appropriate success message
-      if (deletedOrders > 0 && updatedOrders > 0) {
-        toast({ 
-          title: "Orders processed successfully", 
-          description: `${updatedOrders} order(s) updated, ${deletedOrders} order(s) deleted (all items removed).` 
-        });
-      } else if (deletedOrders > 0) {
-        toast({ 
-          title: "Orders deleted successfully", 
-          description: `${deletedOrders} order(s) deleted because all items were removed.` 
-        });
-      } else {
-        toast({ 
-          title: "Orders updated successfully", 
-          description: `Updated ${pendingUpdates.size} item(s) across ${updatedOrders} order(s).` 
-        });
-      }
+      toast({ 
+        title: "Orders updated successfully", 
+        description: `Updated ${pendingUpdates.size} item(s) across ${updatesByOrder.size} order(s).` 
+      });
 
     } catch (error) {
       toast({ 

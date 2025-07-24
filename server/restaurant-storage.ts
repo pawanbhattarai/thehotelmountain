@@ -455,6 +455,75 @@ export class RestaurantStorage {
     });
   }
 
+  async syncKOTBOTWithOrderItems(
+    orderId: string,
+    currentItems: InsertRestaurantOrderItem[]
+  ): Promise<void> {
+    await db.transaction(async (tx) => {
+      // Get all existing KOT/BOT items for this order
+      const existingKOTBOTItems = await tx
+        .select({
+          id: restaurantOrderItems.id,
+          dishId: restaurantOrderItems.dishId,
+          quantity: restaurantOrderItems.quantity,
+          unitPrice: restaurantOrderItems.unitPrice,
+          isKot: restaurantOrderItems.isKot,
+          isBot: restaurantOrderItems.isBot,
+          kotNumber: restaurantOrderItems.kotNumber,
+          botNumber: restaurantOrderItems.botNumber,
+        })
+        .from(restaurantOrderItems)
+        .where(
+          and(
+            eq(restaurantOrderItems.orderId, orderId),
+            or(
+              eq(restaurantOrderItems.isKot, true),
+              eq(restaurantOrderItems.isBot, true)
+            )
+          )
+        );
+
+      // Create a map of current items by dishId for quick lookup
+      const currentItemsMap = new Map();
+      currentItems.forEach(item => {
+        const key = item.dishId;
+        if (currentItemsMap.has(key)) {
+          currentItemsMap.set(key, currentItemsMap.get(key) + item.quantity);
+        } else {
+          currentItemsMap.set(key, item.quantity);
+        }
+      });
+
+      // Check each existing KOT/BOT item
+      for (const kotBotItem of existingKOTBOTItems) {
+        const currentQuantity = currentItemsMap.get(kotBotItem.dishId) || 0;
+        
+        if (currentQuantity === 0) {
+          // Item was completely removed from order - remove from KOT/BOT
+          await tx
+            .delete(restaurantOrderItems)
+            .where(eq(restaurantOrderItems.id, kotBotItem.id));
+          
+          console.log(`🗑️ Removed dish ${kotBotItem.dishId} from KOT/BOT as it was deleted from order`);
+        } else if (currentQuantity < kotBotItem.quantity) {
+          // Quantity was reduced - update KOT/BOT quantity
+          await tx
+            .update(restaurantOrderItems)
+            .set({ 
+              quantity: currentQuantity,
+              totalPrice: (parseFloat(kotBotItem.unitPrice || '0') * currentQuantity).toString()
+            })
+            .where(eq(restaurantOrderItems.id, kotBotItem.id));
+          
+          console.log(`📉 Reduced dish ${kotBotItem.dishId} quantity in KOT/BOT from ${kotBotItem.quantity} to ${currentQuantity}`);
+        }
+        // If quantity increased or stayed same, KOT/BOT remains unchanged
+      }
+
+      console.log(`🔄 Synced KOT/BOT items with current order items for order ${orderId}`);
+    });
+  }
+
   async updateRestaurantOrderStatus(id: string, status: string, userId?: string): Promise<RestaurantOrder> {
     return await db.transaction(async (tx) => {
       // Get order details first to access tableId

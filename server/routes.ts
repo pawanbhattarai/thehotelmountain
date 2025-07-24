@@ -5587,6 +5587,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Replace all order items (this handles additions, deletions, and modifications)
       await restaurantStorage.replaceOrderItems(orderId, validatedItems);
 
+      // Update KOT/BOT items to match the current order items
+      await restaurantStorage.syncKOTBOTWithOrderItems(orderId, validatedItems);
+
       // Get updated order with items
       const updatedOrder = await restaurantStorage.getRestaurantOrder(orderId);
       const updatedItems = await restaurantStorage.getRestaurantOrderItems(orderId);

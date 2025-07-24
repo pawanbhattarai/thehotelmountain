@@ -1100,8 +1100,13 @@ function PrinterConfigurationSection() {
   // Create/update printer configuration
   const savePrinterConfig = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest("/api/printer-configurations", {
-        method: "POST",
+      const url = data.id 
+        ? `/api/printer-configurations/${data.id}` 
+        : "/api/printer-configurations";
+      const method = data.id ? "PUT" : "POST";
+      
+      return apiRequest(url, {
+        method,
         body: JSON.stringify(data),
       });
     },
@@ -1333,8 +1338,15 @@ function PrinterConfigForm({
       });
       return;
     }
-    console.log("Submitting printer config:", formData);
-    onSave(formData);
+    
+    // Include the config ID if editing
+    const submitData = {
+      ...formData,
+      ...(config.id && { id: config.id })
+    };
+    
+    console.log("Submitting printer config:", submitData);
+    onSave(submitData);
   };
 
   return (

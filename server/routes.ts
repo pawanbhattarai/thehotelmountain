@@ -3683,10 +3683,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(req.session.user.id);
       if (!user) return res.status(401).json({ message: "User not found" });
 
+      // Set branchId: for superadmin use provided branchId or default to 1, for others use their branchId
+      const branchId = user.role === "superadmin" 
+        ? (req.body.branchId || user.branchId || 1)
+        : (user.branchId || 1);
+
       const configData = insertPrinterConfigurationSchema.parse({
         ...req.body,
-        branchId: user.role === "superadmin" ? req.body.branchId || user.branchId : user.branchId,
+        branchId,
       });
+
+      console.log("Creating printer config:", configData);
 
       if (
         !checkBranchPermissions(user.role, user.branchId, configData.branchId)
@@ -3701,10 +3708,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .values(configData)
         .returning();
 
+      console.log("Printer configuration created:", configuration[0]);
       res.status(201).json(configuration[0]);
     } catch (error) {
       console.error("Error creating printer configuration:", error);
-      res.status(500).json({ message: "Failed to create printer configuration" });
+      res.status(500).json({ 
+        message: "Failed to create printer configuration",
+        error: error.message 
+      });
     }
   });
 

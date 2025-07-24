@@ -52,7 +52,7 @@ import { NotificationManager } from "@/components/NotificationManager";
 
 const printerConfigSchema = z.object({
   printerName: z.string().min(1, "Printer name is required"),
-  printerType: z.enum(["KOT", "BOT", "billing"]),
+  printerType: z.enum(["kot", "bot", "billing"]),
   ipAddress: z.string().min(1, "IP address is required").regex(/^(\d{1,3}\.){3}\d{1,3}$/, "Invalid IP address format"),
   port: z.number().min(1).max(65535).default(9100),
   isEnabled: z.boolean().default(true),
@@ -291,7 +291,7 @@ export default function Settings() {
     resolver: zodResolver(printerConfigSchema),
     defaultValues: {
       printerName: "",
-      printerType: "KOT" as const,
+      printerType: "kot" as const,
       ipAddress: "",
       port: 9100,
       isEnabled: true,
@@ -304,10 +304,21 @@ export default function Settings() {
 
   const createPrinterMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest("/api/printer-configurations", {
+      const response = await fetch("/api/printer-configurations", {
         method: "POST",
-        body: data,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+        credentials: "include",
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to create printer configuration");
+      }
+
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/printer-configurations"] });
@@ -329,10 +340,21 @@ export default function Settings() {
 
   const updatePrinterMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
-      return apiRequest(`/api/printer-configurations/${id}`, {
+      const response = await fetch(`/api/printer-configurations/${id}`, {
         method: "PUT",
-        body: data,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+        credentials: "include",
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to update printer configuration");
+      }
+
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/printer-configurations"] });
@@ -355,9 +377,17 @@ export default function Settings() {
 
   const deletePrinterMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest(`/api/printer-configurations/${id}`, {
+      const response = await fetch(`/api/printer-configurations/${id}`, {
         method: "DELETE",
+        credentials: "include",
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to delete printer configuration");
+      }
+
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/printer-configurations"] });
@@ -377,9 +407,17 @@ export default function Settings() {
 
   const testPrinterMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest(`/api/printer-configurations/${id}/test`, {
+      const response = await fetch(`/api/printer-configurations/${id}/test`, {
         method: "POST",
+        credentials: "include",
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to test printer connection");
+      }
+
+      return response.json();
     },
     onSuccess: (result: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/printer-configurations"] });
@@ -422,7 +460,7 @@ export default function Settings() {
     setEditingPrinter(printer);
     printerForm.reset({
       printerName: printer.printerName,
-      printerType: printer.printerType.toUpperCase(),
+      printerType: printer.printerType.toLowerCase(),
       ipAddress: printer.ipAddress,
       port: printer.port,
       isEnabled: printer.isEnabled,
@@ -1022,9 +1060,9 @@ export default function Settings() {
                             <div className="h-16 bg-gray-200 rounded animate-pulse"></div>
                             <div className="h-16 bg-gray-200 rounded animate-pulse"></div>
                           </div>
-                        ) : printerConfigs && printerConfigs.length > 0 ? (
+                        ) : printerConfigs && Array.isArray(printerConfigs) && printerConfigs.length > 0 ? (
                           <div className="space-y-4">
-                            {printerConfigs.map((printer: any) => (
+                            {(printerConfigs as any[]).map((printer: any) => (
                               <div
                                 key={printer.id}
                                 className="border rounded-lg p-4 space-y-3"
@@ -1150,8 +1188,8 @@ export default function Settings() {
                                           </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                          <SelectItem value="KOT">KOT (Kitchen Order Ticket)</SelectItem>
-                                          <SelectItem value="BOT">BOT (Beverage Order Ticket)</SelectItem>
+                                          <SelectItem value="kot">KOT (Kitchen Order Ticket)</SelectItem>
+                                          <SelectItem value="bot">BOT (Beverage Order Ticket)</SelectItem>
                                           <SelectItem value="billing">Billing Printer</SelectItem>
                                         </SelectContent>
                                       </Select>

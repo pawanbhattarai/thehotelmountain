@@ -94,7 +94,7 @@ export default function RestaurantBilling() {
   );
 
   const pagination = usePagination({
-    data: Array.isArray(filteredBills) ? filteredBills : [],
+    data: Array.isArray(bills) ? bills.filter((bill: any) => bill.order?.orderType === "dine-in") : [],
     itemsPerPage: 10,
     searchTerm,
     searchFields: ["billNumber", "order.orderNumber", "customerName", "paymentMethod"] as any,
@@ -915,7 +915,14 @@ export default function RestaurantBilling() {
               )}
               {pagination.totalItems > 0 && (
                 <div className="mt-4">
-                  <PaginationControls pagination={pagination} />
+                  <PaginationControls
+                    currentPage={pagination.currentPage}
+                    totalPages={pagination.totalPages}
+                    onPageChange={pagination.setCurrentPage}
+                    startIndex={pagination.startIndex}
+                    endIndex={pagination.endIndex}
+                    totalItems={pagination.totalItems}
+                  />
                 </div>
               )}
             </CardContent>

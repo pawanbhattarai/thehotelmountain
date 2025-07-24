@@ -452,7 +452,12 @@ export default function RestaurantTables() {
               {tables?.length > 0 && (
                 <div className="mt-4">
                   <PaginationControls
-                    pagination={pagination}
+                    currentPage={pagination.currentPage}
+                    totalPages={pagination.totalPages}
+                    onPageChange={pagination.setCurrentPage}
+                    startIndex={pagination.startIndex}
+                    endIndex={pagination.endIndex}
+                    totalItems={pagination.totalItems}
                   />
                 </div>
               )}

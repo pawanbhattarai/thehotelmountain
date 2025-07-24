@@ -359,7 +359,14 @@ export default function RestaurantCategories() {
               )}
               {categories?.length > 0 && (
                 <div className="mt-4">
-                  <PaginationControls pagination={pagination} />
+                  <PaginationControls
+                    currentPage={pagination.currentPage}
+                    totalPages={pagination.totalPages}
+                    onPageChange={pagination.setCurrentPage}
+                    startIndex={pagination.startIndex}
+                    endIndex={pagination.endIndex}
+                    totalItems={pagination.totalItems}
+                  />
                 </div>
               )}
             </CardContent>

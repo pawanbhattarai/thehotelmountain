@@ -287,8 +287,40 @@ export default function RoomOrders() {
     // Always create new orders - never update existing ones for room service
     // This ensures each order is separate for billing purposes
     
-    // Filter out items marked for deletion and items with 0 quantity
-    const finalItems = selectedItems.filter(item => !item.markedForDeletion && item.quantity > 0);
+    // Get all current valid items (from existing orders + new items - deleted items)
+    const allExistingItems = selectedReservation ? getAllReservationItems(selectedReservation.id) : [];
+    const itemsMap = new Map();
+
+    // Add all existing items to the map
+    allExistingItems.forEach((item) => {
+      itemsMap.set(item.dishId, {
+        dishId: item.dishId,
+        dishName: item.dishName || item.dish?.name || `Dish ${item.dishId}`,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        notes: item.specialInstructions || "",
+      });
+    });
+
+    // Apply modifications from selectedItems
+    selectedItems.forEach((selectedItem) => {
+      if (selectedItem.markedForDeletion) {
+        // Remove completely if marked for deletion
+        itemsMap.delete(selectedItem.dishId);
+      } else {
+        // Update or add the item with new quantity
+        itemsMap.set(selectedItem.dishId, {
+          dishId: selectedItem.dishId,
+          dishName: selectedItem.dishName || `Dish ${selectedItem.dishId}`,
+          quantity: selectedItem.quantity,
+          unitPrice: selectedItem.unitPrice,
+          notes: selectedItem.notes || "",
+        });
+      }
+    });
+
+    // Filter out items with 0 quantity and get final items
+    const finalItems = Array.from(itemsMap.values()).filter(item => item.quantity > 0);
 
     if (finalItems.length === 0) {
       toast({
@@ -1122,7 +1154,29 @@ export default function RoomOrders() {
                               className="w-full"
                               disabled={
                                 createOrderMutation.isPending ||
-                                selectedItems.length === 0
+                                (() => {
+                                  // Check if there are any valid items (existing + new - deleted)
+                                  const allExistingItems = selectedReservation ? getAllReservationItems(selectedReservation.id) : [];
+                                  const itemsMap = new Map();
+
+                                  // Add existing items
+                                  allExistingItems.forEach((item) => {
+                                    itemsMap.set(item.dishId, { quantity: item.quantity });
+                                  });
+
+                                  // Apply modifications
+                                  selectedItems.forEach((selectedItem) => {
+                                    if (selectedItem.markedForDeletion) {
+                                      itemsMap.delete(selectedItem.dishId);
+                                    } else {
+                                      itemsMap.set(selectedItem.dishId, { quantity: selectedItem.quantity });
+                                    }
+                                  });
+
+                                  // Count valid items
+                                  const validItemsCount = Array.from(itemsMap.values()).filter(item => item.quantity > 0).length;
+                                  return validItemsCount === 0;
+                                })()
                               }
                             >
                               {createOrderMutation.isPending ? (

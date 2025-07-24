@@ -544,20 +544,32 @@ export default function RestaurantOrders() {
       return;
     }
 
-    // Generate a unique ID for each new item added
-    const newUniqueId = `item-${Date.now()}-${itemCounter}`;
-    setItemCounter((prev) => prev + 1);
+    // Check if the same dish already exists in the current order (not including existing items from previous orders)
+    const existingItemIndex = selectedItems.findIndex(
+      (item) => item.dishId === dish.id && !item.isExistingItem
+    );
 
-    const newItem: SelectedOrderItem = {
-      uniqueId: newUniqueId, // Assign a unique ID
-      dishId: dish.id,
-      dishName: dish.name,
-      quantity: 1,
-      unitPrice: dish.price.toString(),
-      notes: "",
-      isExistingItem: false, // Mark as new item
-    };
-    setSelectedItems((items) => [...items, newItem]);
+    if (existingItemIndex >= 0) {
+      // Item already exists, increment quantity by 1
+      const updatedItems = [...selectedItems];
+      updatedItems[existingItemIndex].quantity += 1;
+      setSelectedItems(updatedItems);
+    } else {
+      // Item doesn't exist, create new entry
+      const newUniqueId = `item-${Date.now()}-${itemCounter}`;
+      setItemCounter((prev) => prev + 1);
+
+      const newItem: SelectedOrderItem = {
+        uniqueId: newUniqueId,
+        dishId: dish.id,
+        dishName: dish.name,
+        quantity: 1,
+        unitPrice: dish.price.toString(),
+        notes: "",
+        isExistingItem: false,
+      };
+      setSelectedItems((items) => [...items, newItem]);
+    }
   };
 
   // Modified removeItem to use uniqueId

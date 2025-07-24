@@ -296,7 +296,7 @@ export default function RoomOrders() {
       toast({
         title: "Error",
         description: "No reservation selected",
-        variant: "descriptive",
+        variant: "destructive",
       });
       return;
     }
@@ -568,6 +568,71 @@ export default function RoomOrders() {
       (sum, item) => sum + parseFloat(item.unitPrice) * item.quantity,
       0
     );
+  };
+
+  // Update quantity for a previous order item
+  const updatePreviousOrderItem = async (dishId: number, newQuantity: number) => {
+    if (!selectedReservation) return;
+    
+    const reservationOrders = getAllReservationOrders(selectedReservation.id);
+    
+    // Find which order contains this dish
+    for (const order of reservationOrders) {
+      if (order.items) {
+        const itemIndex = order.items.findIndex((item: any) => item.dishId === dishId);
+        if (itemIndex >= 0) {
+          // Update the item in this order
+          const updatedItems = [...order.items];
+          
+          if (newQuantity <= 0) {
+            // Remove the item if quantity is 0
+            updatedItems.splice(itemIndex, 1);
+          } else {
+            // Update the quantity
+            updatedItems[itemIndex] = {
+              ...updatedItems[itemIndex],
+              quantity: newQuantity,
+              totalPrice: (parseFloat(updatedItems[itemIndex].unitPrice) * newQuantity).toFixed(2)
+            };
+          }
+          
+          // Calculate new order totals
+          const newSubtotal = updatedItems.reduce((sum, item) => sum + parseFloat(item.unitPrice) * item.quantity, 0);
+          const newTotalAmount = newSubtotal; // Add tax calculation if needed
+          
+          // Update the order via API
+          try {
+            const response = await fetch(`/api/restaurant/orders/${order.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                order: {
+                  ...order,
+                  subtotal: newSubtotal.toFixed(2),
+                  totalAmount: newTotalAmount.toFixed(2)
+                },
+                items: updatedItems
+              })
+            });
+            
+            if (response.ok) {
+              // Refresh orders data
+              queryClient.invalidateQueries(["/api/restaurant/orders/room"]);
+              toast({ title: "Order updated successfully", description: "Item quantity changed." });
+            }
+          } catch (error) {
+            toast({ title: "Error", description: "Failed to update order", variant: "destructive" });
+          }
+          
+          break; // Exit loop once we found and updated the item
+        }
+      }
+    }
+  };
+
+  // Remove an item from previous orders
+  const removePreviousOrderItem = async (dishId: number) => {
+    await updatePreviousOrderItem(dishId, 0);
   };
 
   const getStatusColor = (status: string) => {
@@ -886,7 +951,7 @@ export default function RoomOrders() {
                     ) : (
                       <>
                         <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
-                          {/* Show ALL previous order items for this reservation */}
+                          {/* Show ALL previous order items for this reservation - NOW EDITABLE */}
                           {selectedReservation && getAllReservationItems(selectedReservation.id).map((item, index) => (
                             <div
                               key={`all-items-${item.dishId}`}
@@ -903,8 +968,34 @@ export default function RoomOrders() {
                                   Previous Orders
                                 </p>
                               </div>
-                              <div className="text-sm font-medium">
-                                Qty: {item.quantity}
+                              <div className="flex items-center space-x-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => updatePreviousOrderItem(item.dishId, item.quantity - 1)}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </Button>
+                                <span className="w-6 text-center text-sm">
+                                  {item.quantity}
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => updatePreviousOrderItem(item.dishId, item.quantity + 1)}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => removePreviousOrderItem(item.dishId)}
+                                  className="h-6 w-6 p-0 text-red-500"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
                               </div>
                             </div>
                           ))}

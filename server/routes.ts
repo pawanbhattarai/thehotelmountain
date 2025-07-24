@@ -3683,17 +3683,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(req.session.user.id);
       if (!user) return res.status(401).json({ message: "User not found" });
 
+      console.log("Received printer config request:", req.body);
+
       // Set branchId: for superadmin use provided branchId or default to 1, for others use their branchId
       const branchId = user.role === "superadmin" 
         ? (req.body.branchId || user.branchId || 1)
         : (user.branchId || 1);
 
-      const configData = insertPrinterConfigurationSchema.parse({
+      // Prepare data for validation
+      const dataToValidate = {
         ...req.body,
         branchId,
-      });
+      };
 
-      console.log("Creating printer config:", configData);
+      console.log("Data to validate:", dataToValidate);
+
+      const configData = insertPrinterConfigurationSchema.parse(dataToValidate);
+
+      console.log("Validated config data:", configData);
 
       if (
         !checkBranchPermissions(user.role, user.branchId, configData.branchId)
@@ -3703,15 +3710,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .json({ message: "Insufficient permissions for this branch" });
       }
 
+      // Check if a configuration with the same printer type already exists for this branch
+      const existingConfig = await db
+        .select()
+        .from(printerConfigurations)
+        .where(
+          and(
+            eq(printerConfigurations.branchId, configData.branchId),
+            eq(printerConfigurations.printerType, configData.printerType)
+          )
+        )
+        .limit(1);
+
+      if (existingConfig.length > 0) {
+        return res.status(409).json({ 
+          message: `A ${configData.printerType} printer configuration already exists for this branch. Please edit the existing configuration instead.`
+        });
+      }
+
       const configuration = await db
         .insert(printerConfigurations)
         .values(configData)
         .returning();
 
-      console.log("Printer configuration created:", configuration[0]);
+      console.log("Printer configuration created successfully:", configuration[0]);
       res.status(201).json(configuration[0]);
     } catch (error) {
       console.error("Error creating printer configuration:", error);
+      
+      // Check if it's a validation error
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ 
+          message: "Invalid printer configuration data",
+          details: error.errors
+        });
+      }
+      
       res.status(500).json({ 
         message: "Failed to create printer configuration",
         error: error.message 
@@ -3725,7 +3759,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) return res.status(401).json({ message: "User not found" });
 
       const configId = parseInt(req.params.id);
-      const configData = insertPrinterConfigurationSchema.partial().parse(req.body);
+      
+      console.log("Updating printer config:", configId, req.body);
 
       const existingConfig = await db
         .select()
@@ -3745,16 +3780,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .json({ message: "Insufficient permissions for this configuration" });
       }
 
+      // Remove the id from the update data
+      const { id, ...updateData } = req.body;
+      
+      const configData = insertPrinterConfigurationSchema.partial().parse(updateData);
+
+      console.log("Validated update data:", configData);
+
       const [updatedConfig] = await db
         .update(printerConfigurations)
         .set({ ...configData, updatedAt: sql`NOW()` })
         .where(eq(printerConfigurations.id, configId))
         .returning();
 
+      console.log("Printer configuration updated successfully:", updatedConfig);
       res.json(updatedConfig);
     } catch (error) {
       console.error("Error updating printer configuration:", error);
-      res.status(500).json({ message: "Failed to update printer configuration" });
+      
+      // Check if it's a validation error
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ 
+          message: "Invalid printer configuration data",
+          details: error.errors
+        });
+      }
+      
+      res.status(500).json({ 
+        message: "Failed to update printer configuration",
+        error: error.message 
+      });
     }
   });
 

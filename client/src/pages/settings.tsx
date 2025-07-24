@@ -1105,12 +1105,18 @@ function PrinterConfigurationSection() {
         : "/api/printer-configurations";
       const method = data.id ? "PUT" : "POST";
       
-      return apiRequest(url, {
+      console.log("Sending printer config to API:", { url, method, data });
+      
+      const response = await apiRequest(url, {
         method,
         body: JSON.stringify(data),
       });
+      
+      console.log("API response:", response);
+      return response;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Printer configuration saved successfully:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/printer-configurations"] });
       setEditingConfig(null);
       toast({
@@ -1119,6 +1125,7 @@ function PrinterConfigurationSection() {
       });
     },
     onError: (error: any) => {
+      console.error("Failed to save printer configuration:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to save printer configuration",
@@ -1330,12 +1337,17 @@ function PrinterConfigForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate required fields
     if (!formData.printerType || !formData.printerName || !formData.ipAddress) {
       console.error("Missing required fields:", {
         printerType: formData.printerType,
         printerName: formData.printerName,
         ipAddress: formData.ipAddress
       });
+      
+      // Show error message to user
+      alert("Please fill in all required fields: Printer Type, Printer Name, and IP Address");
       return;
     }
     

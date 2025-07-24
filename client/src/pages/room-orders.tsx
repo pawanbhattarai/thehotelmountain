@@ -13,6 +13,9 @@ import {
   Users,
   Utensils,
   ArrowLeft,
+  AlertCircle,
+  Save,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -85,6 +88,9 @@ export default function RoomOrders() {
   const [selectedMenuTypeFilter, setSelectedMenuTypeFilter] = useState<string>("all");
   const [viewingOrder, setViewingOrder] = useState<any>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  // Deferred update state - track pending changes without immediate API calls
+  const [pendingUpdates, setPendingUpdates] = useState<Map<number, { orderId: string; newQuantity: number; originalQuantity: number }>>(new Map());
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -535,69 +541,129 @@ export default function RoomOrders() {
     );
   };
 
-  // Update quantity for a previous order item
-  const updatePreviousOrderItem = async (dishId: number, newQuantity: number) => {
+  // Stage a quantity change for later batch update (deferred)
+  const stagePendingUpdate = (dishId: number, newQuantity: number) => {
     if (!selectedReservation) return;
 
     const reservationOrders = getAllReservationOrders(selectedReservation.id);
-
+    
     // Find which order contains this dish
     for (const order of reservationOrders) {
       if (order.items) {
-        const itemIndex = order.items.findIndex((item: any) => item.dishId === dishId);
-        if (itemIndex >= 0) {
-          // Update the item in this order
-          const updatedItems = [...order.items];
-
-          if (newQuantity <= 0) {
-            // Remove the item if quantity is 0
-            updatedItems.splice(itemIndex, 1);
-          } else {
-            // Update the quantity
-            updatedItems[itemIndex] = {
-              ...updatedItems[itemIndex],
-              quantity: newQuantity,
-              totalPrice: (parseFloat(updatedItems[itemIndex].unitPrice) * newQuantity).toFixed(2)
-            };
-          }
-
-          // Calculate new order totals
-          const newSubtotal = updatedItems.reduce((sum, item) => sum + parseFloat(item.unitPrice) * item.quantity, 0);
-          const newTotalAmount = newSubtotal; // Add tax calculation if needed
-
-          // Update the order via API
-          try {
-            const response = await fetch(`/api/restaurant/orders/${order.id}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                order: {
-                  ...order,
-                  subtotal: newSubtotal.toFixed(2),
-                  totalAmount: newTotalAmount.toFixed(2)
-                },
-                items: updatedItems
-              })
-            });
-
-            if (response.ok) {
-              // Refresh orders data
-              queryClient.invalidateQueries(["/api/restaurant/orders/room"]);
-              toast({ title: "Order updated successfully", description: "Item quantity changed." });
+        const item = order.items.find((item: any) => item.dishId === dishId);
+        if (item) {
+          setPendingUpdates(prev => {
+            const newMap = new Map(prev);
+            if (newQuantity <= 0) {
+              newMap.set(dishId, { orderId: order.id, newQuantity: 0, originalQuantity: item.quantity });
+            } else {
+              newMap.set(dishId, { orderId: order.id, newQuantity, originalQuantity: item.quantity });
             }
-          } catch (error) {
-            toast({ title: "Error", description: "Failed to update order", variant: "destructive" });
-          }
-
-          break; // Exit loop once we found and updated the item
+            return newMap;
+          });
+          setHasUnsavedChanges(true);
+          break;
         }
       }
     }
   };
 
-  // Remove an item from previous orders
-  const removePreviousOrderItem = async (dishId: number) => {
-    await updatePreviousOrderItem(dishId, 0);
+  // Get the current effective quantity including pending changes
+  const getEffectiveQuantity = (dishId: number, originalQuantity: number) => {
+    const pendingUpdate = pendingUpdates.get(dishId);
+    return pendingUpdate ? pendingUpdate.newQuantity : originalQuantity;
+  };
+
+  // Remove an item (stage for deletion)
+  const removePreviousOrderItem = (dishId: number) => {
+    stagePendingUpdate(dishId, 0);
+  };
+
+  // Apply all pending updates in a batch
+  const applyPendingUpdates = async () => {
+    if (pendingUpdates.size === 0) return;
+
+    try {
+      // Group updates by order ID
+      const updatesByOrder = new Map<string, any[]>();
+      
+      for (const [dishId, updateInfo] of pendingUpdates.entries()) {
+        if (!updatesByOrder.has(updateInfo.orderId)) {
+          updatesByOrder.set(updateInfo.orderId, []);
+        }
+        updatesByOrder.get(updateInfo.orderId)!.push({
+          dishId,
+          newQuantity: updateInfo.newQuantity
+        });
+      }
+
+      // Apply updates to each order
+      for (const [orderId, updates] of updatesByOrder.entries()) {
+        const order = orders?.find((o: any) => o.id === orderId);
+        if (!order) continue;
+
+        // Apply all quantity changes to this order's items
+        const updatedItems = order.items.map((item: any) => {
+          const update = updates.find(u => u.dishId === item.dishId);
+          if (update) {
+            if (update.newQuantity <= 0) {
+              return null; // Mark for removal
+            }
+            return {
+              ...item,
+              quantity: update.newQuantity,
+              totalPrice: (parseFloat(item.unitPrice) * update.newQuantity).toFixed(2)
+            };
+          }
+          return item;
+        }).filter(Boolean); // Remove null items
+
+        // Calculate new order totals
+        const newSubtotal = updatedItems.reduce((sum, item) => sum + parseFloat(item.unitPrice) * item.quantity, 0);
+        const newTotalAmount = newSubtotal;
+
+        // Update the order via API
+        const response = await fetch(`/api/restaurant/orders/${orderId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            order: {
+              ...order,
+              subtotal: newSubtotal.toFixed(2),
+              totalAmount: newTotalAmount.toFixed(2)
+            },
+            items: updatedItems
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to update order ${orderId}`);
+        }
+      }
+
+      // Clear pending updates and refresh data
+      setPendingUpdates(new Map());
+      setHasUnsavedChanges(false);
+      queryClient.invalidateQueries(["/api/restaurant/orders/room"]);
+      toast({ 
+        title: "Orders updated successfully", 
+        description: `Updated ${pendingUpdates.size} item(s) across ${updatesByOrder.size} order(s).` 
+      });
+
+    } catch (error) {
+      toast({ 
+        title: "Error", 
+        description: "Failed to update some orders. Please try again.", 
+        variant: "destructive" 
+      });
+    }
+  };
+
+  // Discard all pending changes
+  const discardPendingUpdates = () => {
+    setPendingUpdates(new Map());
+    setHasUnsavedChanges(false);
+    toast({ title: "Changes discarded", description: "All pending changes have been reset." });
   };
 
   const getStatusColor = (status: string) => {
@@ -983,9 +1049,10 @@ export default function RoomOrders() {
                                                 updateItemQuantity(item.dishId, newQuantity);
                                               }
                                             } else {
-                                              // Handle existing item quantity change
-                                              const newQuantity = Math.max(0, item.quantity - 1);
-                                              updatePreviousOrderItem(item.dishId, newQuantity);
+                                              // Handle existing item quantity change (deferred)
+                                              const currentEffectiveQuantity = getEffectiveQuantity(item.dishId, item.quantity);
+                                              const newQuantity = Math.max(0, currentEffectiveQuantity - 1);
+                                              stagePendingUpdate(item.dishId, newQuantity);
                                             }
                                           }}
                                           className="h-6 w-6 p-0"
@@ -993,7 +1060,7 @@ export default function RoomOrders() {
                                           <Minus className="h-3 w-3" />
                                         </Button>
                                         <span className="w-8 text-center text-sm font-medium">
-                                          {item.quantity}
+                                          {item.isNewItem ? item.quantity : getEffectiveQuantity(item.dishId, item.quantity)}
                                         </span>
                                         <Button
                                           size="sm"
@@ -1007,9 +1074,10 @@ export default function RoomOrders() {
                                                 updateItemQuantity(item.dishId, newQuantity);
                                               }
                                             } else {
-                                              // Handle existing item quantity change
-                                              const newQuantity = item.quantity + 1;
-                                              updatePreviousOrderItem(item.dishId, newQuantity);
+                                              // Handle existing item quantity change (deferred)
+                                              const currentEffectiveQuantity = getEffectiveQuantity(item.dishId, item.quantity);
+                                              const newQuantity = currentEffectiveQuantity + 1;
+                                              stagePendingUpdate(item.dishId, newQuantity);
                                             }
                                           }}
                                           className="h-6 w-6 p-0"
@@ -1027,7 +1095,7 @@ export default function RoomOrders() {
                                             // Remove from current order
                                             removeItemFromOrder(item.dishId);
                                           } else {
-                                            // Remove from previous orders
+                                            // Remove from previous orders (deferred)
                                             removePreviousOrderItem(item.dishId);
                                           }
                                         }}
@@ -1124,6 +1192,45 @@ export default function RoomOrders() {
                             );
                           })()}
                         </div>
+
+                        {/* Update/Discard buttons for pending changes */}
+                        {hasUnsavedChanges && (
+                          <div className="border-t pt-4 space-y-2">
+                            <div className="flex items-center justify-between text-sm text-orange-600 bg-orange-50 p-3 rounded-lg mb-3">
+                              <div className="flex items-center">
+                                <AlertCircle className="h-4 w-4 mr-2" />
+                                <span>You have {pendingUpdates.size} unsaved change(s)</span>
+                              </div>
+                            </div>
+                            <div className="flex space-x-2">
+                              <Button 
+                                onClick={applyPendingUpdates}
+                                className="flex-1"
+                                disabled={createOrderMutation.isPending}
+                              >
+                                {createOrderMutation.isPending ? (
+                                  <div className="flex items-center">
+                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                                    Updating...
+                                  </div>
+                                ) : (
+                                  <>
+                                    <Save className="h-4 w-4 mr-2" />
+                                    Update Orders
+                                  </>
+                                )}
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                onClick={discardPendingUpdates}
+                                disabled={createOrderMutation.isPending}
+                              >
+                                <X className="h-4 w-4 mr-2" />
+                                Discard
+                              </Button>
+                            </div>
+                          </div>
+                        )}
 
                         <Form {...form}>
                           <form

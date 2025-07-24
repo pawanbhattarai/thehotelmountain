@@ -54,6 +54,16 @@ A comprehensive restaurant management system built with Node.js, Express, React,
   - Now shows proper total amount and item count across multiple orders for each reservation
   - Enhanced display to show order count when multiple orders exist (e.g., "3 Orders (Latest: #RM58202979)")
   - Fixed both server-side dish name flattening and frontend cumulative calculations
+- **Deferred Update System Implementation**: Optimized Order Summary efficiency with batch updates
+  - Problem: Every quantity change triggered immediate API calls, causing server load and poor UX
+  - Root cause: Direct database updates on each +/- button click led to excessive API requests
+  - Solution: Implemented deferred update system with local staging and explicit commit actions
+  - Changes are staged locally with visual feedback showing pending modifications
+  - Users see orange notification banner with unsaved change count
+  - "Update Orders" button applies all changes in single batch API call
+  - "Discard" button resets all pending changes without database impact
+  - Significant performance improvement and reduced server load
+  - Better user control over when changes are actually committed
 - **Previous Fixes Maintained**:
   - Order System: Single bill per table until checkout
   - Bill Printing: Complete item details display

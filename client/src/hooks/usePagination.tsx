@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 
 interface UsePaginationProps {
   data: any[];
@@ -44,7 +44,7 @@ export function usePagination({
   );
 
   // Reset to first page when search term changes
-  useEffect(() => {
+  useMemo(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 

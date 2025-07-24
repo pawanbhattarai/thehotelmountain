@@ -945,8 +945,7 @@ export default function Settings() {
                         <div className="space-y-2">
                           <Label htmlFor="printerPaperHeight">
                             Paper Height
-                          </Label>
-                          <Input
+                          </Label><Input
                             id="printerPaperHeight"
                             {...form.register("printerPaperHeight")}
                             placeholder="auto or 297mm"
@@ -1023,7 +1022,7 @@ export default function Settings() {
                         <p className="text-sm text-muted-foreground">
                           Configure KOT (Kitchen Order Ticket) and BOT (Beverage Order Ticket) network thermal printers
                         </p>
-                        
+
                         <PrinterConfigurationSection />
                       </div>
                     </CardContent>
@@ -1227,8 +1226,12 @@ function PrinterConfigurationSection() {
               </div>
             </div>
           </CardHeader>
-          <CardContent className="pt-0">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          
+<CardContent className="space-y-2">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="font-medium">Name:</span> {config.printerName}
+              </div>
               <div>
                 <span className="font-medium">IP Address:</span> {config.ipAddress}
               </div>
@@ -1236,18 +1239,20 @@ function PrinterConfigurationSection() {
                 <span className="font-medium">Port:</span> {config.port}
               </div>
               <div>
-                <span className="font-medium">Direct Print:</span>{" "}
-                {config.directPrint ? "Enabled" : "Disabled"}
+                <span className="font-medium">Paper Width:</span> {config.paperWidth}mm
+              </div>
+              <div>
+                <span className="font-medium">Status:</span>{" "}
+                {config.isEnabled ? "Enabled" : "Disabled"}
+              </div>
+              <div>
+                <span className="font-medium">Auto Print:</span>{" "}
+                {config.autoDirectPrint ? "Yes" : "No"}
               </div>
             </div>
-            {config.lastTestPrint && (
-              <div className="mt-2 text-xs text-muted-foreground">
-                Last tested: {new Date(config.lastTestPrint).toLocaleString()}
-              </div>
-            )}
             {config.errorMessage && (
-              <div className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded">
-                {config.errorMessage}
+              <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                <span className="font-medium">Error:</span> {config.errorMessage}
               </div>
             )}
           </CardContent>
@@ -1331,84 +1336,158 @@ function PrinterConfigForm({
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="printerType">Printer Type *</Label>
-              <Select
-                value={formData.printerType}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, printerType: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select printer type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          
+<div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="printerType">Printer Type</Label>
+                  <Select
+                    value={formData.printerType}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, printerType: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select printer type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="ipAddress">IP Address *</Label>
-              <Input
-                id="ipAddress"
-                value={formData.ipAddress}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, ipAddress: e.target.value }))
-                }
-                placeholder="192.168.1.100"
-                required
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="printerName">Printer Name</Label>
+                  <Input
+                    id="printerName"
+                    type="text"
+                    value={formData.printerName}
+                    onChange={(e) =>
+                      setFormData({ ...formData, printerName: e.target.value })
+                    }
+                    placeholder="Kitchen Printer 1"
+                    required
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="port">Port</Label>
-              <Input
-                id="port"
-                type="number"
-                value={formData.port}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, port: parseInt(e.target.value) || 9100 }))
-                }
-                placeholder="9100"
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ipAddress">IP Address</Label>
+                  <Input
+                    id="ipAddress"
+                    type="text"
+                    value={formData.ipAddress}
+                    onChange={(e) =>
+                      setFormData({ ...formData, ipAddress: e.target.value })
+                    }
+                    placeholder="192.168.1.100"
+                    required
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="connectionTimeout">Timeout (ms)</Label>
-              <Input
-                id="connectionTimeout"
-                type="number"
-                value={formData.connectionTimeout}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    connectionTimeout: parseInt(e.target.value) || 5000,
-                  }))
-                }
-                placeholder="5000"
-              />
-            </div>
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="port">Port</Label>
+                  <Input
+                    id="port"
+                    type="number"
+                    value={formData.port}
+                    onChange={(e) =>
+                      setFormData({ ...formData, port: parseInt(e.target.value) || 9100 })
+                    }
+                    placeholder="9100"
+                  />
+                </div>
 
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="directPrint"
-              checked={formData.directPrint}
-              onCheckedChange={(checked) =>
-                setFormData((prev) => ({ ...prev, directPrint: checked }))
-              }
-            />
-            <Label htmlFor="directPrint" className="text-sm">
-              Enable direct printing (automatically print when KOT/BOT is generated)
-            </Label>
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="paperWidth">Paper Width (mm)</Label>
+                  <Input
+                    id="paperWidth"
+                    type="number"
+                    value={formData.paperWidth}
+                    onChange={(e) =>
+                      setFormData({ ...formData, paperWidth: parseInt(e.target.value) || 80 })
+                    }
+                    placeholder="80"
+                  />
+                </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="connectionTimeout">Connection Timeout (ms)</Label>
+                  <Input
+                    id="connectionTimeout"
+                    type="number"
+                    value={formData.connectionTimeout}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        connectionTimeout: parseInt(e.target.value) || 5000,
+                      })
+                    }
+                    placeholder="5000"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="retryAttempts">Retry Attempts</Label>
+                  <Input
+                    id="retryAttempts"
+                    type="number"
+                    value={formData.retryAttempts}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        retryAttempts: parseInt(e.target.value) || 3,
+                      })
+                    }
+                    placeholder="3"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="characterEncoding">Character Encoding</Label>
+                  <Select
+                    value={formData.characterEncoding}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, characterEncoding: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="UTF-8">UTF-8</SelectItem>
+                      <SelectItem value="ASCII">ASCII</SelectItem>
+                      <SelectItem value="ISO-8859-1">ISO-8859-1</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="isEnabled"
+                    checked={formData.isEnabled}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, isEnabled: checked })
+                    }
+                  />
+                  <Label htmlFor="isEnabled">Enable Printer</Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="autoDirectPrint"
+                    checked={formData.autoDirectPrint}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, autoDirectPrint: checked })
+                    }
+                  />
+                  <Label htmlFor="autoDirectPrint">Auto Direct Print</Label>
+                </div>
+              </div>
           <div className="bg-blue-50 p-3 rounded-lg text-sm">
             <p className="font-medium text-blue-900 mb-1">Network Printer Setup:</p>
             <ul className="text-blue-800 space-y-1 text-xs">

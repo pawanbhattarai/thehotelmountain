@@ -42,6 +42,7 @@ import {
   insertStockConsumptionSchema,
   insertDishIngredientSchema,
   insertPrinterConfigurationSchema,
+  printerConfigurations,
 } from "@shared/schema";
 import { QRService } from "./qr-service";
 import { uploadIdDocument } from "./fileUpload";
@@ -3654,6 +3655,219 @@ export async function registerRoutes(app: Express): Promise<Server> {
         details:
           process.env.NODE_ENV === "development" ? error?.stack : undefined,
       });
+    }
+  });
+
+  // Printer Configuration Routes
+  app.get("/api/printer-configurations", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.session.user.id);
+      if (!user) return res.status(401).json({ message: "User not found" });
+
+      const branchId = user.role === "superadmin" ? undefined : user.branchId!;
+      const configurations = await db
+        .select()
+        .from(printerConfigurations)
+        .where(branchId ? eq(printerConfigurations.branchId, branchId) : undefined)
+        .orderBy(printerConfigurations.printerType);
+
+      res.json(configurations);
+    } catch (error) {
+      console.error("Error fetching printer configurations:", error);
+      res.status(500).json({ message: "Failed to fetch printer configurations" });
+    }
+  });
+
+  app.post("/api/printer-configurations", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.session.user.id);
+      if (!user) return res.status(401).json({ message: "User not found" });
+
+      const configData = insertPrinterConfigurationSchema.parse({
+        ...req.body,
+        branchId: user.role === "superadmin" ? req.body.branchId || user.branchId : user.branchId,
+      });
+
+      if (
+        !checkBranchPermissions(user.role, user.branchId, configData.branchId)
+      ) {
+        return res
+          .status(403)
+          .json({ message: "Insufficient permissions for this branch" });
+      }
+
+      const configuration = await db
+        .insert(printerConfigurations)
+        .values(configData)
+        .returning();
+
+      res.status(201).json(configuration[0]);
+    } catch (error) {
+      console.error("Error creating printer configuration:", error);
+      res.status(500).json({ message: "Failed to create printer configuration" });
+    }
+  });
+
+  app.put("/api/printer-configurations/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.session.user.id);
+      if (!user) return res.status(401).json({ message: "User not found" });
+
+      const configId = parseInt(req.params.id);
+      const configData = insertPrinterConfigurationSchema.partial().parse(req.body);
+
+      const existingConfig = await db
+        .select()
+        .from(printerConfigurations)
+        .where(eq(printerConfigurations.id, configId))
+        .limit(1);
+
+      if (!existingConfig.length) {
+        return res.status(404).json({ message: "Printer configuration not found" });
+      }
+
+      if (
+        !checkBranchPermissions(user.role, user.branchId, existingConfig[0].branchId)
+      ) {
+        return res
+          .status(403)
+          .json({ message: "Insufficient permissions for this configuration" });
+      }
+
+      const [updatedConfig] = await db
+        .update(printerConfigurations)
+        .set({ ...configData, updatedAt: sql`NOW()` })
+        .where(eq(printerConfigurations.id, configId))
+        .returning();
+
+      res.json(updatedConfig);
+    } catch (error) {
+      console.error("Error updating printer configuration:", error);
+      res.status(500).json({ message: "Failed to update printer configuration" });
+    }
+  });
+
+  app.delete("/api/printer-configurations/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.session.user.id);
+      if (!user) return res.status(401).json({ message: "User not found" });
+
+      const configId = parseInt(req.params.id);
+
+      const existingConfig = await db
+        .select()
+        .from(printerConfigurations)
+        .where(eq(printerConfigurations.id, configId))
+        .limit(1);
+
+      if (!existingConfig.length) {
+        return res.status(404).json({ message: "Printer configuration not found" });
+      }
+
+      if (
+        !checkBranchPermissions(user.role, user.branchId, existingConfig[0].branchId)
+      ) {
+        return res
+          .status(403)
+          .json({ message: "Insufficient permissions for this configuration" });
+      }
+
+      await db
+        .delete(printerConfigurations)
+        .where(eq(printerConfigurations.id, configId));
+
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting printer configuration:", error);
+      res.status(500).json({ message: "Failed to delete printer configuration" });
+    }
+  });
+
+  app.post("/api/printer-configurations/:id/test", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.session.user.id);
+      if (!user) return res.status(401).json({ message: "User not found" });
+
+      const configId = parseInt(req.params.id);
+
+      const existingConfig = await db
+        .select()
+        .from(printerConfigurations)
+        .where(eq(printerConfigurations.id, configId))
+        .limit(1);
+
+      if (!existingConfig.length) {
+        return res.status(404).json({ message: "Printer configuration not found" });
+      }
+
+      if (
+        !checkBranchPermissions(user.role, user.branchId, existingConfig[0].branchId)
+      ) {
+        return res
+          .status(403)
+          .json({ message: "Insufficient permissions for this configuration" });
+      }
+
+      const config = existingConfig[0];
+
+      // Test printer connection
+      try {
+        const net = await import("net");
+        const client = new net.Socket();
+        
+        const testConnection = new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            client.destroy();
+            reject(new Error("Connection timeout"));
+          }, config.connectionTimeout || 5000);
+
+          client.connect(config.port || 9100, config.ipAddress, () => {
+            clearTimeout(timeout);
+            client.destroy();
+            resolve(true);
+          });
+
+          client.on("error", (err) => {
+            clearTimeout(timeout);
+            client.destroy();
+            reject(err);
+          });
+        });
+
+        await testConnection;
+
+        // Update connection status
+        await db
+          .update(printerConfigurations)
+          .set({
+            connectionStatus: "connected",
+            lastTestPrint: sql`NOW()`,
+            errorMessage: null,
+            updatedAt: sql`NOW()`
+          })
+          .where(eq(printerConfigurations.id, configId));
+
+        res.json({ success: true, message: "Printer connection successful" });
+      } catch (error: any) {
+        // Update connection status with error
+        await db
+          .update(printerConfigurations)
+          .set({
+            connectionStatus: "error",
+            errorMessage: error.message,
+            updatedAt: sql`NOW()`
+          })
+          .where(eq(printerConfigurations.id, configId));
+
+        res.json({ 
+          success: false, 
+          error: error.message || "Connection failed",
+          message: "Failed to connect to printer"
+        });
+      }
+    } catch (error) {
+      console.error("Error testing printer connection:", error);
+      res.status(500).json({ message: "Failed to test printer connection" });
     }
   });
 

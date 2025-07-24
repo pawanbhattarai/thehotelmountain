@@ -195,7 +195,15 @@ export default function RestaurantOrders() {
 
   // New mutation for updating existing orders (handles deletions)
   const updateOrderMutation = useMutation({
-    mutationFn: async ({ orderId, order, items }: { orderId: string; order: any; items: any[] }) => {
+    mutationFn: async ({
+      orderId,
+      order,
+      items,
+    }: {
+      orderId: string;
+      order: any;
+      items: any[];
+    }) => {
       const response = await fetch(`/api/restaurant/orders/${orderId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -464,7 +472,7 @@ export default function RestaurantOrders() {
       // Recalculate totals based on all items (not just new ones)
       const fullSubtotal = calculateSubtotal();
       let fullTaxAmount = 0;
-      
+
       if (orderTaxes) {
         for (const tax of orderTaxes) {
           fullTaxAmount += (fullSubtotal * parseFloat(tax.rate)) / 100;
@@ -546,7 +554,7 @@ export default function RestaurantOrders() {
 
     // Check if the same dish already exists in the current order (not including existing items from previous orders)
     const existingItemIndex = selectedItems.findIndex(
-      (item) => item.dishId === dish.id && !item.isExistingItem
+      (item) => item.dishId === dish.id && !item.isExistingItem,
     );
 
     if (existingItemIndex >= 0) {
@@ -848,9 +856,9 @@ export default function RestaurantOrders() {
               )}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Menu Selection */}
-              <div className="lg:col-span-2">
+              <div className="md:col-span-2">
                 <Card>
                   <CardHeader>
                     <div className="space-y-3">
@@ -1193,7 +1201,7 @@ export default function RestaurantOrders() {
         />
         <main className="p-6">
           {/* Tables Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-4 gap-6">
             {tables?.map((table: any) => {
               const tableOrder = getTableOrder(table.id);
               const isOccupied = !!tableOrder;

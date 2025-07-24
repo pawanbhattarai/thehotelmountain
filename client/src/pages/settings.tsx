@@ -1308,11 +1308,15 @@ function PrinterConfigForm({
 }) {
   const [formData, setFormData] = useState({
     printerType: config.printerType || "",
+    printerName: config.printerName || "",
     ipAddress: config.ipAddress || "",
     port: config.port || 9100,
-    directPrint: config.directPrint || false,
+    paperWidth: config.paperWidth || 80,
     connectionTimeout: config.connectionTimeout || 5000,
-    ...config,
+    retryAttempts: config.retryAttempts || 3,
+    characterEncoding: config.characterEncoding || "UTF-8",
+    isEnabled: config.isEnabled !== undefined ? config.isEnabled : true,
+    autoDirectPrint: config.autoDirectPrint || false,
   });
 
   const availableTypes = printerTypes.filter(
@@ -1321,9 +1325,15 @@ function PrinterConfigForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.printerType || !formData.ipAddress) {
+    if (!formData.printerType || !formData.printerName || !formData.ipAddress) {
+      console.error("Missing required fields:", {
+        printerType: formData.printerType,
+        printerName: formData.printerName,
+        ipAddress: formData.ipAddress
+      });
       return;
     }
+    console.log("Submitting printer config:", formData);
     onSave(formData);
   };
 
@@ -1341,7 +1351,7 @@ function PrinterConfigForm({
                 <div className="space-y-2">
                   <Label htmlFor="printerType">Printer Type</Label>
                   <Select
-                    value={formData.printerType}
+                    value={formData.printerType || ""}
                     onValueChange={(value) =>
                       setFormData({ ...formData, printerType: value })
                     }
@@ -1364,7 +1374,7 @@ function PrinterConfigForm({
                   <Input
                     id="printerName"
                     type="text"
-                    value={formData.printerName}
+                    value={formData.printerName || ""}
                     onChange={(e) =>
                       setFormData({ ...formData, printerName: e.target.value })
                     }
@@ -1378,7 +1388,7 @@ function PrinterConfigForm({
                   <Input
                     id="ipAddress"
                     type="text"
-                    value={formData.ipAddress}
+                    value={formData.ipAddress || ""}
                     onChange={(e) =>
                       setFormData({ ...formData, ipAddress: e.target.value })
                     }
@@ -1392,7 +1402,7 @@ function PrinterConfigForm({
                   <Input
                     id="port"
                     type="number"
-                    value={formData.port}
+                    value={formData.port || 9100}
                     onChange={(e) =>
                       setFormData({ ...formData, port: parseInt(e.target.value) || 9100 })
                     }
@@ -1405,7 +1415,7 @@ function PrinterConfigForm({
                   <Input
                     id="paperWidth"
                     type="number"
-                    value={formData.paperWidth}
+                    value={formData.paperWidth || 80}
                     onChange={(e) =>
                       setFormData({ ...formData, paperWidth: parseInt(e.target.value) || 80 })
                     }
@@ -1418,7 +1428,7 @@ function PrinterConfigForm({
                   <Input
                     id="connectionTimeout"
                     type="number"
-                    value={formData.connectionTimeout}
+                    value={formData.connectionTimeout || 5000}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
@@ -1434,7 +1444,7 @@ function PrinterConfigForm({
                   <Input
                     id="retryAttempts"
                     type="number"
-                    value={formData.retryAttempts}
+                    value={formData.retryAttempts || 3}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
@@ -1448,7 +1458,7 @@ function PrinterConfigForm({
                 <div className="space-y-2">
                   <Label htmlFor="characterEncoding">Character Encoding</Label>
                   <Select
-                    value={formData.characterEncoding}
+                    value={formData.characterEncoding || "UTF-8"}
                     onValueChange={(value) =>
                       setFormData({ ...formData, characterEncoding: value })
                     }

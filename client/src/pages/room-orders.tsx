@@ -1193,45 +1193,6 @@ export default function RoomOrders() {
                           })()}
                         </div>
 
-                        {/* Update/Discard buttons for pending changes */}
-                        {hasUnsavedChanges && (
-                          <div className="border-t pt-4 space-y-2">
-                            <div className="flex items-center justify-between text-sm text-orange-600 bg-orange-50 p-3 rounded-lg mb-3">
-                              <div className="flex items-center">
-                                <AlertCircle className="h-4 w-4 mr-2" />
-                                <span>You have {pendingUpdates.size} unsaved change(s)</span>
-                              </div>
-                            </div>
-                            <div className="flex space-x-2">
-                              <Button 
-                                onClick={applyPendingUpdates}
-                                className="flex-1"
-                                disabled={createOrderMutation.isPending}
-                              >
-                                {createOrderMutation.isPending ? (
-                                  <div className="flex items-center">
-                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                                    Updating...
-                                  </div>
-                                ) : (
-                                  <>
-                                    <Save className="h-4 w-4 mr-2" />
-                                    Update Orders
-                                  </>
-                                )}
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                onClick={discardPendingUpdates}
-                                disabled={createOrderMutation.isPending}
-                              >
-                                <X className="h-4 w-4 mr-2" />
-                                Discard
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-
                         <Form {...form}>
                           <form
                             onSubmit={form.handleSubmit(onSubmit)}
@@ -1254,45 +1215,78 @@ export default function RoomOrders() {
                                 </FormItem>
                               )}
                             />
-                            <Button
-                              type="submit"
-                              className="w-full"
-                              disabled={
-                                createOrderMutation.isPending ||
-                                (() => {
-                                  // Check if there are any valid items (existing + new - deleted)
-                                  const allExistingItems = selectedReservation ? getAllReservationItems(selectedReservation.id) : [];
-                                  const itemsMap = new Map();
 
-                                  // Add existing items
-                                  allExistingItems.forEach((item) => {
-                                    itemsMap.set(item.dishId, { quantity: item.quantity });
-                                  });
-
-                                  // Apply modifications
-                                  selectedItems.forEach((selectedItem) => {
-                                    if (selectedItem.markedForDeletion) {
-                                      itemsMap.delete(selectedItem.dishId);
-                                    } else {
-                                      itemsMap.set(selectedItem.dishId, { quantity: selectedItem.quantity });
-                                    }
-                                  });
-
-                                  // Count valid items
-                                  const validItemsCount = Array.from(itemsMap.values()).filter(item => item.quantity > 0).length;
-                                  return validItemsCount === 0;
-                                })()
-                              }
-                            >
-                              {createOrderMutation.isPending ? (
-                                <div className="flex items-center">
-                                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                                  Creating...
+                            {/* Smart Update Order Button */}
+                            <div className="space-y-3">
+                              {(hasUnsavedChanges || selectedItems.length > 0) && (
+                                <div className="flex items-center justify-between text-sm text-blue-600 bg-blue-50 p-3 rounded-lg">
+                                  <div className="flex items-center">
+                                    <AlertCircle className="h-4 w-4 mr-2" />
+                                    <span>
+                                      {hasUnsavedChanges && selectedItems.length > 0
+                                        ? `${pendingUpdates.size} pending change(s) + ${selectedItems.length} new item(s)`
+                                        : hasUnsavedChanges
+                                        ? `${pendingUpdates.size} pending change(s)`
+                                        : `${selectedItems.length} new item(s)`}
+                                    </span>
+                                  </div>
                                 </div>
-                              ) : (
-                                "Create New Order"
                               )}
-                            </Button>
+
+                              <div className="flex space-x-2">
+                                <Button
+                                  type="button"
+                                  onClick={async () => {
+                                    // Handle both pending updates and new orders
+                                    if (hasUnsavedChanges) {
+                                      await applyPendingUpdates();
+                                    }
+                                    
+                                    // If there are new items, create a new order
+                                    if (selectedItems.length > 0) {
+                                      form.handleSubmit(onSubmit)();
+                                    }
+                                  }}
+                                  className="flex-1"
+                                  disabled={
+                                    createOrderMutation.isPending ||
+                                    (!hasUnsavedChanges && selectedItems.length === 0)
+                                  }
+                                >
+                                  {createOrderMutation.isPending ? (
+                                    <div className="flex items-center">
+                                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                                      Updating...
+                                    </div>
+                                  ) : (
+                                    <>
+                                      <Save className="h-4 w-4 mr-2" />
+                                      Update Order
+                                    </>
+                                  )}
+                                </Button>
+
+                                {(hasUnsavedChanges || selectedItems.length > 0) && (
+                                  <Button 
+                                    type="button"
+                                    variant="outline" 
+                                    onClick={() => {
+                                      if (hasUnsavedChanges) {
+                                        discardPendingUpdates();
+                                      }
+                                      if (selectedItems.length > 0) {
+                                        setSelectedItems([]);
+                                        form.reset();
+                                      }
+                                    }}
+                                    disabled={createOrderMutation.isPending}
+                                  >
+                                    <X className="h-4 w-4 mr-2" />
+                                    Reset
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
                           </form>
                         </Form>
                       </>

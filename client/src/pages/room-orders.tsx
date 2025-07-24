@@ -950,114 +950,113 @@ export default function RoomOrders() {
                       </div>
                     ) : (
                       <>
-                        <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
-                          {/* Show ALL previous order items for this reservation - NOW EDITABLE */}
-                          {selectedReservation && getAllReservationItems(selectedReservation.id).map((item, index) => (
-                            <div
-                              key={`all-items-${item.dishId}`}
-                              className="flex items-center justify-between p-2 bg-blue-50 rounded border-l-4 border-blue-400"
-                            >
-                              <div className="flex-1">
-                                <h4 className="font-medium text-sm">
-                                  {item.dishName}
-                                </h4>
-                                <p className="text-xs text-gray-600">
-                                  {currencySymbol} {item.unitPrice} each
-                                </p>
-                                <p className="text-xs text-blue-600 font-medium">
-                                  Previous Orders
-                                </p>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => updatePreviousOrderItem(item.dishId, item.quantity - 1)}
-                                  className="h-6 w-6 p-0"
-                                >
-                                  <Minus className="h-3 w-3" />
-                                </Button>
-                                <span className="w-6 text-center text-sm">
-                                  {item.quantity}
-                                </span>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => updatePreviousOrderItem(item.dishId, item.quantity + 1)}
-                                  className="h-6 w-6 p-0"
-                                >
-                                  <Plus className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => removePreviousOrderItem(item.dishId)}
-                                  className="h-6 w-6 p-0 text-red-500"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
+                        {/* Table-style order summary */}
+                        <div className="border rounded-lg overflow-hidden mb-4">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="w-[40%]">Item</TableHead>
+                                <TableHead className="w-[20%] text-center">Price</TableHead>
+                                <TableHead className="w-[25%] text-center">Quantity</TableHead>
+                                <TableHead className="w-[15%] text-center">Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {/* Show ALL previous order items for this reservation */}
+                              {selectedReservation && getAllReservationItems(selectedReservation.id).map((item, index) => (
+                                <TableRow key={`prev-${item.dishId}`}>
+                                  <TableCell>
+                                    <div>
+                                      <div className="font-medium text-sm">{item.dishName}</div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center text-sm">
+                                    {currencySymbol} {item.unitPrice}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center justify-center space-x-1">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => updatePreviousOrderItem(item.dishId, item.quantity - 1)}
+                                        className="h-6 w-6 p-0"
+                                      >
+                                        <Minus className="h-3 w-3" />
+                                      </Button>
+                                      <span className="w-8 text-center text-sm font-medium">
+                                        {item.quantity}
+                                      </span>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => updatePreviousOrderItem(item.dishId, item.quantity + 1)}
+                                        className="h-6 w-6 p-0"
+                                      >
+                                        <Plus className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => removePreviousOrderItem(item.dishId)}
+                                      className="h-6 w-6 p-0 text-red-500"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
 
-                          {/* Show current order items being edited */}
-                          {selectedItems.map((item, index) => (
-                            <div
-                              key={`current-${item.dishId}`}
-                              className="flex items-center justify-between p-2 bg-green-50 rounded border-l-4 border-green-400"
-                            >
-                              <div className="flex-1">
-                                <h4 className="font-medium text-sm">
-                                  {item.dishName}
-                                </h4>
-                                <p className="text-xs text-gray-600">
-                                  {currencySymbol} {item.unitPrice} each
-                                </p>
-                                <p className="text-xs text-green-600 font-medium">
-                                  Current Order
-                                </p>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() =>
-                                    updateItemQuantity(
-                                      item.dishId,
-                                      item.quantity - 1
-                                    )
-                                  }
-                                  className="h-6 w-6 p-0"
-                                >
-                                  <Minus className="h-3 w-3" />
-                                </Button>
-                                <span className="w-6 text-center text-sm">
-                                  {item.quantity}
-                                </span>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() =>
-                                    updateItemQuantity(
-                                      item.dishId,
-                                      item.quantity + 1
-                                    )
-                                  }
-                                  className="h-6 w-6 p-0"
-                                >
-                                  <Plus className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => removeItemFromOrder(item.dishId)}
-                                  className="h-6 w-6 p-0 text-red-500"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
+                              {/* Show current order items being edited */}
+                              {selectedItems.map((item, index) => (
+                                <TableRow key={`new-${item.dishId}`}>
+                                  <TableCell>
+                                    <div>
+                                      <div className="font-medium text-sm">{item.dishName}</div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center text-sm">
+                                    {currencySymbol} {item.unitPrice}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center justify-center space-x-1">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => updateItemQuantity(item.dishId, item.quantity - 1)}
+                                        className="h-6 w-6 p-0"
+                                      >
+                                        <Minus className="h-3 w-3" />
+                                      </Button>
+                                      <span className="w-8 text-center text-sm font-medium">
+                                        {item.quantity}
+                                      </span>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => updateItemQuantity(item.dishId, item.quantity + 1)}
+                                        className="h-6 w-6 p-0"
+                                      >
+                                        <Plus className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => removeItemFromOrder(item.dishId)}
+                                      className="h-6 w-6 p-0 text-red-500"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
                         </div>
 
                         
@@ -1089,25 +1088,9 @@ export default function RoomOrders() {
 
                             return (
                               <>
-                                {/* Show breakdown if there are previous orders */}
-                                {previousOrdersTotal > 0 && (
-                                  <div className="flex justify-between text-sm text-blue-600">
-                                    <span>Previous Orders ({allItems.length} items):</span>
-                                    <span>{currencySymbol} {previousOrdersTotal.toFixed(2)}</span>
-                                  </div>
-                                )}
-
-                                {/* Show current order if any */}
-                                {currentOrderTotal > 0 && (
-                                  <div className="flex justify-between text-sm text-green-600">
-                                    <span>Current Order ({selectedItems.length} items):</span>
-                                    <span>{currencySymbol} {currentOrderTotal.toFixed(2)}</span>
-                                  </div>
-                                )}
-
-                                {/* Show combined subtotal */}
-                                <div className="flex justify-between text-sm font-medium border-t pt-2">
-                                  <span>Combined Subtotal ({totalItemCount} items):</span>
+                                {/* Show subtotal */}
+                                <div className="flex justify-between text-sm font-medium">
+                                  <span>Subtotal ({totalItemCount} items):</span>
                                   <span>{currencySymbol} {allItemsTotal.toFixed(2)}</span>
                                 </div>
 

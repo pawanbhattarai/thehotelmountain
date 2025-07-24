@@ -283,15 +283,6 @@ export default function RoomOrders() {
 
     const existingOrder = getReservationOrder(selectedReservation.id);
 
-    if (selectedItems.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please add at least one item to the order",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!selectedReservation) {
       toast({
         title: "Error",
@@ -319,70 +310,32 @@ export default function RoomOrders() {
       branchId = user?.branchId || 1;
     }
 
-    // Determine if we need complete update or partial update
-    const useCompleteUpdate = existingOrder && needsCompleteUpdate();
-    let itemsToSubmit = selectedItems;
-    let subtotalForCalculation = 0;
+    // For existing orders, always use complete update to handle all changes properly
+    const useCompleteUpdate = !!existingOrder;
+    
+    // Filter out items marked for deletion and items with 0 quantity
+    const finalItems = selectedItems.filter(item => !item.markedForDeletion && item.quantity > 0);
 
-    if (useCompleteUpdate) {
-      // Complete update: send all current items (handles deletions and modifications)
-      itemsToSubmit = selectedItems;
-      subtotalForCalculation = calculateSubtotal();
-      console.log("Using COMPLETE UPDATE mode - sending all items");
-    } else if (existingOrder) {
-      // Partial update: only send new items or items with increased quantity
-      itemsToSubmit = selectedItems.filter((item) => {
-        const originalItem = originalItems.find(
-          (orig) => orig.dishId === item.dishId
-        );
-
-        if (!originalItem) {
-          // This is a completely new item
-          subtotalForCalculation += parseFloat(item.unitPrice) * item.quantity;
-          return true;
-        } else if (item.quantity > originalItem.quantity) {
-          // This item has increased quantity, only submit the difference
-          const additionalQuantity = item.quantity - originalItem.quantity;
-          subtotalForCalculation += parseFloat(item.unitPrice) * additionalQuantity;
-          return true;
-        }
-
-        return false; // Don't submit unchanged items
-      });
-
-      // For items with increased quantity, adjust the quantity to only the difference
-      itemsToSubmit = itemsToSubmit.map((item) => {
-        const originalItem = originalItems.find(
-          (orig) => orig.dishId === item.dishId
-        );
-
-        if (originalItem && item.quantity > originalItem.quantity) {
-          const additionalQuantity = item.quantity - originalItem.quantity;
-          return {
-            ...item,
-            quantity: additionalQuantity
-          };
-        }
-
-        return item;
-      });
-      console.log("Using PARTIAL UPDATE mode - sending only new/increased items");
-    } else {
-      // New order: calculate full subtotal
-      subtotalForCalculation = calculateSubtotal();
-      console.log("Creating NEW ORDER");
-    }
-
-    if (existingOrder && !useCompleteUpdate && itemsToSubmit.length === 0) {
+    if (finalItems.length === 0 && !existingOrder) {
       toast({
-        title: "No new items",
-        description: "No new items to add to the existing order",
-        variant: "default",
+        title: "Error",
+        description: "Please add at least one item to the order",
+        variant: "destructive",
       });
       return;
     }
 
-    // Calculate taxes dynamically on new items only
+    // Calculate subtotal from final items
+    const subtotalForCalculation = finalItems.reduce(
+      (sum, item) => sum + parseFloat(item.unitPrice) * item.quantity,
+      0
+    );
+
+    console.log("Using", useCompleteUpdate ? "COMPLETE UPDATE" : "NEW ORDER", "mode");
+    console.log("Final items count:", finalItems.length);
+    console.log("Subtotal:", subtotalForCalculation);
+
+    // Calculate taxes
     let totalTaxAmount = 0;
     const appliedTaxes = [];
 
@@ -416,7 +369,7 @@ export default function RoomOrders() {
       status: "pending",
     };
 
-    const itemsData = itemsToSubmit.map((item) => ({
+    const itemsData = finalItems.map((item) => ({
       dishId: item.dishId,
       quantity: item.quantity,
       unitPrice: parseFloat(item.unitPrice).toFixed(2),
@@ -425,9 +378,8 @@ export default function RoomOrders() {
     }));
 
     console.log("Submitting room order:", { order: orderData, items: itemsData });
-    console.log("Items to submit:", itemsToSubmit);
+    console.log("Items to submit:", finalItems);
     console.log("Existing order:", existingOrder ? "Yes" : "No");
-    console.log("Update mode:", useCompleteUpdate ? "COMPLETE" : "PARTIAL");
 
     createOrderMutation.mutate({ 
       order: orderData, 
@@ -509,25 +461,26 @@ export default function RoomOrders() {
     const unitPrice = dish?.price || "0.00";
 
     // Check if this item already exists in selectedItems
-    const existingSelectedItem = selectedItems.find(item => item.dishId === dishId);
+    const existingSelectedItemIndex = selectedItems.findIndex(item => item.dishId === dishId);
     
-    if (existingSelectedItem) {
+    if (existingSelectedItemIndex >= 0) {
       // Update existing selected item
-      setSelectedItems(prev => prev.map(item => 
-        item.dishId === dishId 
+      setSelectedItems(prev => prev.map((item, index) => 
+        index === existingSelectedItemIndex
           ? { ...item, quantity, markedForDeletion: false }
           : item
       ));
     } else {
       // Add new item to selectedItems
-      setSelectedItems(prev => [...prev, {
+      const newItem = {
         dishId,
         dishName,
         quantity,
         unitPrice,
         notes: "",
         markedForDeletion: false
-      }]);
+      };
+      setSelectedItems(prev => [...prev, newItem]);
     }
   };
 
@@ -538,10 +491,10 @@ export default function RoomOrders() {
     
     if (existsInPreviousOrders) {
       // Mark for deletion if it exists in previous orders
-      const existingSelectedItem = selectedItems.find(item => item.dishId === dishId);
-      if (existingSelectedItem) {
-        setSelectedItems(prev => prev.map(item => 
-          item.dishId === dishId 
+      const existingSelectedItemIndex = selectedItems.findIndex(item => item.dishId === dishId);
+      if (existingSelectedItemIndex >= 0) {
+        setSelectedItems(prev => prev.map((item, index) => 
+          index === existingSelectedItemIndex
             ? { ...item, quantity: 0, markedForDeletion: true }
             : item
         ));
@@ -549,18 +502,19 @@ export default function RoomOrders() {
         // Find the item details from previous orders
         const previousItem = getAllReservationItems(selectedReservation.id).find(item => item.dishId === dishId);
         if (previousItem) {
-          setSelectedItems(prev => [...prev, {
+          const markedItem = {
             dishId,
             dishName: previousItem.dishName || previousItem.dish?.name || `Dish ${dishId}`,
             quantity: 0,
             unitPrice: previousItem.unitPrice,
             notes: previousItem.specialInstructions || "",
             markedForDeletion: true
-          }]);
+          };
+          setSelectedItems(prev => [...prev, markedItem]);
         }
       }
     } else {
-      // Remove completely if it's a new item
+      // Remove completely if it's a new item (not in previous orders)
       setSelectedItems(prev => prev.filter(item => item.dishId !== dishId));
     }
   };

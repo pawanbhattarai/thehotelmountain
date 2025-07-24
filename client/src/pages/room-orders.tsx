@@ -962,99 +962,106 @@ export default function RoomOrders() {
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {/* Show ALL previous order items for this reservation */}
-                              {selectedReservation && getAllReservationItems(selectedReservation.id).map((item, index) => (
-                                <TableRow key={`prev-${item.dishId}`}>
-                                  <TableCell>
-                                    <div>
-                                      <div className="font-medium text-sm">{item.dishName}</div>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-center text-sm">
-                                    {currencySymbol} {item.unitPrice}
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex items-center justify-center space-x-1">
+                              {(() => {
+                                // Consolidate all items (previous orders + current editing) into one list
+                                const consolidatedItems = new Map();
+                                
+                                // Add previous order items
+                                if (selectedReservation) {
+                                  const previousItems = getAllReservationItems(selectedReservation.id);
+                                  previousItems.forEach((item) => {
+                                    consolidatedItems.set(item.dishId, {
+                                      ...item,
+                                      isFromPreviousOrder: true
+                                    });
+                                  });
+                                }
+                                
+                                // Add/update with current editing items
+                                selectedItems.forEach((item) => {
+                                  const existing = consolidatedItems.get(item.dishId);
+                                  if (existing) {
+                                    // Update existing item with current editing values
+                                    consolidatedItems.set(item.dishId, {
+                                      ...existing,
+                                      quantity: item.quantity,
+                                      notes: item.notes || existing.notes,
+                                      isFromPreviousOrder: false, // Now being edited
+                                      dishName: item.dishName || existing.dishName
+                                    });
+                                  } else {
+                                    // Add new item
+                                    consolidatedItems.set(item.dishId, {
+                                      ...item,
+                                      isFromPreviousOrder: false
+                                    });
+                                  }
+                                });
+                                
+                                return Array.from(consolidatedItems.values()).map((item) => (
+                                  <TableRow key={item.dishId}>
+                                    <TableCell>
+                                      <div>
+                                        <div className="font-medium text-sm">{item.dishName}</div>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-center text-sm">
+                                      {currencySymbol} {item.unitPrice}
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="flex items-center justify-center space-x-1">
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => {
+                                            if (item.isFromPreviousOrder) {
+                                              updatePreviousOrderItem(item.dishId, item.quantity - 1);
+                                            } else {
+                                              updateItemQuantity(item.dishId, item.quantity - 1);
+                                            }
+                                          }}
+                                          className="h-6 w-6 p-0"
+                                        >
+                                          <Minus className="h-3 w-3" />
+                                        </Button>
+                                        <span className="w-8 text-center text-sm font-medium">
+                                          {item.quantity}
+                                        </span>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => {
+                                            if (item.isFromPreviousOrder) {
+                                              updatePreviousOrderItem(item.dishId, item.quantity + 1);
+                                            } else {
+                                              updateItemQuantity(item.dishId, item.quantity + 1);
+                                            }
+                                          }}
+                                          className="h-6 w-6 p-0"
+                                        >
+                                          <Plus className="h-3 w-3" />
+                                        </Button>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-center">
                                       <Button
                                         size="sm"
-                                        variant="outline"
-                                        onClick={() => updatePreviousOrderItem(item.dishId, item.quantity - 1)}
-                                        className="h-6 w-6 p-0"
+                                        variant="ghost"
+                                        onClick={() => {
+                                          if (item.isFromPreviousOrder) {
+                                            removePreviousOrderItem(item.dishId);
+                                          } else {
+                                            removeItemFromOrder(item.dishId);
+                                          }
+                                        }}
+                                        className="h-6 w-6 p-0 text-red-500"
                                       >
-                                        <Minus className="h-3 w-3" />
+                                        <Trash2 className="h-3 w-3" />
                                       </Button>
-                                      <span className="w-8 text-center text-sm font-medium">
-                                        {item.quantity}
-                                      </span>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => updatePreviousOrderItem(item.dishId, item.quantity + 1)}
-                                        className="h-6 w-6 p-0"
-                                      >
-                                        <Plus className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-center">
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => removePreviousOrderItem(item.dishId)}
-                                      className="h-6 w-6 p-0 text-red-500"
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-
-                              {/* Show current order items being edited */}
-                              {selectedItems.map((item, index) => (
-                                <TableRow key={`new-${item.dishId}`}>
-                                  <TableCell>
-                                    <div>
-                                      <div className="font-medium text-sm">{item.dishName}</div>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-center text-sm">
-                                    {currencySymbol} {item.unitPrice}
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex items-center justify-center space-x-1">
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => updateItemQuantity(item.dishId, item.quantity - 1)}
-                                        className="h-6 w-6 p-0"
-                                      >
-                                        <Minus className="h-3 w-3" />
-                                      </Button>
-                                      <span className="w-8 text-center text-sm font-medium">
-                                        {item.quantity}
-                                      </span>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => updateItemQuantity(item.dishId, item.quantity + 1)}
-                                        className="h-6 w-6 p-0"
-                                      >
-                                        <Plus className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-center">
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => removeItemFromOrder(item.dishId)}
-                                      className="h-6 w-6 p-0 text-red-500"
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
+                                    </TableCell>
+                                  </TableRow>
+                                ));
+                              })()}
                             </TableBody>
                           </Table>
                         </div>
@@ -1062,15 +1069,42 @@ export default function RoomOrders() {
                         
 <div className="border-t pt-4 space-y-2">
                           {(() => {
-                            // Calculate totals for ALL items (previous + current)
-                            const previousOrdersTotal = selectedReservation ? calculateAllReservationTotal(selectedReservation.id) : 0;
-                            const currentOrderTotal = calculateSubtotal();
-                            const allItemsTotal = previousOrdersTotal + currentOrderTotal;
+                            // Calculate totals using consolidated items (no duplicates)
+                            const consolidatedItems = new Map();
+                            
+                            // Add previous order items
+                            if (selectedReservation) {
+                              const previousItems = getAllReservationItems(selectedReservation.id);
+                              previousItems.forEach((item) => {
+                                consolidatedItems.set(item.dishId, {
+                                  ...item,
+                                  quantity: item.quantity,
+                                  unitPrice: parseFloat(item.unitPrice)
+                                });
+                              });
+                            }
+                            
+                            // Add/update with current editing items
+                            selectedItems.forEach((item) => {
+                              consolidatedItems.set(item.dishId, {
+                                ...item,
+                                quantity: item.quantity,
+                                unitPrice: parseFloat(item.unitPrice)
+                              });
+                            });
+                            
+                            // Calculate total from consolidated items
+                            let allItemsTotal = 0;
+                            let totalItemCount = 0;
+                            Array.from(consolidatedItems.values()).forEach((item) => {
+                              allItemsTotal += item.unitPrice * item.quantity;
+                              totalItemCount += 1;
+                            });
                             
                             let totalTaxAmount = 0;
                             const appliedTaxes = [];
 
-                            // Calculate taxes on all items (previous + current)
+                            // Calculate taxes on consolidated total
                             if (orderTaxes) {
                               for (const tax of orderTaxes) {
                                 const taxAmount = (allItemsTotal * parseFloat(tax.rate)) / 100;
@@ -1082,9 +1116,6 @@ export default function RoomOrders() {
                                 });
                               }
                             }
-
-                            const allItems = selectedReservation ? getAllReservationItems(selectedReservation.id) : [];
-                            const totalItemCount = allItems.length + selectedItems.length;
 
                             return (
                               <>
@@ -1104,7 +1135,7 @@ export default function RoomOrders() {
 
                                 {/* Show total */}
                                 <div className="flex justify-between font-semibold text-lg border-t pt-2">
-                                  <span>Total Amount (All Orders):</span>
+                                  <span>Total Amount:</span>
                                   <span className="text-green-600">{currencySymbol} {(allItemsTotal + totalTaxAmount).toFixed(2)}</span>
                                 </div>
                               </>

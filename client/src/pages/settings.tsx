@@ -437,6 +437,115 @@ export default function Settings() {
     },
   });
 
+  // Enhanced Network Printer Discovery State
+  const [discoveredPrinters, setDiscoveredPrinters] = useState<any[]>([]);
+  const [discoveringPrinters, setDiscoveringPrinters] = useState(false);
+  const [quickTestIP, setQuickTestIP] = useState("192.168.1.100");
+
+  // Network printer discovery mutation
+  const discoverPrintersMutation = useMutation({
+    mutationFn: async (ipRange: string = "192.168.1") => {
+      setDiscoveringPrinters(true);
+      const response = await fetch(`/api/printer-configurations/discover?ipRange=${ipRange}`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to discover network printers");
+      }
+
+      return response.json();
+    },
+    onSuccess: (result: any) => {
+      setDiscoveredPrinters(result.printers || []);
+      setDiscoveringPrinters(false);
+      toast({
+        title: "Discovery Complete",
+        description: `Found ${result.foundCount} network printers in range ${result.searchRange}`,
+      });
+    },
+    onError: (error: any) => {
+      setDiscoveringPrinters(false);
+      toast({
+        title: "Discovery Failed",
+        description: error.message || "Failed to discover network printers",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Enhanced printer test mutation
+  const enhancedTestMutation = useMutation({
+    mutationFn: async ({ ipAddress, port = 9100, timeout = 10000 }: { ipAddress: string; port?: number; timeout?: number }) => {
+      const response = await fetch("/api/printer-configurations/enhanced-test", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ipAddress, port, timeout }),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to test printer connection");
+      }
+
+      return response.json();
+    },
+    onSuccess: (result: any) => {
+      toast({
+        title: result.success ? "Connection Successful" : "Connection Failed",
+        description: `${result.ipAddress}:${result.port} - ${result.message}${result.responseTime ? ` (${result.responseTime}ms)` : ''}`,
+        variant: result.success ? "default" : "destructive",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Test Failed",
+        description: error.message || "Failed to test printer connection",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Test print mutation
+  const testPrintMutation = useMutation({
+    mutationFn: async (configId: number) => {
+      const response = await fetch("/api/printer-configurations/test-print", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ configId }),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to send test print");
+      }
+
+      return response.json();
+    },
+    onSuccess: (result: any) => {
+      toast({
+        title: result.success ? "Test Print Sent" : "Test Print Failed",
+        description: `${result.printerName} (${result.ipAddress}:${result.port}) - ${result.message}`,
+        variant: result.success ? "default" : "destructive",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Test Print Failed",
+        description: error.message || "Failed to send test print",
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = (data: HotelSettingsForm) => {
     saveSettingsMutation.mutate(data);
   };
@@ -1044,6 +1153,116 @@ export default function Settings() {
                     </CardHeader>
                     <CardContent className="space-y-6">
                       {/* Printer List */}
+                      {/* Enhanced Network Printer Discovery */}
+                      <div className="space-y-4">
+                        <h4 className="font-medium">Network Printer Discovery & Testing</h4>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          {/* Quick Test Section */}
+                          <Card className="p-4">
+                            <h5 className="font-medium mb-3">Quick Connection Test</h5>
+                            <div className="space-y-3">
+                              <div className="flex gap-2">
+                                <Input
+                                  placeholder="192.168.1.100"
+                                  value={quickTestIP}
+                                  onChange={(e) => setQuickTestIP(e.target.value)}
+                                  className="flex-1"
+                                />
+                                <Button
+                                  variant="outline"
+                                  onClick={() => enhancedTestMutation.mutate({ ipAddress: quickTestIP })}
+                                  disabled={enhancedTestMutation.isPending}
+                                >
+                                  {enhancedTestMutation.isPending ? "Testing..." : "Test"}
+                                </Button>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Test connection to your network printer directly
+                              </p>
+                            </div>
+                          </Card>
+
+                          {/* Network Discovery Section */}
+                          <Card className="p-4">
+                            <h5 className="font-medium mb-3">Auto-Discover Network Printers</h5>
+                            <div className="space-y-3">
+                              <Button
+                                onClick={() => discoverPrintersMutation.mutate("192.168.1")}
+                                disabled={discoveringPrinters}
+                                className="w-full"
+                              >
+                                {discoveringPrinters ? "Scanning Network..." : "Scan Network (192.168.1.x)"}
+                              </Button>
+                              <p className="text-xs text-muted-foreground">
+                                Automatically find thermal printers on your network
+                              </p>
+                            </div>
+                          </Card>
+                        </div>
+
+                        {/* Discovered Printers Results */}
+                        {discoveredPrinters.length > 0 && (
+                          <div className="space-y-3">
+                            <h5 className="font-medium">Discovered Network Printers</h5>
+                            <div className="space-y-2">
+                              {discoveredPrinters.map((printer: any, index: number) => (
+                                <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium">{printer.ipAddress}:9100</span>
+                                      <Badge variant={printer.isOnline ? "default" : "destructive"}>
+                                        {printer.isOnline ? "Online" : "Offline"}
+                                      </Badge>
+                                      {printer.responseTime && (
+                                        <Badge variant="outline">{printer.responseTime}ms</Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">
+                                      {printer.suggestedName} • {printer.message}
+                                    </p>
+                                  </div>
+                                  {printer.isOnline && (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => {
+                                        printerForm.reset({
+                                          printerName: printer.suggestedName,
+                                          printerType: "kot",
+                                          ipAddress: printer.ipAddress,
+                                          port: 9100,
+                                          isEnabled: true,
+                                          autoDirectPrint: false,
+                                          paperWidth: 80,
+                                          connectionTimeout: 5000,
+                                          retryAttempts: 3,
+                                        });
+                                        setShowPrinterForm(true);
+                                      }}
+                                    >
+                                      Configure
+                                    </Button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                          <h5 className="font-medium text-blue-900 mb-2">Setup Instructions for PWA Network Printing:</h5>
+                          <div className="space-y-1 text-sm text-blue-800">
+                            <p>• Connect your thermal printer to the network via Ethernet cable</p>
+                            <p>• Configure a static IP address on your printer (recommended: 192.168.1.100)</p>
+                            <p>• Use port 9100 for most thermal printers</p>
+                            <p>• Your Node.js server acts as a bridge between the PWA and network printers</p>
+                            <p>• Test the connection to ensure reliable printing</p>
+                            <p>• Enable auto-direct print for automatic KOT/BOT printing</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Separator className="my-6" />
+
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
                           <h4 className="font-medium">Configured Printers</h4>
@@ -1106,6 +1325,14 @@ export default function Settings() {
                                       disabled={testPrinterMutation.isPending}
                                     >
                                       {testPrinterMutation.isPending ? "Testing..." : "Test"}
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => testPrintMutation.mutate(printer.id)}
+                                      disabled={testPrintMutation.isPending}
+                                    >
+                                      {testPrintMutation.isPending ? "Printing..." : "Test Print"}
                                     </Button>
                                     <Button
                                       variant="outline"

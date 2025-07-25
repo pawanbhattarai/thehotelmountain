@@ -2,6 +2,7 @@ import { Socket } from 'net';
 import { db } from './storage';
 import { printerConfigurations, hotelSettings } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
+import { networkPrinterBridge } from './network-printer-bridge';
 
 interface PrinterCommand {
   command: string;
@@ -162,7 +163,7 @@ class PrinterService {
   }
 
   /**
-   * Process print job based on configuration
+   * Process print job using enhanced network bridge
    */
   async processPrintJob(printJob: PrintJob): Promise<{ success: boolean; message: string }> {
     try {
@@ -182,39 +183,31 @@ class PrinterService {
         };
       }
 
-      // Test connectivity first
-      const isConnected = await this.testPrinterConnection(config.ipAddress, config.port || 9100);
-      
-      if (!isConnected) {
-        await this.updatePrinterStatus(config.id, 'disconnected', 'Unable to connect to printer');
-        return {
-          success: false,
-          message: `Cannot connect to ${printJob.printerType.toUpperCase()} printer at ${config.ipAddress}:${config.port || 9100}`
-        };
-      }
+      console.log(`🖨️  Processing ${printJob.printerType.toUpperCase()} print job for ${config.printerName} at ${config.ipAddress}:${config.port || 9100}`);
 
-      // Send print job
-      const printSuccess = await this.sendPrintJob(config.ipAddress, printJob.content, config.port || 9100);
-      
-      if (printSuccess) {
-        await this.updatePrinterStatus(config.id, 'connected');
-        await db
-          .update(printerConfigurations)
-          .set({
-            lastSuccessfulPrint: new Date(),
-            updatedAt: new Date(),
-          })
-          .where(eq(printerConfigurations.id, config.id));
+      // Use the enhanced network bridge for reliable printing
+      const bridgePrintJob = {
+        id: `${printJob.printerType}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        printerType: printJob.printerType,
+        content: printJob.content,
+        printerConfig: config,
+        timestamp: new Date(),
+        retries: 0
+      };
 
+      const result = await networkPrinterBridge.sendPrintJobToNetwork(bridgePrintJob);
+      
+      if (result.success) {
+        console.log(`✅ ${printJob.printerType.toUpperCase()} printed successfully to ${config.printerName}`);
         return {
           success: true,
-          message: `${printJob.printerType.toUpperCase()} printed successfully`
+          message: `${printJob.printerType.toUpperCase()} printed successfully to ${config.printerName}`
         };
       } else {
-        await this.updatePrinterStatus(config.id, 'error', 'Print job failed');
+        console.log(`❌ Failed to print ${printJob.printerType.toUpperCase()} to ${config.printerName}: ${result.message}`);
         return {
           success: false,
-          message: `Failed to print ${printJob.printerType.toUpperCase()}`
+          message: `Failed to print ${printJob.printerType.toUpperCase()}: ${result.message}`
         };
       }
     } catch (error) {

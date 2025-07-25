@@ -3936,6 +3936,225 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Enhanced Network Printer Discovery and Testing Endpoints
+  app.get("/api/printer-configurations/discover", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.session.user.id);
+      if (!user) return res.status(401).json({ message: "User not found" });
+
+      // Import network printer bridge dynamically to avoid circular imports
+      const { networkPrinterBridge } = await import('./network-printer-bridge');
+      
+      const ipRange = req.query.ipRange || '192.168.1';
+      
+      console.log(`🔍 Discovering network printers in range ${ipRange}.100-200...`);
+      
+      const discoveredPrinters = await networkPrinterBridge.discoverNetworkPrinters(ipRange);
+      
+      // Get detailed information for each discovered printer
+      const printerDetails = await Promise.all(
+        discoveredPrinters.map(async (ip) => {
+          const testResult = await networkPrinterBridge.testPrinterConnection(ip, 9100, 5000);
+          return {
+            ipAddress: ip,
+            port: 9100,
+            isOnline: testResult.success,
+            responseTime: testResult.responseTime,
+            message: testResult.message,
+            suggestedName: `Thermal Printer ${ip.split('.').pop()}`
+          };
+        })
+      );
+
+      res.json({
+        success: true,
+        searchRange: `${ipRange}.100-200`,
+        foundCount: discoveredPrinters.length,
+        printers: printerDetails
+      });
+    } catch (error) {
+      console.error("Error discovering network printers:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to discover network printers",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.post("/api/printer-configurations/enhanced-test", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.session.user.id);
+      if (!user) return res.status(401).json({ message: "User not found" });
+
+      const { ipAddress, port = 9100, timeout = 10000 } = req.body;
+      
+      if (!ipAddress) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "IP address is required" 
+        });
+      }
+
+      console.log(`🧪 Testing enhanced printer connection to ${ipAddress}:${port}...`);
+
+      // Import network printer bridge dynamically
+      const { networkPrinterBridge } = await import('./network-printer-bridge');
+      
+      const testResult = await networkPrinterBridge.testPrinterConnection(
+        ipAddress, 
+        port, 
+        timeout
+      );
+
+      if (testResult.success) {
+        console.log(`✅ Enhanced printer test successful: ${ipAddress}:${port} (${testResult.responseTime}ms)`);
+      } else {
+        console.log(`❌ Enhanced printer test failed: ${ipAddress}:${port} - ${testResult.message}`);
+      }
+
+      res.json({
+        success: testResult.success,
+        message: testResult.message,
+        responseTime: testResult.responseTime,
+        ipAddress,
+        port,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error in enhanced printer test:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to test printer connection",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.get("/api/printer-configurations/queue-status", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.session.user.id);
+      if (!user) return res.status(401).json({ message: "User not found" });
+
+      // Import network printer bridge dynamically
+      const { networkPrinterBridge } = await import('./network-printer-bridge');
+      
+      const queueStatus = networkPrinterBridge.getQueueStatus();
+
+      res.json({
+        success: true,
+        queueCount: queueStatus.jobCount,
+        pendingJobs: queueStatus.jobs.map(job => ({
+          id: job.id,
+          printerType: job.printerType,
+          timestamp: job.timestamp,
+          retries: job.retries,
+          printerName: job.printerConfig.printerName,
+          ipAddress: job.printerConfig.ipAddress
+        }))
+      });
+    } catch (error) {
+      console.error("Error getting print queue status:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to get queue status",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.post("/api/printer-configurations/test-print", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.session.user.id);
+      if (!user) return res.status(401).json({ message: "User not found" });
+
+      const { configId, testContent } = req.body;
+      
+      if (!configId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Printer configuration ID is required" 
+        });
+      }
+
+      // Get printer configuration
+      const config = await storage.getPrinterConfiguration(configId);
+      if (!config) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Printer configuration not found" 
+        });
+      }
+
+      // Check permissions
+      if (user.role !== "superadmin" && user.branchId !== config.branchId) {
+        return res.status(403).json({ 
+          success: false, 
+          message: "Insufficient permissions" 
+        });
+      }
+
+      const content = testContent || `
+TEST PRINT
+${config.printerName}
+${config.printerType.toUpperCase()} Printer Test
+==========================================
+Date: ${new Date().toLocaleString()}
+IP: ${config.ipAddress}:${config.port}
+Paper: ${config.paperWidth}mm
+==========================================
+This is a test print to verify
+your thermal printer is working
+correctly with the restaurant
+management system.
+
+✓ Connection successful
+✓ Print formatting correct  
+✓ Ready for operation
+
+Thank you!
+`;
+
+      // Import network printer bridge and send test print
+      const { networkPrinterBridge } = await import('./network-printer-bridge');
+      
+      const testPrintJob = {
+        id: `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        printerType: config.printerType as 'kot' | 'bot' | 'billing',
+        content,
+        printerConfig: config,
+        timestamp: new Date(),
+        retries: 0
+      };
+
+      console.log(`🖨️  Sending test print to ${config.printerName} (${config.ipAddress}:${config.port})`);
+
+      const result = await networkPrinterBridge.sendPrintJobToNetwork(testPrintJob);
+      
+      if (result.success) {
+        console.log(`✅ Test print successful to ${config.printerName}`);
+      } else {
+        console.log(`❌ Test print failed to ${config.printerName}: ${result.message}`);
+      }
+
+      res.json({
+        success: result.success,
+        message: result.message,
+        printerName: config.printerName,
+        ipAddress: config.ipAddress,
+        port: config.port,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error sending test print:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to send test print",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // QR Order System Routes
   app.get("/api/order/info/:token", async (req: any, res) => {
     try {

@@ -1205,7 +1205,11 @@ export default function Settings() {
                                 <Button
                                   type="button"
                                   variant="outline"
-                                  onClick={() => enhancedTestMutation.mutate({ ipAddress: quickTestIP })}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    enhancedTestMutation.mutate({ ipAddress: quickTestIP });
+                                  }}
                                   disabled={enhancedTestMutation.isPending}
                                 >
                                   {enhancedTestMutation.isPending ? "Testing..." : "Test"}
@@ -1213,7 +1217,11 @@ export default function Settings() {
                                 <Button
                                   type="button"
                                   variant="outline"
-                                  onClick={() => diagnoseMutation.mutate(quickTestIP)}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    diagnoseMutation.mutate(quickTestIP);
+                                  }}
                                   disabled={diagnoseMutation.isPending}
                                 >
                                   {diagnoseMutation.isPending ? "Diagnosing..." : "Diagnose"}

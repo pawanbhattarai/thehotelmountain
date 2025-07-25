@@ -1372,7 +1372,11 @@ export default function Settings() {
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      onClick={() => testPrinterMutation.mutate(printer.id)}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        testPrinterMutation.mutate(printer.id);
+                                      }}
                                       disabled={testPrinterMutation.isPending}
                                     >
                                       {testPrinterMutation.isPending ? "Testing..." : "Test"}
@@ -1380,7 +1384,11 @@ export default function Settings() {
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      onClick={() => testPrintMutation.mutate(printer.id)}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        testPrintMutation.mutate(printer.id);
+                                      }}
                                       disabled={testPrintMutation.isPending}
                                     >
                                       {testPrintMutation.isPending ? "Printing..." : "Test Print"}

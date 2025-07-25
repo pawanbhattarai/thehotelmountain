@@ -4031,7 +4031,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Add printer diagnosis endpoint
+  // Enhanced printer diagnosis endpoint
   app.post("/api/printer-configurations/diagnose", isAuthenticated, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.session.user.id);
@@ -4046,42 +4046,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      console.log(`🔍 Diagnosing printer at ${ipAddress}...`);
+      console.log(`🔍 Performing comprehensive diagnosis for ${ipAddress}...`);
 
       const { networkPrinterBridge } = await import('./network-printer-bridge');
       
-      // Test multiple ports commonly used by printers
-      const portsToTest = [9100, 515, 631, 80, 443, 8080];
-      const results = [];
+      // Perform comprehensive network connectivity test
+      const networkTest = await networkPrinterBridge.performNetworkConnectivityTest(ipAddress);
+      
+      // Test specific printer ports with detailed results
+      const printerPortsToTest = [9100, 515, 631, 8000, 8080, 8443, 9000, 9001, 9002, 9003];
+      const printerResults = [];
 
-      for (const port of portsToTest) {
-        const result = await networkPrinterBridge.testPrinterConnection(ipAddress, port, 3000);
-        results.push({
+      for (const port of printerPortsToTest) {
+        const result = await networkPrinterBridge.testPrinterConnection(ipAddress, port, 5000);
+        printerResults.push({
           port,
           success: result.success,
           message: result.message,
-          responseTime: result.responseTime
+          responseTime: result.responseTime,
+          isPrinterPort: [9100, 515, 631].includes(port)
         });
-        console.log(`Port ${port}: ${result.success ? '✅' : '❌'} ${result.message}`);
+        console.log(`Printer Port ${port}: ${result.success ? '✅' : '❌'} ${result.message}`);
       }
 
-      const successfulPorts = results.filter(r => r.success);
+      const successfulPrinterPorts = printerResults.filter(r => r.success);
+      const likelyPrinterPorts = successfulPrinterPorts.filter(r => r.isPrinterPort);
+
+      // Generate detailed diagnosis
+      let diagnosis = [];
+      
+      if (networkTest.reachable) {
+        diagnosis.push("✅ Device is reachable on the network");
+      } else {
+        diagnosis.push("❌ Device is not reachable from this server");
+      }
+      
+      if (networkTest.openPorts.length > 0) {
+        diagnosis.push(`🔓 Found ${networkTest.openPorts.length} open ports: ${networkTest.openPorts.join(', ')}`);
+      } else {
+        diagnosis.push("🔒 No open ports detected (may indicate firewall or incorrect IP)");
+      }
+      
+      if (likelyPrinterPorts.length > 0) {
+        diagnosis.push(`🖨️ Found printer services on ports: ${likelyPrinterPorts.map(p => p.port).join(', ')}`);
+      } else if (successfulPrinterPorts.length > 0) {
+        diagnosis.push(`⚠️ Found services on non-standard ports: ${successfulPrinterPorts.map(p => p.port).join(', ')}`);
+      } else {
+        diagnosis.push("❌ No printer services detected on common ports");
+      }
+
+      // Recommendations
+      let recommendations = [];
+      
+      if (!networkTest.reachable) {
+        recommendations.push("Check if the IP address is correct");
+        recommendations.push("Verify the device is powered on and connected to network");
+        recommendations.push("Check firewall settings on both device and network");
+      } else if (likelyPrinterPorts.length === 0) {
+        recommendations.push("Printer may be using non-standard ports");
+        recommendations.push("Check printer's network configuration menu");
+        recommendations.push("Try different connection protocols (USB, WiFi Direct)");
+        recommendations.push("Consult printer manual for network setup");
+      } else {
+        recommendations.push(`Use port ${likelyPrinterPorts[0].port} for printer configuration`);
+        recommendations.push("Test print functionality after configuration");
+      }
 
       res.json({
-        success: successfulPorts.length > 0,
+        success: successfulPrinterPorts.length > 0,
         ipAddress,
-        results,
+        networkConnectivity: networkTest,
+        printerResults,
+        diagnosis,
+        recommendations,
         summary: {
-          totalPorts: portsToTest.length,
-          successfulPorts: successfulPorts.length,
-          recommendedPorts: successfulPorts.map(r => r.port)
+          networkReachable: networkTest.reachable,
+          totalOpenPorts: networkTest.openPorts.length,
+          printerPortsFound: likelyPrinterPorts.length,
+          recommendedPort: likelyPrinterPorts.length > 0 ? likelyPrinterPorts[0].port : (successfulPrinterPorts.length > 0 ? successfulPrinterPorts[0].port : null)
         },
-        message: successfulPorts.length > 0 
-          ? `Found printer on ports: ${successfulPorts.map(r => r.port).join(', ')}`
-          : `No printer services found on common ports`
+        message: likelyPrinterPorts.length > 0 
+          ? `Printer detected on standard ports: ${likelyPrinterPorts.map(r => r.port).join(', ')}`
+          : successfulPrinterPorts.length > 0
+          ? `Services found on non-standard ports: ${successfulPrinterPorts.map(r => r.port).join(', ')}`
+          : `No printer services detected. Device has ${networkTest.openPorts.length} open ports.`
       });
     } catch (error) {
-      console.error("Error in printer diagnosis:", error);
+      console.error("Error in comprehensive printer diagnosis:", error);
       res.status(500).json({ 
         success: false,
         message: "Failed to diagnose printer",

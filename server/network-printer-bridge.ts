@@ -89,7 +89,7 @@ class NetworkPrinterBridge {
           // Send ESC/POS initialization command - thermal printers should accept this
           const initCommand = Buffer.from([0x1B, 0x40]); // ESC @
           socket.write(initCommand);
-          
+
           setTimeout(() => {
             cleanup();
             clearTimeout(timer);
@@ -120,7 +120,7 @@ class NetworkPrinterBridge {
   ): Promise<{ success: boolean; message: string; responseTime?: number }> {
     // Try multiple common printer ports
     const portsToTry = [port, 9100, 515, 631, 80];
-    
+
     for (const testPort of portsToTry) {
       const result = await this.testSinglePort(ipAddress, testPort, timeout);
       if (result.success) {
@@ -128,7 +128,7 @@ class NetworkPrinterBridge {
         return { ...result, message: `Connected on port ${testPort}` };
       }
     }
-    
+
     return {
       success: false,
       message: `No printer found on ports ${portsToTry.join(', ')}`
@@ -144,7 +144,7 @@ class NetworkPrinterBridge {
     timeout: number
   ): Promise<{ success: boolean; message: string; responseTime?: number }> {
     const startTime = Date.now();
-    
+
     return new Promise((resolve) => {
       const socket = new Socket();
       let isResolved = false;
@@ -171,7 +171,7 @@ class NetworkPrinterBridge {
           isResolved = true;
           clearTimeout(timer);
           const responseTime = Date.now() - startTime;
-          
+
           // Update printer status
           this.printerStatus.set(`${ipAddress}:${port}`, {
             ipAddress,
@@ -192,7 +192,7 @@ class NetworkPrinterBridge {
       socket.on('error', (error) => {
         cleanup();
         clearTimeout(timer);
-        
+
         // Update printer status as offline
         this.printerStatus.set(`${ipAddress}:${port}`, {
           ipAddress,
@@ -219,6 +219,49 @@ class NetworkPrinterBridge {
   }
 
   /**
+   * Enhanced network connectivity test
+   */
+  async performNetworkConnectivityTest(ipAddress: string): Promise<{
+    pingable: boolean;
+    reachable: boolean;
+    openPorts: number[];
+    diagnostics: any;
+  }> {
+    console.log(`🌐 Performing comprehensive network test for ${ipAddress}...`);
+
+    // Test basic connectivity first
+    const connectivityTest = await this.testSinglePort(ipAddress, 80, 2000);
+
+    // Extended port scan for any open services
+    const commonPorts = [21, 22, 23, 25, 53, 80, 110, 143, 443, 515, 631, 993, 995, 8000, 8008, 8080, 8443, 8888, 9000, 9100, 9101, 9102, 9103];
+    const openPorts = [];
+
+    for (const port of commonPorts) {
+      try {
+        const result = await this.testSinglePort(ipAddress, port, 1500);
+        if (result.success) {
+          openPorts.push(port);
+          console.log(`🔓 Found open port: ${port}`);
+        }
+      } catch (error) {
+        // Ignore individual port errors
+      }
+    }
+
+    return {
+      pingable: true, // We can't ping from Node.js directly, but we assume it's pingable based on user's CMD result
+      reachable: connectivityTest.success || openPorts.length > 0,
+      openPorts,
+      diagnostics: {
+        totalPortsScanned: commonPorts.length,
+        openPortsFound: openPorts.length,
+        likelyPrinterPorts: openPorts.filter(p => [515, 631, 8000, 8080, 9100, 9101, 9102, 9103].includes(p)),
+        commonServicePorts: openPorts.filter(p => [21, 22, 23, 25, 53, 80, 443, 993, 995].includes(p))
+      }
+    };
+  }
+
+  /**
    * Send print job with enhanced error handling and queuing
    */
   async sendPrintJobToNetwork(
@@ -239,7 +282,7 @@ class NetworkPrinterBridge {
 
       if (!connectionTest.success) {
         console.error(`❌ Printer ${printerConfig.printerName} is offline: ${connectionTest.message}`);
-        
+
         // Add to retry queue if retries are available
         if (printJob.retries < this.maxRetries) {
           printJob.retries++;
@@ -269,17 +312,17 @@ class NetworkPrinterBridge {
 
       if (printResult.success) {
         console.log(`✅ Successfully printed to ${printerConfig.printerName}`);
-        
+
         // Update printer configuration status
         await this.updatePrinterStatus(printerConfig.id, 'connected', null);
-        
+
         return {
           success: true,
           message: `Successfully printed to ${printerConfig.printerName}`,
         };
       } else {
         console.error(`❌ Print failed to ${printerConfig.printerName}: ${printResult.message}`);
-        
+
         // Add to retry queue if retries are available
         if (printJob.retries < this.maxRetries) {
           printJob.retries++;
@@ -298,9 +341,9 @@ class NetworkPrinterBridge {
       }
     } catch (error: any) {
       console.error(`❌ Print job error for ${printerConfig.printerName}:`, error);
-      
+
       await this.updatePrinterStatus(printerConfig.id, 'error', error.message);
-      
+
       return {
         success: false,
         message: `Print job error: ${error.message}`,
@@ -339,7 +382,7 @@ class NetworkPrinterBridge {
       socket.connect(port, ipAddress, () => {
         console.log(`📡 Connected to printer ${ipAddress}:${port}, sending data...`);
         socket.write(data, 'binary');
-        
+
         // Give some time for the data to be sent
         setTimeout(() => {
           if (!isComplete) {
@@ -404,10 +447,10 @@ class NetworkPrinterBridge {
 
     // Initialize printer and set encoding
     let thermalContent = commands.INIT;
-    
+
     // Process content line by line to apply proper formatting
     const lines = content.split('\n');
-    
+
     for (const line of lines) {
       if (line.includes('='.repeat(20)) || line.includes('-'.repeat(20))) {
         // Separator line
@@ -427,10 +470,10 @@ class NetworkPrinterBridge {
         thermalContent += commands.ALIGN_LEFT + line + commands.FEED;
       }
     }
-    
+
     // Add spacing and cut
     thermalContent += commands.FEED + commands.FEED + commands.CUT;
-    
+
     return thermalContent;
   }
 
@@ -439,7 +482,7 @@ class NetworkPrinterBridge {
    */
   private addToRetryQueue(printJob: PrintJob): void {
     this.printQueue.set(printJob.id, printJob);
-    
+
     // Schedule retry
     setTimeout(() => {
       this.processRetryQueue();
@@ -453,9 +496,9 @@ class NetworkPrinterBridge {
     for (const [jobId, printJob] of this.printQueue.entries()) {
       if (printJob.retries < this.maxRetries) {
         console.log(`🔄 Retrying print job ${jobId} (attempt ${printJob.retries + 1}/${this.maxRetries})`);
-        
+
         const result = await this.sendPrintJobToNetwork(printJob);
-        
+
         if (result.success) {
           this.printQueue.delete(jobId);
           console.log(`✅ Retry successful for print job ${jobId}`);

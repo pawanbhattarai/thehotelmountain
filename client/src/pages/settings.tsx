@@ -1169,6 +1169,7 @@ export default function Settings() {
                                   className="flex-1"
                                 />
                                 <Button
+                                  type="button"
                                   variant="outline"
                                   onClick={() => enhancedTestMutation.mutate({ ipAddress: quickTestIP })}
                                   disabled={enhancedTestMutation.isPending}

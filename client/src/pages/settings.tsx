@@ -1915,8 +1915,7 @@ function PrinterConfigForm({
     (type) => type.value === config.printerType || !existingTypes.includes(type.value)
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = () => {
     
     // Validate required fields
     if (!formData.printerType || !formData.printerName || !formData.ipAddress) {
@@ -1949,7 +1948,7 @@ function PrinterConfigForm({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-4">
           
 <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -2116,11 +2115,11 @@ function PrinterConfigForm({
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSaving}>
+            <Button type="button" onClick={handleSubmit} disabled={isSaving}>
               {isSaving ? "Saving..." : "Save Configuration"}
             </Button>
           </div>
-        </form>
+        </div>
       </CardContent>
     </Card>
   );

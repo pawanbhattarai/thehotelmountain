@@ -4031,6 +4031,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add printer diagnosis endpoint
+  app.post("/api/printer-configurations/diagnose", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.session.user.id);
+      if (!user) return res.status(401).json({ message: "User not found" });
+
+      const { ipAddress } = req.body;
+      
+      if (!ipAddress) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "IP address is required" 
+        });
+      }
+
+      console.log(`🔍 Diagnosing printer at ${ipAddress}...`);
+
+      const { networkPrinterBridge } = await import('./network-printer-bridge');
+      
+      // Test multiple ports commonly used by printers
+      const portsToTest = [9100, 515, 631, 80, 443, 8080];
+      const results = [];
+
+      for (const port of portsToTest) {
+        const result = await networkPrinterBridge.testPrinterConnection(ipAddress, port, 3000);
+        results.push({
+          port,
+          success: result.success,
+          message: result.message,
+          responseTime: result.responseTime
+        });
+        console.log(`Port ${port}: ${result.success ? '✅' : '❌'} ${result.message}`);
+      }
+
+      const successfulPorts = results.filter(r => r.success);
+
+      res.json({
+        success: successfulPorts.length > 0,
+        ipAddress,
+        results,
+        summary: {
+          totalPorts: portsToTest.length,
+          successfulPorts: successfulPorts.length,
+          recommendedPorts: successfulPorts.map(r => r.port)
+        },
+        message: successfulPorts.length > 0 
+          ? `Found printer on ports: ${successfulPorts.map(r => r.port).join(', ')}`
+          : `No printer services found on common ports`
+      });
+    } catch (error) {
+      console.error("Error in printer diagnosis:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to diagnose printer",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   app.get("/api/printer-configurations/queue-status", isAuthenticated, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.session.user.id);

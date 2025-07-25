@@ -476,6 +476,41 @@ export default function Settings() {
     },
   });
 
+    // Diagnose printer mutation
+    const diagnoseMutation = useMutation({
+      mutationFn: async (ipAddress: string) => {
+        const response = await fetch("/api/printer-configurations/diagnose", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ ipAddress }),
+          credentials: "include",
+        });
+  
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || "Failed to diagnose printer");
+        }
+  
+        return response.json();
+      },
+      onSuccess: (result: any) => {
+        toast({
+          title: result.success ? "Diagnosis Successful" : "Diagnosis Failed",
+          description: result.message,
+          variant: result.success ? "default" : "destructive",
+        });
+      },
+      onError: (error: any) => {
+        toast({
+          title: "Diagnosis Failed",
+          description: error.message || "Failed to diagnose printer",
+          variant: "destructive",
+        });
+      },
+    });
+
   // Enhanced printer test mutation
   const enhancedTestMutation = useMutation({
     mutationFn: async ({ ipAddress, port = 9100, timeout = 10000 }: { ipAddress: string; port?: number; timeout?: number }) => {
@@ -876,8 +911,7 @@ export default function Settings() {
                       {/* Social Media & Company Info Section */}
                       <div className="space-y-6">
                         <h4 className="font-medium">
-                          Social Media & Company Information
-                        </h4>
+                          Social Media & Company Information                        </h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-2">
                             <Label htmlFor="facebookUrl">Facebook URL</Label>
@@ -1161,7 +1195,7 @@ export default function Settings() {
                           <Card className="p-4">
                             <h5 className="font-medium mb-3">Quick Connection Test</h5>
                             <div className="space-y-3">
-                              <div className="flex gap-2">
+                              <div className="flex items-center gap-2">
                                 <Input
                                   placeholder="192.168.1.100"
                                   value={quickTestIP}
@@ -1175,6 +1209,14 @@ export default function Settings() {
                                   disabled={enhancedTestMutation.isPending}
                                 >
                                   {enhancedTestMutation.isPending ? "Testing..." : "Test"}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => diagnoseMutation.mutate(quickTestIP)}
+                                  disabled={diagnoseMutation.isPending}
+                                >
+                                  {diagnoseMutation.isPending ? "Diagnosing..." : "Diagnose"}
                                 </Button>
                               </div>
                               <p className="text-xs text-muted-foreground">
@@ -1892,22 +1934,22 @@ function PrinterConfigurationSection() {
         ? `/api/printer-configurations/${data.id}` 
         : "/api/printer-configurations";
       const method = data.id ? "PUT" : "POST";
-      
+
       // Ensure branchId is set if not provided (default to 1 for the demo)
       const configData = {
         ...data,
         branchId: data.branchId || 1
       };
-      
+
       console.log("Sending printer config to API:", { url, method, data: configData });
-      
+
       const response = await apiRequest(method, url, configData);
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to save configuration' }));
         throw new Error(errorData.message || 'Failed to save configuration');
       }
-      
+
       const result = await response.json();
       console.log("API response:", result);
       return result;
@@ -1935,12 +1977,12 @@ function PrinterConfigurationSection() {
   const testPrinterConnection = useMutation({
     mutationFn: async (id: number) => {
       const response = await apiRequest("POST", `/api/printer-configurations/${id}/test`);
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Test connection failed' }));
         throw new Error(errorData.message || 'Test connection failed');
       }
-      
+
       return await response.json();
     },
     onSuccess: (data) => {
@@ -1968,12 +2010,12 @@ function PrinterConfigurationSection() {
   const deletePrinterConfig = useMutation({
     mutationFn: async (id: number) => {
       const response = await apiRequest("DELETE", `/api/printer-configurations/${id}`);
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to delete configuration' }));
         throw new Error(errorData.message || 'Failed to delete configuration');
       }
-      
+
       return await response.json();
     },
     onSuccess: () => {
@@ -2046,7 +2088,7 @@ function PrinterConfigurationSection() {
               </div>
             </div>
           </CardHeader>
-          
+
 <CardContent className="space-y-2">
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
@@ -2145,7 +2187,7 @@ function PrinterConfigForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate required fields
     if (!formData.printerType || !formData.printerName || !formData.ipAddress) {
       console.error("Missing required fields:", {
@@ -2153,18 +2195,18 @@ function PrinterConfigForm({
         printerName: formData.printerName,
         ipAddress: formData.ipAddress
       });
-      
+
       // Show error message to user
       alert("Please fill in all required fields: Printer Type, Printer Name, and IP Address");
       return;
     }
-    
+
     // Include the config ID if editing
     const submitData = {
       ...formData,
       ...(config.id && { id: config.id })
     };
-    
+
     console.log("Submitting printer config:", submitData);
     onSave(submitData);
   };
@@ -2178,7 +2220,7 @@ function PrinterConfigForm({
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          
+
 <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="printerType">Printer Type</Label>

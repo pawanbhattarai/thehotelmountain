@@ -32,14 +32,25 @@ class NetworkPrinterBridge {
     const discoveredPrinters: string[] = [];
     const promises: Promise<void>[] = [];
 
-    // Test common printer IPs in the range
-    for (let i = 100; i <= 200; i++) {
+    // Test common printer IPs in the range (reduced range for better accuracy)
+    for (let i = 100; i <= 120; i++) {
       const ip = `${ipRange}.${i}`;
       promises.push(
-        this.testPrinterConnection(ip, 9100, 3000).then((isOnline) => {
-          if (isOnline) {
-            discoveredPrinters.push(ip);
-            console.log(`🖨️  Discovered printer at ${ip}:9100`);
+        this.testPrinterConnection(ip, 9100, 2000).then((result) => {
+          if (result.success) {
+            // Additional validation: try to send a simple ESC/POS command to verify it's actually a printer
+            this.validateThermalPrinter(ip, 9100).then((isValidPrinter) => {
+              if (isValidPrinter) {
+                discoveredPrinters.push(ip);
+                console.log(`🖨️  Discovered thermal printer at ${ip}:9100`);
+              } else {
+                console.log(`⚠️  Device at ${ip}:9100 responds but is not a thermal printer`);
+              }
+            }).catch(() => {
+              // If validation fails, still consider it a potential printer
+              discoveredPrinters.push(ip);
+              console.log(`🖨️  Discovered potential printer at ${ip}:9100 (validation failed)`);
+            });
           }
         }).catch(() => {
           // Ignore errors during discovery
@@ -48,7 +59,55 @@ class NetworkPrinterBridge {
     }
 
     await Promise.all(promises);
+    // Wait a bit for validation to complete
+    await new Promise(resolve => setTimeout(resolve, 1000));
     return discoveredPrinters;
+  }
+
+  /**
+   * Validate if a device is actually a thermal printer
+   */
+  private async validateThermalPrinter(ipAddress: string, port: number): Promise<boolean> {
+    return new Promise((resolve) => {
+      const socket = new Socket();
+      let isComplete = false;
+
+      const cleanup = () => {
+        if (!isComplete) {
+          isComplete = true;
+          socket.destroy();
+        }
+      };
+
+      const timer = setTimeout(() => {
+        cleanup();
+        resolve(false);
+      }, 3000);
+
+      socket.connect(port, ipAddress, () => {
+        try {
+          // Send ESC/POS initialization command - thermal printers should accept this
+          const initCommand = Buffer.from([0x1B, 0x40]); // ESC @
+          socket.write(initCommand);
+          
+          setTimeout(() => {
+            cleanup();
+            clearTimeout(timer);
+            resolve(true);
+          }, 500);
+        } catch (error) {
+          cleanup();
+          clearTimeout(timer);
+          resolve(false);
+        }
+      });
+
+      socket.on('error', () => {
+        cleanup();
+        clearTimeout(timer);
+        resolve(false);
+      });
+    });
   }
 
   /**
@@ -58,6 +117,31 @@ class NetworkPrinterBridge {
     ipAddress: string, 
     port: number = 9100, 
     timeout: number = 10000
+  ): Promise<{ success: boolean; message: string; responseTime?: number }> {
+    // Try multiple common printer ports
+    const portsToTry = [port, 9100, 515, 631, 80];
+    
+    for (const testPort of portsToTry) {
+      const result = await this.testSinglePort(ipAddress, testPort, timeout);
+      if (result.success) {
+        console.log(`✅ Printer found at ${ipAddress}:${testPort} (${result.responseTime}ms)`);
+        return { ...result, message: `Connected on port ${testPort}` };
+      }
+    }
+    
+    return {
+      success: false,
+      message: `No printer found on ports ${portsToTry.join(', ')}`
+    };
+  }
+
+  /**
+   * Test connection to a specific port
+   */
+  private async testSinglePort(
+    ipAddress: string, 
+    port: number, 
+    timeout: number
   ): Promise<{ success: boolean; message: string; responseTime?: number }> {
     const startTime = Date.now();
     

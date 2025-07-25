@@ -1048,6 +1048,7 @@ export default function Settings() {
                         <div className="flex items-center justify-between">
                           <h4 className="font-medium">Configured Printers</h4>
                           <Button
+                            type="button"
                             onClick={handleAddPrinter}
                             className="flex items-center gap-2"
                           >
@@ -1100,6 +1101,7 @@ export default function Settings() {
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <Button
+                                      type="button"
                                       variant="outline"
                                       size="sm"
                                       onClick={() => testPrinterMutation.mutate(printer.id)}
@@ -1108,6 +1110,7 @@ export default function Settings() {
                                       {testPrinterMutation.isPending ? "Testing..." : "Test"}
                                     </Button>
                                     <Button
+                                      type="button"
                                       variant="outline"
                                       size="sm"
                                       onClick={() => handleEditPrinter(printer)}
@@ -1115,6 +1118,7 @@ export default function Settings() {
                                       Edit
                                     </Button>
                                     <Button
+                                      type="button"
                                       variant="destructive"
                                       size="sm"
                                       onClick={() => deletePrinterMutation.mutate(printer.id)}

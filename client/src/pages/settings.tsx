@@ -60,6 +60,7 @@ const printerConfigSchema = z.object({
   paperWidth: z.number().min(10).max(500).default(80),
   connectionTimeout: z.number().min(1000).max(60000).default(5000),
   retryAttempts: z.number().min(1).max(10).default(3),
+  branchId: z.number().min(1).optional(),
 });
 
 const hotelSettingsSchema = z.object({
@@ -1651,7 +1652,7 @@ function PrinterConfigurationSection() {
   const [testingId, setTestingId] = useState<number | null>(null);
 
   // Fetch printer configurations
-  const { data: configurations = [], isLoading } = useQuery({
+  const { data: configurations = [], isLoading } = useQuery<any[]>({
     queryKey: ["/api/printer-configurations"],
     staleTime: 60000,
   });
@@ -1664,15 +1665,24 @@ function PrinterConfigurationSection() {
         : "/api/printer-configurations";
       const method = data.id ? "PUT" : "POST";
       
-      console.log("Sending printer config to API:", { url, method, data });
+      // Ensure branchId is set if not provided (default to 1 for the demo)
+      const configData = {
+        ...data,
+        branchId: data.branchId || 1
+      };
       
-      const response = await apiRequest(url, {
-        method,
-        body: JSON.stringify(data),
-      });
+      console.log("Sending printer config to API:", { url, method, data: configData });
       
-      console.log("API response:", response);
-      return response;
+      const response = await apiRequest(method, url, configData);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to save configuration' }));
+        throw new Error(errorData.message || 'Failed to save configuration');
+      }
+      
+      const result = await response.json();
+      console.log("API response:", result);
+      return result;
     },
     onSuccess: (data) => {
       console.log("Printer configuration saved successfully:", data);
@@ -1696,9 +1706,14 @@ function PrinterConfigurationSection() {
   // Test printer connection
   const testPrinterConnection = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest(`/api/printer-configurations/${id}/test`, {
-        method: "POST",
-      });
+      const response = await apiRequest("POST", `/api/printer-configurations/${id}/test`);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Test connection failed' }));
+        throw new Error(errorData.message || 'Test connection failed');
+      }
+      
+      return await response.json();
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/printer-configurations"] });
@@ -1724,9 +1739,14 @@ function PrinterConfigurationSection() {
   // Delete printer configuration
   const deletePrinterConfig = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest(`/api/printer-configurations/${id}`, {
-        method: "DELETE",
-      });
+      const response = await apiRequest("DELETE", `/api/printer-configurations/${id}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to delete configuration' }));
+        throw new Error(errorData.message || 'Failed to delete configuration');
+      }
+      
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/printer-configurations"] });
@@ -1747,8 +1767,9 @@ function PrinterConfigurationSection() {
   };
 
   const printerTypes = [
-    { value: "KOT", label: "KOT (Kitchen Order Ticket)" },
-    { value: "BOT", label: "BOT (Beverage Order Ticket)" },
+    { value: "kot", label: "KOT (Kitchen Order Ticket)" },
+    { value: "bot", label: "BOT (Beverage Order Ticket)" },
+    { value: "billing", label: "Billing Printer" },
   ];
 
   if (isLoading) {

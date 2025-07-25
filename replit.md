@@ -21,8 +21,14 @@ A comprehensive restaurant management system built with Node.js, Express, React,
 - File upload capabilities
 
 ## Recent Changes
-- **2025-07-24**: Successfully completed migration from Replit Agent to Replit environment
+- **2025-07-25**: Successfully completed migration from Replit Agent to Replit environment
 - **Migration Status**: Complete - PostgreSQL database configured, all systems operational
+- **Printer Configuration Bug Fix**: Fixed critical printer configuration saving issue
+  - Problem: Printer configurations not saving due to API request format errors and schema mismatches
+  - Root cause: Frontend using incorrect apiRequest parameters and uppercase printer types
+  - Solution: Updated API calls to use correct format (method, url, data) and lowercase printer types
+  - Fixed TypeScript errors and added automatic branchId handling
+  - Printer configuration form now properly validates and saves to database
 - **Printer Configuration System**: Implementing comprehensive KOT/BOT printer configuration with IP addresses
   - Added printer service for thermal printer communication via TCP/IP
   - Network connectivity testing and error handling

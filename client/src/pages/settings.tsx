@@ -49,7 +49,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { NotificationManager } from "@/components/NotificationManager";
-import { ThermalPrinterDemo } from "@/components/ThermalPrinterDemo";
 
 const printerConfigSchema = z.object({
   printerName: z.string().min(1, "Printer name is required"),
@@ -526,7 +525,7 @@ export default function Settings() {
             onValueChange={setActiveTab}
             className="space-y-6"
           >
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="general" className="flex items-center gap-2">
                 <Building className="h-4 w-4" />
                 <span className="hidden sm:inline">General</span>
@@ -541,10 +540,6 @@ export default function Settings() {
               <TabsTrigger value="printers" className="flex items-center gap-2">
                 <Printer className="h-4 w-4" />
                 <span className="hidden sm:inline">Printers</span>
-              </TabsTrigger>
-              <TabsTrigger value="direct-print" className="flex items-center gap-2">
-                <Smartphone className="h-4 w-4" />
-                <span className="hidden sm:inline">Direct Print</span>
               </TabsTrigger>
               <TabsTrigger value="billing" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
@@ -1053,7 +1048,6 @@ export default function Settings() {
                         <div className="flex items-center justify-between">
                           <h4 className="font-medium">Configured Printers</h4>
                           <Button
-                            type="button"
                             onClick={handleAddPrinter}
                             className="flex items-center gap-2"
                           >
@@ -1106,7 +1100,6 @@ export default function Settings() {
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <Button
-                                      type="button"
                                       variant="outline"
                                       size="sm"
                                       onClick={() => testPrinterMutation.mutate(printer.id)}
@@ -1115,7 +1108,6 @@ export default function Settings() {
                                       {testPrinterMutation.isPending ? "Testing..." : "Test"}
                                     </Button>
                                     <Button
-                                      type="button"
                                       variant="outline"
                                       size="sm"
                                       onClick={() => handleEditPrinter(printer)}
@@ -1123,7 +1115,6 @@ export default function Settings() {
                                       Edit
                                     </Button>
                                     <Button
-                                      type="button"
                                       variant="destructive"
                                       size="sm"
                                       onClick={() => deletePrinterMutation.mutate(printer.id)}
@@ -1390,10 +1381,6 @@ export default function Settings() {
                       </div>
                     </CardContent>
                   </Card>
-                </TabsContent>
-
-                <TabsContent value="direct-print" className="space-y-6">
-                  <ThermalPrinterDemo />
                 </TabsContent>
 
                 <TabsContent value="billing" className="space-y-6">
@@ -1928,7 +1915,8 @@ function PrinterConfigForm({
     (type) => type.value === config.printerType || !existingTypes.includes(type.value)
   );
 
-  const handleSubmit = () => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     
     // Validate required fields
     if (!formData.printerType || !formData.printerName || !formData.ipAddress) {
@@ -1961,7 +1949,7 @@ function PrinterConfigForm({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           
 <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -2128,11 +2116,11 @@ function PrinterConfigForm({
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancel
             </Button>
-            <Button type="button" onClick={handleSubmit} disabled={isSaving}>
+            <Button type="submit" disabled={isSaving}>
               {isSaving ? "Saving..." : "Save Configuration"}
             </Button>
           </div>
-        </div>
+        </form>
       </CardContent>
     </Card>
   );

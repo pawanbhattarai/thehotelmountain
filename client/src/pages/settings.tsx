@@ -49,6 +49,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { NotificationManager } from "@/components/NotificationManager";
+import { ThermalPrinterDemo } from "@/components/ThermalPrinterDemo";
 
 const printerConfigSchema = z.object({
   printerName: z.string().min(1, "Printer name is required"),
@@ -525,7 +526,7 @@ export default function Settings() {
             onValueChange={setActiveTab}
             className="space-y-6"
           >
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="general" className="flex items-center gap-2">
                 <Building className="h-4 w-4" />
                 <span className="hidden sm:inline">General</span>
@@ -540,6 +541,10 @@ export default function Settings() {
               <TabsTrigger value="printers" className="flex items-center gap-2">
                 <Printer className="h-4 w-4" />
                 <span className="hidden sm:inline">Printers</span>
+              </TabsTrigger>
+              <TabsTrigger value="direct-print" className="flex items-center gap-2">
+                <Smartphone className="h-4 w-4" />
+                <span className="hidden sm:inline">Direct Print</span>
               </TabsTrigger>
               <TabsTrigger value="billing" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
@@ -1385,6 +1390,10 @@ export default function Settings() {
                       </div>
                     </CardContent>
                   </Card>
+                </TabsContent>
+
+                <TabsContent value="direct-print" className="space-y-6">
+                  <ThermalPrinterDemo />
                 </TabsContent>
 
                 <TabsContent value="billing" className="space-y-6">

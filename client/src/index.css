@@ -2,6 +2,57 @@
 @tailwind components;
 @tailwind utilities;
 
+/* PWA Responsive Design for Rotation Support */
+@supports (orientation: landscape) {
+  @media screen and (orientation: landscape) {
+    .main-content {
+      min-height: 100vh;
+      overflow-x: auto;
+    }
+    
+    .sidebar-mobile {
+      z-index: 9999;
+    }
+  }
+}
+
+@supports (orientation: portrait) {
+  @media screen and (orientation: portrait) {
+    .main-content {
+      min-height: 100vh;
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+  }
+}
+
+/* Responsive layout improvements for mobile/tablet rotation */
+@media screen and (max-width: 768px) {
+  .grid-responsive {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media screen and (min-width: 769px) and (max-width: 1024px) {
+  .grid-responsive {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+/* Ensure content adapts to rotation */
+.responsive-container {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Mobile-friendly touch targets */
+@media (hover: none) and (pointer: coarse) {
+  button, .btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
 /* iOS PWA Fixes */
 @supports (-webkit-touch-callout: none) {
 

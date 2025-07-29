@@ -23,6 +23,19 @@ A comprehensive restaurant management system built with Node.js, Express, React,
 ## Recent Changes
 - **2025-07-29**: Successfully completed migration from Replit Agent to Replit environment  
 - **Migration Status**: Complete - PostgreSQL database configured, all systems operational
+- **PWA Rotation Support Fixed**: Enhanced mobile and tablet rotation support for restaurant management system
+  - Fixed PWA manifest orientation from "portrait-primary" to "any" to allow free rotation
+  - Updated viewport meta tag to enable user scaling and improved touch interaction
+  - Added comprehensive CSS support for orientation changes (landscape/portrait)
+  - Added responsive layout improvements for mobile/tablet rotation scenarios
+  - Enhanced touch targets for mobile devices with minimum 44px touch areas
+  - Fixed JSX syntax errors that were preventing application startup
+- **KOT/BOT Generation System Enhanced**: Improved reservation-based KOT/BOT processing
+  - Created new endpoint for processing all orders in a reservation simultaneously
+  - Added comprehensive error handling and user feedback for order generation
+  - Enhanced button logic to work with reservation IDs instead of individual order IDs
+  - Added clear messaging when no orders exist to generate tickets from
+  - Created test data structure: guest, reservation, and menu items for testing functionality
 - **Timezone Fix for Room Orders**: Fixed critical timezone issue affecting room order timestamps
   - Problem: Room order creation times displayed in UTC instead of hotel's configured timezone
   - Root cause: Frontend using server UTC timestamps without timezone conversion

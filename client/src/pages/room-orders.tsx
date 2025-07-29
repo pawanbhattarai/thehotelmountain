@@ -946,7 +946,6 @@ export default function RoomOrders() {
                         ))
                       )}
                     </div>
-                    </div>
                   </CardContent>
                 </Card>
               </div>

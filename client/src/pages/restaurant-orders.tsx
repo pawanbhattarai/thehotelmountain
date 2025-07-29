@@ -982,8 +982,8 @@ export default function RestaurantOrders() {
 
               {/* Order Summary */}
               <div>
-                <Card className="sticky top-4">
-                  <CardHeader>
+                <Card className="sticky top-4 max-h-[calc(100vh-8rem)] flex flex-col">
+                  <CardHeader className="flex-shrink-0">
                     <CardTitle className="flex items-center">
                       <ShoppingCart className="h-5 w-5 mr-2" />
                       Order Summary
@@ -992,7 +992,7 @@ export default function RestaurantOrders() {
                       )}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="flex-1 overflow-y-auto">
                     {selectedItems.length === 0 ? (
                       <div className="text-center py-8">
                         <ShoppingCart className="h-12 w-12 mx-auto text-gray-400 mb-2" />
@@ -1000,7 +1000,7 @@ export default function RestaurantOrders() {
                       </div>
                     ) : (
                       <>
-                        <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
+                        <div className="space-y-3 mb-4 max-h-48 overflow-y-auto">
                           {selectedItems.map((item, index) => {
                             // Use uniqueId as key here
                             const itemKey =

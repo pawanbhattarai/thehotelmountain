@@ -572,84 +572,92 @@ export default function RestaurantMenu() {
                           )}
                         />
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <FormField
-                            control={dishForm.control}
-                            name="dietType"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Diet Type</FormLabel>
-                                <FormControl>
-                                  <div className="grid grid-cols-3 gap-2">
-                                    <div 
-                                      className={`flex flex-col items-center p-3 border-2 rounded-lg cursor-pointer transition-all ${
-                                        field.value === 'vegetarian' 
-                                          ? 'border-green-500 bg-green-50' 
-                                          : 'border-gray-200 hover:border-green-300'
-                                      }`}
-                                      onClick={() => field.onChange('vegetarian')}
-                                    >
-                                      <div className="w-6 h-6 border-2 border-green-500 rounded-sm flex items-center justify-center mb-1">
-                                        <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                        {(() => {
+                          const selectedCategoryId = dishForm.watch('categoryId');
+                          const selectedCategory = Array.isArray(categories) ? categories.find((cat: any) => cat.id === selectedCategoryId) : null;
+                          const isBarCategory = selectedCategory?.type === 'bar';
+                          
+                          return !isBarCategory ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <FormField
+                                control={dishForm.control}
+                                name="dietType"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Diet Type</FormLabel>
+                                    <FormControl>
+                                      <div className="grid grid-cols-3 gap-2">
+                                        <div 
+                                          className={`flex flex-col items-center p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                                            field.value === 'vegetarian' 
+                                              ? 'border-green-500 bg-green-50' 
+                                              : 'border-gray-200 hover:border-green-300'
+                                          }`}
+                                          onClick={() => field.onChange('vegetarian')}
+                                        >
+                                          <div className="w-6 h-6 border-2 border-green-500 rounded-sm flex items-center justify-center mb-1">
+                                            <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                                          </div>
+                                          <span className="text-xs font-medium text-green-600">VEG</span>
+                                        </div>
+                                        <div 
+                                          className={`flex flex-col items-center p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                                            field.value === 'non-vegetarian' 
+                                              ? 'border-red-500 bg-red-50' 
+                                              : 'border-gray-200 hover:border-red-300'
+                                          }`}
+                                          onClick={() => field.onChange('non-vegetarian')}
+                                        >
+                                          <div className="w-6 h-6 border-2 border-red-500 rounded-sm flex items-center justify-center mb-1">
+                                            <div className="w-4 h-4 bg-red-500 rounded-full"></div>
+                                          </div>
+                                          <span className="text-xs font-medium text-red-600">NON-VEG</span>
+                                        </div>
+                                        <div 
+                                          className={`flex flex-col items-center p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                                            field.value === 'vegan' 
+                                              ? 'border-green-600 bg-green-50' 
+                                              : 'border-gray-200 hover:border-green-400'
+                                          }`}
+                                          onClick={() => field.onChange('vegan')}
+                                        >
+                                          <div className="w-6 h-6 border-2 border-green-600 rounded-sm flex items-center justify-center mb-1">
+                                            <div className="w-4 h-4 bg-green-600 rounded-full"></div>
+                                          </div>
+                                          <span className="text-xs font-medium text-green-700">VEGAN</span>
+                                        </div>
                                       </div>
-                                      <span className="text-xs font-medium text-green-600">VEG</span>
-                                    </div>
-                                    <div 
-                                      className={`flex flex-col items-center p-3 border-2 rounded-lg cursor-pointer transition-all ${
-                                        field.value === 'non-vegetarian' 
-                                          ? 'border-red-500 bg-red-50' 
-                                          : 'border-gray-200 hover:border-red-300'
-                                      }`}
-                                      onClick={() => field.onChange('non-vegetarian')}
-                                    >
-                                      <div className="w-6 h-6 border-2 border-red-500 rounded-sm flex items-center justify-center mb-1">
-                                        <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-                                      </div>
-                                      <span className="text-xs font-medium text-red-600">NON-VEG</span>
-                                    </div>
-                                    <div 
-                                      className={`flex flex-col items-center p-3 border-2 rounded-lg cursor-pointer transition-all ${
-                                        field.value === 'vegan' 
-                                          ? 'border-green-600 bg-green-50' 
-                                          : 'border-gray-200 hover:border-green-400'
-                                      }`}
-                                      onClick={() => field.onChange('vegan')}
-                                    >
-                                      <div className="w-6 h-6 border-2 border-green-600 rounded-sm flex items-center justify-center mb-1">
-                                        <div className="w-4 h-4 bg-green-600 rounded-full"></div>
-                                      </div>
-                                      <span className="text-xs font-medium text-green-700">VEGAN</span>
-                                    </div>
-                                  </div>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={dishForm.control}
-                            name="spiceLevel"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Spice Level</FormLabel>
-                                <FormControl>
-                                  <Select value={field.value} onValueChange={field.onChange}>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select spice level" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="mild">Mild</SelectItem>
-                                      <SelectItem value="medium">Medium</SelectItem>
-                                      <SelectItem value="hot">Hot</SelectItem>
-                                      <SelectItem value="extra-hot">Extra Hot</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={dishForm.control}
+                                name="spiceLevel"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Spice Level</FormLabel>
+                                    <FormControl>
+                                      <Select value={field.value} onValueChange={field.onChange}>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select spice level" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="mild">Mild</SelectItem>
+                                          <SelectItem value="medium">Medium</SelectItem>
+                                          <SelectItem value="hot">Hot</SelectItem>
+                                          <SelectItem value="extra-hot">Extra Hot</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                          ) : null;
+                        })()}
 
                         <FormField
                           control={dishForm.control}

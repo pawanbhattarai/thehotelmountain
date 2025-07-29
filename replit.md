@@ -21,8 +21,16 @@ A comprehensive restaurant management system built with Node.js, Express, React,
 - File upload capabilities
 
 ## Recent Changes
-- **2025-07-25**: Successfully completed migration from Replit Agent to Replit environment
+- **2025-07-29**: Successfully completed migration from Replit Agent to Replit environment  
 - **Migration Status**: Complete - PostgreSQL database configured, all systems operational
+- **Timezone Fix for Room Orders**: Fixed critical timezone issue affecting room order timestamps
+  - Problem: Room order creation times displayed in UTC instead of hotel's configured timezone
+  - Root cause: Frontend using server UTC timestamps without timezone conversion
+  - Solution: Implemented timezone-aware timestamp display using hotel settings configuration
+  - Added formatDateInTimezone utility function for proper timezone conversion
+  - Order timestamps now display correctly in hotel's configured timezone (Asia/Kathmandu by default)
+  - Fixed both reservation card timestamps and individual order detail timestamps
+  - Users now see accurate local time when room orders are created
 - **Printer Configuration Bug Fix**: Fixed critical printer configuration saving issue
   - Problem: Printer configurations not saving due to API request format errors and schema mismatches
   - Root cause: Frontend using incorrect apiRequest parameters and uppercase printer types

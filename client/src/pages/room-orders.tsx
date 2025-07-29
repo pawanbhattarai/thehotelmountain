@@ -130,6 +130,26 @@ export default function RoomOrders() {
   });
   const currencySymbol = (settings as any)?.currency || "Rs.";
 
+  // Get hotel settings for timezone
+  const { data: hotelSettings } = useQuery({
+    queryKey: ["/api/hotel-settings"],
+  });
+  const timeZone = (hotelSettings as any)?.timeZone || "Asia/Kathmandu";
+
+  // Utility function to format dates in hotel's timezone
+  const formatDateInTimezone = (dateString: string, timeZone: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat("en-GB", {
+      timeZone,
+      day: "2-digit",
+      month: "2-digit", 
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(date);
+  };
+
   // Create new order mutation
   const createOrderMutation = useMutation({
     mutationFn: async (data: { order: any; items: any[] }) => {
@@ -1242,6 +1262,18 @@ export default function RoomOrders() {
                               ? `Order #${latestOrderNumber}`
                               : `${reservationOrders.length} Orders (Latest: #${latestOrderNumber})`}
                           </p>
+                          {/* Show latest order timestamp in local timezone */}
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3 text-gray-400" />
+                            <p className="text-xs text-gray-500">
+                              {(() => {
+                                const latestOrder = reservationOrders.reduce((latest: any, current: any) =>
+                                  new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest
+                                );
+                                return formatDateInTimezone(latestOrder.createdAt, timeZone);
+                              })()}
+                            </p>
+                          </div>
                           <div className="flex items-center justify-between">
                             <p className="text-sm font-semibold text-green-600">
                               {currencySymbol} {totalAmount.toFixed(2)}
@@ -1312,6 +1344,17 @@ export default function RoomOrders() {
                       <p className="font-bold text-green-600">
                         {currencySymbol} {viewingOrder.totalAmount}
                       </p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-sm font-medium text-gray-500">
+                        Order Created:
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-gray-400" />
+                        <p className="font-semibold">
+                          {formatDateInTimezone(viewingOrder.createdAt, timeZone)}
+                        </p>
+                      </div>
                     </div>
                   </div>
 

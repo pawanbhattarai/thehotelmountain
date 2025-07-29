@@ -690,12 +690,16 @@ export default function RestaurantDishes() {
                             )}
                           </TableCell>
                           <TableCell>
-                            {dish.spiceLevel && (
-                              <Badge
-                                className={`${getSpiceLevelColor(dish.spiceLevel)} text-white`}
-                              >
-                                {dish.spiceLevel}
-                              </Badge>
+                            {dish.category?.menuType === "Bar" ? (
+                              <span className="text-gray-400">-</span>
+                            ) : (
+                              dish.spiceLevel && (
+                                <Badge
+                                  className={`${getSpiceLevelColor(dish.spiceLevel)} text-white`}
+                                >
+                                  {dish.spiceLevel}
+                                </Badge>
+                              )
                             )}
                           </TableCell>
                           <TableCell>

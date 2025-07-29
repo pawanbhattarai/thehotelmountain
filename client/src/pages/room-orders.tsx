@@ -827,7 +827,7 @@ export default function RoomOrders() {
                         />
                       </div>
                       
-                      <div className="flex flex-wrap gap-3"></div>
+                      <div className="flex flex-wrap gap-3">
                         <Select
                           value={selectedCategory}
                           onValueChange={setSelectedCategory}
@@ -891,7 +891,7 @@ export default function RoomOrders() {
                       </div>
                     )}
                     
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-96 overflow-y-auto"></div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
                       {filteredDishes?.length === 0 ? (
                         <div className="col-span-2 text-center py-8">
                           <div className="text-gray-400 mb-2">
@@ -944,7 +944,8 @@ export default function RoomOrders() {
                             </CardContent>
                           </Card>
                         ))
-                      )}</div>
+                      )}
+                    </div>
                     </div>
                   </CardContent>
                 </Card>

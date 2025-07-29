@@ -25,7 +25,9 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, Eye, Check, ShoppingCart, Calendar } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, Check, ShoppingCart, Calendar, Search } from "lucide-react";
+import { usePagination } from "@/hooks/usePagination";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -70,6 +72,8 @@ export default function PurchaseOrders() {
   const [editingOrder, setEditingOrder] = useState<any>(null);
   const [viewingOrder, setViewingOrder] = useState<any>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const { user } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -97,12 +101,19 @@ export default function PurchaseOrders() {
     name: "items",
   });
 
-  const { data: orders = [], isLoading } = useQuery({
+  const { data: orders = [], isLoading } = useQuery<any[]>({
     queryKey: ["/api/purchase-orders", statusFilter],
     queryFn: () => {
       const params = statusFilter !== "all" ? `?status=${statusFilter}` : "";
       return fetch(`/api/purchase-orders${params}`).then(res => res.json());
     },
+  });
+
+  const pagination = usePagination({
+    data: Array.isArray(orders) ? orders : [],
+    itemsPerPage: 10,
+    searchTerm,
+    searchFields: ["supplierName", "orderNumber", "status"],
   });
 
   const { data: suppliers = [] } = useQuery({
@@ -303,8 +314,6 @@ export default function PurchaseOrders() {
     );
   };
 
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar
@@ -320,8 +329,9 @@ export default function PurchaseOrders() {
           }
         />
         <main className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center space-x-4">
+          {/* Search and Filter Section */}
+          <div className="mb-6 flex flex-col lg:flex-row gap-4 justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-48">
                   <SelectValue placeholder="Filter by status" />
@@ -336,11 +346,20 @@ export default function PurchaseOrders() {
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search purchase orders..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
 
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button onClick={openCreateDialog}>
+                <Button onClick={openCreateDialog} className="w-full lg:w-auto bg-primary hover:bg-primary/90">
                   <Plus className="mr-2 h-4 w-4" />
                   Create Purchase Order
                 </Button>
@@ -643,7 +662,7 @@ export default function PurchaseOrders() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {orders.map((order: any) => (
+                    {pagination.paginatedData.map((order: any) => (
                       <TableRow key={order.id}>
                         <TableCell className="font-medium">
                           {order.poNumber}
@@ -691,15 +710,25 @@ export default function PurchaseOrders() {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {orders.length === 0 && (
+                    {pagination.paginatedData.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center py-8">
-                          No purchase orders found. Create your first purchase order to get started.
+                          {searchTerm ? "No purchase orders found matching your search." : "No purchase orders found. Create your first purchase order to get started."}
                         </TableCell>
                       </TableRow>
                     )}
                   </TableBody>
                 </Table>
+              )}
+              {pagination.totalItems > 0 && (
+                <PaginationControls
+                  currentPage={pagination.currentPage}
+                  totalPages={pagination.totalPages}
+                  onPageChange={pagination.setCurrentPage}
+                  startIndex={pagination.startIndex}
+                  endIndex={pagination.endIndex}
+                  totalItems={pagination.totalItems}
+                />
               )}
             </CardContent>
           </Card>

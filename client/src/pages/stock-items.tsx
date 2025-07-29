@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, Package } from "lucide-react";
+import { Plus, Edit, Trash2, Package, Search } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -48,6 +48,8 @@ import { z } from "zod";
 import { useAuth } from "@/hooks/useAuth";
 import BulkOperations from "@/components/bulk-operations";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
+import { usePagination } from "@/hooks/usePagination";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 
 const formSchema = insertStockItemSchema.extend({
   name: z.string().min(1, "Item name is required"),
@@ -98,6 +100,8 @@ export default function StockItems() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const { user } = useAuth();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
@@ -121,19 +125,26 @@ export default function StockItems() {
     },
   });
 
-  const { data: items = [], isLoading } = useQuery({
+  const { data: items = [], isLoading } = useQuery<any[]>({
     queryKey: ["/api/inventory/stock-items"],
   });
 
-  const { data: stockCategories = [] } = useQuery({
+  const pagination = usePagination({
+    data: Array.isArray(items) ? items : [],
+    itemsPerPage: 10,
+    searchTerm,
+    searchFields: ["name", "sku", "stockCategory.name", "supplier.name"],
+  });
+
+  const { data: stockCategories = [] } = useQuery<any[]>({
     queryKey: ["/api/inventory/stock-categories"],
   });
 
-  const { data: measuringUnits = [] } = useQuery({
+  const { data: measuringUnits = [] } = useQuery<any[]>({
     queryKey: ["/api/inventory/measuring-units"],
   });
 
-  const { data: suppliers = [] } = useQuery({
+  const { data: suppliers = [] } = useQuery<any[]>({
     queryKey: ["/api/inventory/suppliers"],
   });
 
@@ -302,8 +313,6 @@ export default function StockItems() {
     setDialogOpen(true);
   };
 
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar
@@ -319,10 +328,11 @@ export default function StockItems() {
           }
         />
         <main className="p-6">
-          <div className="flex justify-between items-center mb-6">
+          {/* Search and Add Button Section */}
+          <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between">
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button onClick={openCreateDialog}>
+                <Button onClick={openCreateDialog} className="w-full sm:w-auto bg-primary hover:bg-primary/90">
                   <Plus className="mr-2 h-4 w-4" />
                   Add Item
                 </Button>
@@ -649,7 +659,15 @@ export default function StockItems() {
                 </Form>
               </DialogContent>
             </Dialog>
-
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search stock items..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
 
           {/* Bulk Stock Items Dialog */}
@@ -700,7 +718,7 @@ export default function StockItems() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {items.map((item: any) => (
+                    {pagination.paginatedData.map((item: any) => (
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">
                           {item.name}
@@ -756,16 +774,25 @@ export default function StockItems() {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {items.length === 0 && (
+                    {pagination.paginatedData.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={7} className="text-center py-8">
-                          No stock items found. Create your first item to get
-                          started.
+                          {searchTerm ? "No stock items found matching your search." : "No stock items found. Create your first item to get started."}
                         </TableCell>
                       </TableRow>
                     )}
                   </TableBody>
                 </Table>
+              )}
+              {pagination.totalItems > 0 && (
+                <PaginationControls
+                  currentPage={pagination.currentPage}
+                  totalPages={pagination.totalPages}
+                  onPageChange={pagination.setCurrentPage}
+                  startIndex={pagination.startIndex}
+                  endIndex={pagination.endIndex}
+                  totalItems={pagination.totalItems}
+                />
               )}
             </CardContent>
           </Card>

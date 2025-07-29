@@ -23,7 +23,9 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, Ruler } from "lucide-react";
+import { Plus, Edit, Trash2, Ruler, Search } from "lucide-react";
+import { usePagination } from "@/hooks/usePagination";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -65,6 +67,7 @@ export default function MeasuringUnits() {
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
   const [editingUnit, setEditingUnit] = useState<MeasuringUnit | null>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -76,8 +79,15 @@ export default function MeasuringUnits() {
     },
   });
 
-  const { data: units = [], isLoading } = useQuery({
+  const { data: units = [], isLoading } = useQuery<any[]>({
     queryKey: ["/api/inventory/measuring-units"],
+  });
+
+  const pagination = usePagination({
+    data: Array.isArray(units) ? units : [],
+    itemsPerPage: 10,
+    searchTerm,
+    searchFields: ["name", "symbol", "baseUnit"],
   });
 
   const { data: branches } = useQuery({
@@ -236,10 +246,11 @@ export default function MeasuringUnits() {
           }
         />
         <main className="p-6">
-          <div className="flex justify-between items-center mb-6">
+          {/* Search and Add Button Section */}
+          <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between">
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button onClick={openCreateDialog}>
+                <Button onClick={openCreateDialog} className="w-full sm:w-auto bg-primary hover:bg-primary/90">
                   <Plus className="mr-2 h-4 w-4" />
                   Add Unit
                 </Button>
@@ -342,7 +353,15 @@ export default function MeasuringUnits() {
                 </Form>
               </DialogContent>
             </Dialog>
-
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search units..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
 
           {/* Bulk Measuring Units Dialog */}
@@ -389,7 +408,7 @@ export default function MeasuringUnits() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {units.map((unit: MeasuringUnit) => (
+                    {pagination.paginatedData.map((unit: MeasuringUnit) => (
                       <TableRow key={unit.id}>
                         <TableCell className="font-medium">
                           {unit.name}
@@ -427,16 +446,25 @@ export default function MeasuringUnits() {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {units.length === 0 && (
+                    {pagination.paginatedData.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center py-8">
-                          No measuring units found. Create your first unit to
-                          get started.
+                          {searchTerm ? "No units found matching your search." : "No measuring units found. Create your first unit to get started."}
                         </TableCell>
                       </TableRow>
                     )}
                   </TableBody>
                 </Table>
+              )}
+              {pagination.totalItems > 0 && (
+                <PaginationControls
+                  currentPage={pagination.currentPage}
+                  totalPages={pagination.totalPages}
+                  onPageChange={pagination.setCurrentPage}
+                  startIndex={pagination.startIndex}
+                  endIndex={pagination.endIndex}
+                  totalItems={pagination.totalItems}
+                />
               )}
             </CardContent>
           </Card>

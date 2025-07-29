@@ -14,7 +14,9 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, Truck } from "lucide-react";
+import { Plus, Edit, Trash2, Truck, Search } from "lucide-react";
+import { usePagination } from "@/hooks/usePagination";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
@@ -59,6 +61,7 @@ export default function Suppliers() {
   const [editingSupplier, setEditingSupplier] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<any>(null);
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
@@ -76,8 +79,15 @@ export default function Suppliers() {
     },
   });
 
-  const { data: suppliers = [], isLoading } = useQuery({
+  const { data: suppliers = [], isLoading } = useQuery<any[]>({
     queryKey: ["/api/inventory/suppliers"],
+  });
+
+  const pagination = usePagination({
+    data: Array.isArray(suppliers) ? suppliers : [],
+    itemsPerPage: 10,
+    searchTerm,
+    searchFields: ["name", "email", "phone", "contactPerson"],
   });
 
   const { data: branches = [] } = useQuery({
@@ -234,10 +244,11 @@ export default function Suppliers() {
           }
         />
         <main className="p-6">
-          <div className="flex justify-between items-center mb-6">
+          {/* Search and Add Button Section */}
+          <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between">
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button onClick={openCreateDialog}>
+                <Button onClick={openCreateDialog} className="w-full sm:w-auto bg-primary hover:bg-primary/90">
                   <Plus className="mr-2 h-4 w-4" />
                   Add Supplier
                 </Button>
@@ -381,7 +392,15 @@ export default function Suppliers() {
                 </Form>
               </DialogContent>
             </Dialog>
-
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search suppliers..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
 
           {/* Bulk Suppliers Dialog */}
@@ -428,7 +447,7 @@ export default function Suppliers() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {suppliers.map((supplier: any) => (
+                    {pagination.paginatedData.map((supplier: any) => (
                       <TableRow key={supplier.id}>
                         <TableCell className="font-medium">
                           {supplier.name}
@@ -466,16 +485,25 @@ export default function Suppliers() {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {suppliers.length === 0 && (
+                    {pagination.paginatedData.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center py-8">
-                          No suppliers found. Create your first supplier to get
-                          started.
+                          {searchTerm ? "No suppliers found matching your search." : "No suppliers found. Create your first supplier to get started."}
                         </TableCell>
                       </TableRow>
                     )}
                   </TableBody>
                 </Table>
+              )}
+              {pagination.totalItems > 0 && (
+                <PaginationControls
+                  currentPage={pagination.currentPage}
+                  totalPages={pagination.totalPages}
+                  onPageChange={pagination.setCurrentPage}
+                  startIndex={pagination.startIndex}
+                  endIndex={pagination.endIndex}
+                  totalItems={pagination.totalItems}
+                />
               )}
             </CardContent>
           </Card>

@@ -26,7 +26,9 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, Package } from "lucide-react";
+import { Plus, Edit, Trash2, Package, Search } from "lucide-react";
+import { usePagination } from "@/hooks/usePagination";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -68,6 +70,8 @@ export default function StockCategories() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const [editingCategory, setEditingCategory] = useState<StockCategory | null>(
     null,
   );
@@ -81,8 +85,15 @@ export default function StockCategories() {
     },
   });
 
-  const { data: categories = [], isLoading } = useQuery({
+  const { data: categories = [], isLoading } = useQuery<any[]>({
     queryKey: ["/api/inventory/stock-categories"],
+  });
+
+  const pagination = usePagination({
+    data: Array.isArray(categories) ? categories : [],
+    itemsPerPage: 10,
+    searchTerm,
+    searchFields: ["name", "description"],
   });
 
   const { data: branches = [] } = useQuery({
@@ -232,8 +243,6 @@ export default function StockCategories() {
     setDialogOpen(true);
   };
 
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar
@@ -249,10 +258,11 @@ export default function StockCategories() {
           }
         />
         <main className="p-6">
-          <div className="flex justify-between items-center mb-6">
+          {/* Search and Add Button Section */}
+          <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between">
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button onClick={openCreateDialog}>
+                <Button onClick={openCreateDialog} className="w-full sm:w-auto bg-primary hover:bg-primary/90">
                   <Plus className="mr-2 h-4 w-4" />
                   Add Category
                 </Button>
@@ -372,7 +382,15 @@ export default function StockCategories() {
                 </Form>
               </DialogContent>
             </Dialog>
-
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search categories..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
 
           {/* Bulk Stock Categories Dialog */}
@@ -419,7 +437,7 @@ export default function StockCategories() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {categories.map((category: StockCategory) => (
+                    {pagination.paginatedData.map((category: StockCategory) => (
                       <TableRow key={category.id}>
                         <TableCell className="font-medium">
                           {category.name}
@@ -465,16 +483,25 @@ export default function StockCategories() {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {categories.length === 0 && (
+                    {pagination.paginatedData.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={5} className="text-center py-8">
-                          No stock categories found. Create your first category
-                          to get started.
+                          {searchTerm ? "No categories found matching your search." : "No stock categories found. Create your first category to get started."}
                         </TableCell>
                       </TableRow>
                     )}
                   </TableBody>
                 </Table>
+              )}
+              {pagination.totalItems > 0 && (
+                <PaginationControls
+                  currentPage={pagination.currentPage}
+                  totalPages={pagination.totalPages}
+                  onPageChange={pagination.setCurrentPage}
+                  startIndex={pagination.startIndex}
+                  endIndex={pagination.endIndex}
+                  totalItems={pagination.totalItems}
+                />
               )}
             </CardContent>
           </Card>

@@ -371,11 +371,11 @@ export default function PurchaseOrders() {
         />
         <main className="p-6">
           {/* Search and Filter Section */}
-          <div className="mb-6 flex flex-col gap-4">
-            {/* First row: Status filter and Create button */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+          <div className="mb-6">
+            <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
+              {/* Status Filter */}
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-48">
+                <SelectTrigger className="w-full lg:w-48">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -391,11 +391,23 @@ export default function PurchaseOrders() {
                 </SelectContent>
               </Select>
 
+              {/* Search Bar */}
+              <div className="relative w-full lg:flex-1 lg:max-w-md lg:mx-4">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search purchase orders..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-full"
+                />
+              </div>
+
+              {/* Create Button */}
               <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogTrigger asChild>
                   <Button
                     onClick={openCreateDialog}
-                    className="w-full sm:w-auto bg-primary hover:bg-primary/90 shrink-0"
+                    className="w-full lg:w-auto bg-primary hover:bg-primary/90 shrink-0"
                   >
                     <Plus className="mr-2 h-4 w-4" />
                     Create Purchase Order
@@ -700,17 +712,6 @@ export default function PurchaseOrders() {
                   </Form>
                 </DialogContent>
               </Dialog>
-            </div>
-
-            {/* Second row: Search bar */}
-            <div className="relative w-full sm:max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search purchase orders..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-full"
-              />
             </div>
           </div>
 

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Sidebar from "@/components/layout/sidebar";
@@ -132,10 +131,10 @@ export default function PurchaseOrders() {
   const createMutation = useMutation({
     mutationFn: async (data: z.infer<typeof formSchema>) => {
       console.log("Submitting purchase order data:", data);
-      
+
       // Calculate totals
       const subtotal = data.items.reduce((sum, item) => sum + parseFloat(item.totalPrice || "0"), 0);
-      
+
       const orderData = {
         supplierId: data.supplierId,
         orderDate: data.orderDate,
@@ -169,12 +168,12 @@ export default function PurchaseOrders() {
           items: itemsData,
         }),
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || "Failed to create purchase order");
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
@@ -213,12 +212,12 @@ export default function PurchaseOrders() {
       const response = await fetch(`/api/purchase-orders/${id}/approve`, {
         method: "POST",
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || "Failed to approve purchase order");
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
@@ -239,12 +238,12 @@ export default function PurchaseOrders() {
       const response = await fetch(`/api/purchase-orders/${id}`, {
         method: "DELETE",
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || "Failed to delete purchase order");
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
@@ -364,7 +363,7 @@ export default function PurchaseOrders() {
                   Create Purchase Order
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto mx-4 sm:mx-auto">
                 <DialogHeader>
                   <DialogTitle>Create Purchase Order</DialogTitle>
                 </DialogHeader>
@@ -735,11 +734,11 @@ export default function PurchaseOrders() {
 
           {/* View Purchase Order Dialog */}
           <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto mx-4 sm:mx-auto">
               <DialogHeader>
                 <DialogTitle>Purchase Order Details</DialogTitle>
               </DialogHeader>
-              
+
               {viewingOrder && (
                 <div className="space-y-6">
                   {/* Header */}

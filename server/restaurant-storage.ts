@@ -457,6 +457,25 @@ export class RestaurantStorage {
     return order;
   }
 
+  async getRestaurantOrdersByReservation(reservationId: string): Promise<any[]> {
+    return await db
+      .select({
+        id: restaurantOrders.id,
+        orderNumber: restaurantOrders.orderNumber,
+        reservationId: restaurantOrders.reservationId,
+        roomId: restaurantOrders.roomId,
+        branchId: restaurantOrders.branchId,
+        customerName: restaurantOrders.customerName,
+        status: restaurantOrders.status,
+        subtotal: restaurantOrders.subtotal,
+        totalAmount: restaurantOrders.totalAmount,
+        createdAt: restaurantOrders.createdAt,
+      })
+      .from(restaurantOrders)
+      .where(eq(restaurantOrders.reservationId, reservationId))
+      .orderBy(desc(restaurantOrders.createdAt));
+  }
+
   async replaceOrderItems(
     orderId: string,
     items: InsertRestaurantOrderItem[],

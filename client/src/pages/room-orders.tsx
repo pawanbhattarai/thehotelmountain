@@ -357,6 +357,59 @@ export default function RoomOrders() {
     },
   });
 
+  // New mutation for reservation-based KOT/BOT generation
+  const generateReservationKOTBOTMutation = useMutation({
+    mutationFn: async (reservationId: string) => {
+      console.log(`🎫 Generating KOT/BOT for reservation ID: ${reservationId}`);
+      
+      const response = await fetch(
+        `/api/restaurant/reservations/${reservationId}/kot-bot`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+      
+      console.log(`🎫 Reservation KOT/BOT response status: ${response.status}`);
+      
+      if (!response.ok) {
+        const error = await response.json();
+        console.error(`🎫 Reservation KOT/BOT error:`, error);
+        throw new Error(error.message || "Failed to generate KOT/BOT for reservation");
+      }
+      
+      const result = await response.json();
+      console.log(`🎫 Reservation KOT/BOT result:`, result);
+      return result;
+    },
+    onSuccess: (data) => {
+      console.log(`🎫 Reservation KOT/BOT generation successful:`, data);
+      
+      queryClient.invalidateQueries({
+        queryKey: ["/api/restaurant/orders/room"],
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/restaurant/kot"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/restaurant/bot"] });
+
+      toast({
+        title: data.message || "KOT/BOT Generated Successfully",
+        description: data.description || "Tickets generated for all orders in reservation",
+      });
+    },
+    onError: (error: any) => {
+      console.error(`🎫 Reservation KOT/BOT generation failed:`, error);
+      toast({
+        title: "Failed to generate KOT/BOT",
+        description:
+          error.message || "An error occurred while generating KOT/BOT for reservation",
+        variant: "destructive",
+      });
+    },
+  });
+
   const form = useForm<OrderFormData>({
     resolver: zodResolver(orderSchema),
     defaultValues: {
@@ -721,14 +774,17 @@ export default function RoomOrders() {
                   <Button
                     variant="default"
                     onClick={() => {
-                      const latestOrder = existingOrders[existingOrders.length - 1];
-                      generateKOTBOTMutation.mutate(latestOrder.id);
+                      console.log(`🎫 Generating KOT/BOT for reservation:`, selectedReservation.id);
+                      console.log(`🎫 Available orders:`, existingOrders.length);
+                      
+                      // Use the new reservation-based endpoint
+                      generateReservationKOTBOTMutation.mutate(selectedReservation.id);
                     }}
-                    disabled={generateKOTBOTMutation.isPending}
+                    disabled={generateReservationKOTBOTMutation.isPending}
                     className="bg-blue-600 hover:bg-blue-700"
                   >
                     <FileText className="h-4 w-4 mr-2" />
-                    {generateKOTBOTMutation.isPending ? "Generating..." : "Generate KOT/BOT"}
+                    {generateReservationKOTBOTMutation.isPending ? "Generating..." : "Generate KOT/BOT"}
                   </Button>
                 )}
               </div>

@@ -6710,6 +6710,104 @@ Thank you!
     },
   );
 
+  // Generate KOT/BOT for all orders in a reservation
+  app.post(
+    "/api/restaurant/reservations/:reservationId/kot-bot",
+    isAuthenticated,
+    async (req: any, res) => {
+      try {
+        const user = await storage.getUser(req.session.user.id);
+        if (!user) return res.status(401).json({ message: "User not found" });
+
+        const reservationId = req.params.reservationId;
+        
+        // Get all orders for this reservation
+        const orders = await restaurantStorage.getRestaurantOrdersByReservation(reservationId);
+        
+        if (!orders || orders.length === 0) {
+          return res.status(404).json({ message: "No orders found for this reservation" });
+        }
+
+        let totalKotGenerated = 0;
+        let totalBotGenerated = 0;
+        let kotNumbers = [];
+        let botNumbers = [];
+        let messages = [];
+
+        // Process each order
+        for (const order of orders) {
+          try {
+            const result = await restaurantStorage.generateKOTAndBOT(
+              order.id,
+              user.id,
+            );
+
+            if (result.kotGenerated) {
+              totalKotGenerated++;
+              kotNumbers.push(result.kotData.kotNumber);
+            }
+            if (result.botGenerated) {
+              totalBotGenerated++;
+              botNumbers.push(result.botData.botNumber);
+            }
+            
+            messages.push(result.message);
+          } catch (orderError) {
+            console.log(`Skipping order ${order.id}: ${orderError.message}`);
+          }
+        }
+
+        // Build response message
+        let description = "";
+        if (totalKotGenerated > 0 && totalBotGenerated > 0) {
+          description = `Generated ${totalKotGenerated} KOT(s) and ${totalBotGenerated} BOT(s) for reservation orders`;
+        } else if (totalKotGenerated > 0) {
+          description = `Generated ${totalKotGenerated} KOT(s) for food items`;
+        } else if (totalBotGenerated > 0) {
+          description = `Generated ${totalBotGenerated} BOT(s) for beverage items`;
+        } else {
+          description = "No items available for KOT/BOT generation in any order";
+        }
+
+        // Broadcast updates
+        if (totalKotGenerated > 0) {
+          wsManager.broadcastDataUpdate(
+            "restaurant-kot",
+            orders[0].branchId?.toString(),
+          );
+        }
+        if (totalBotGenerated > 0) {
+          wsManager.broadcastDataUpdate(
+            "restaurant-bot",
+            orders[0].branchId?.toString(),
+          );
+        }
+        wsManager.broadcastDataUpdate(
+          "restaurant-orders",
+          orders[0].branchId?.toString(),
+        );
+
+        res.json({
+          success: true,
+          message: "KOT/BOT generation completed",
+          description,
+          kotGenerated: totalKotGenerated > 0,
+          botGenerated: totalBotGenerated > 0,
+          kotNumbers,
+          botNumbers,
+          totalProcessed: orders.length,
+          totalKotGenerated,
+          totalBotGenerated
+        });
+      } catch (error) {
+        console.error("Error generating KOT/BOT for reservation:", error);
+        res
+          .status(500)
+          .json({ message: error.message || "Failed to generate KOT/BOT for reservation" });
+      }
+    },
+  );
+
   app.post(
     "/api/restaurant/orders/:id/bot",
     isAuthenticated,

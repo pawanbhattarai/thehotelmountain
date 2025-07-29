@@ -888,8 +888,15 @@ export class DatabaseStorage implements IStorage {
 
   // Hotel Settings operations
   async getHotelSettings(): Promise<HotelSettings | undefined> {
+    console.log(`🔍 Getting hotel settings`);
+
     const [settings] = await db.select().from(hotelSettings).limit(1);
-    return settings;
+
+    const result = settings[0] || undefined;
+    console.log(`🔍 Hotel settings from DB:`, result);
+    console.log(`🕐 Timezone from DB: "${result?.timeZone}"`);
+
+    return result;
   }
 
   async upsertHotelSettings(
@@ -2089,11 +2096,11 @@ export class DatabaseStorage implements IStorage {
   // Printer Configuration operations
   async getPrinterConfigurations(branchId?: number): Promise<PrinterConfiguration[]> {
     let query = db.select().from(printerConfigurations);
-    
+
     if (branchId) {
       query = query.where(eq(printerConfigurations.branchId, branchId));
     }
-    
+
     return await query.orderBy(printerConfigurations.printerType, printerConfigurations.createdAt);
   }
 
@@ -2103,7 +2110,7 @@ export class DatabaseStorage implements IStorage {
       .from(printerConfigurations)
       .where(eq(printerConfigurations.id, id))
       .limit(1);
-    
+
     return result[0];
   }
 
@@ -2119,7 +2126,7 @@ export class DatabaseStorage implements IStorage {
         )
       )
       .limit(1);
-    
+
     return result[0];
   }
 
@@ -2131,7 +2138,7 @@ export class DatabaseStorage implements IStorage {
         printerType: config.printerType.toLowerCase() as 'kot' | 'bot' | 'billing',
       })
       .returning();
-    
+
     return result[0];
   }
 
@@ -2145,7 +2152,7 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(printerConfigurations.id, id))
       .returning();
-    
+
     return result[0];
   }
 
@@ -2157,21 +2164,21 @@ export class DatabaseStorage implements IStorage {
 
   async testPrinterConnection(id: number): Promise<{ success: boolean; message: string }> {
     const config = await this.getPrinterConfiguration(id);
-    
+
     if (!config) {
       return { success: false, message: 'Printer configuration not found' };
     }
 
     // Import printer service dynamically to avoid circular imports
     const { printerService } = await import('./printer-service');
-    
+
     try {
       const isConnected = await printerService.testPrinterConnection(
         config.ipAddress, 
         config.port || 9100, 
         config.connectionTimeout || 5000
       );
-      
+
       if (isConnected) {
         await this.updatePrinterConfiguration(id, {
           connectionStatus: 'connected',

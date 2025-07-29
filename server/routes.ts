@@ -3329,7 +3329,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         : undefined;
 
       const settings = await storage.getHotelSettings(targetBranchId);
-      res.json(settings || {});
+      console.log(`🌍 Hotel settings retrieved from DB:`, settings);
+      console.log(`🕐 Timezone in settings: "${settings?.timeZone}"`);
+      
+      const response = settings || {};
+      console.log(`🔄 Sending hotel settings response:`, response);
+      res.json(response);
     } catch (error) {
       console.error("Error fetching hotel settings:", error);
       res.status(500).json({ message: "Failed to fetch hotel settings" });

@@ -296,19 +296,34 @@ export default function RoomOrders() {
 
   const generateKOTBOTMutation = useMutation({
     mutationFn: async (orderId: string) => {
+      console.log(`🎫 Generating KOT/BOT for order ID: ${orderId}`);
+      
       const response = await fetch(
         `/api/restaurant/orders/${orderId}/kot-bot`,
         {
           method: "POST",
+          credentials: "include", // Include session cookies
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
       );
+      
+      console.log(`🎫 KOT/BOT response status: ${response.status}`);
+      
       if (!response.ok) {
         const error = await response.json();
+        console.error(`🎫 KOT/BOT error:`, error);
         throw new Error(error.message || "Failed to generate KOT/BOT");
       }
-      return response.json();
+      
+      const result = await response.json();
+      console.log(`🎫 KOT/BOT result:`, result);
+      return result;
     },
     onSuccess: (data) => {
+      console.log(`🎫 KOT/BOT generation successful:`, data);
+      
       queryClient.invalidateQueries({
         queryKey: ["/api/restaurant/orders/room"],
       });
@@ -327,11 +342,12 @@ export default function RoomOrders() {
       }
 
       toast({
-        title: data.message,
+        title: data.message || "KOT/BOT Generated Successfully",
         description: description,
       });
     },
     onError: (error: any) => {
+      console.error(`🎫 KOT/BOT generation failed:`, error);
       toast({
         title: "Failed to generate KOT/BOT",
         description:

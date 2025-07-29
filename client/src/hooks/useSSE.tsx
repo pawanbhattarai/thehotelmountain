@@ -302,6 +302,19 @@ export function useSSE() {
         queryClient.invalidateQueries({ queryKey: ['/api/restaurant/dashboard/today-orders'] });
         break;
 
+      // Room order operations - invalidate billing and room order queries
+      case 'restaurant-orders_created':
+      case 'restaurant-orders_updated':
+      case 'restaurant-orders_deleted':
+        invalidateWithStaleTime(['/api/restaurant/orders/room'], strategy.staleTime, true); // Critical
+        invalidateWithStaleTime(['/api/room-orders'], strategy.staleTime, true); // Critical
+        invalidateWithStaleTime(['/api/reservations'], strategy.staleTime, true); // Critical - for billing totals
+        // Invalidate specific reservation room orders if we have the reservation ID
+        if (data && data.reservationId) {
+          invalidateWithStaleTime([`/api/reservations/${data.reservationId}/room-orders`], strategy.staleTime, true);
+        }
+        break;
+
       case 'restaurant-kot':
         queryClient.invalidateQueries({ queryKey: ['/api/restaurant/kot'] });
         break;

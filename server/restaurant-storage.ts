@@ -970,7 +970,8 @@ export class RestaurantStorage {
           isBot: restaurantOrderItems.isBot,
           kotNumber: restaurantOrderItems.kotNumber,
           botNumber: restaurantOrderItems.botNumber,
-          kotGeneratedAt: restaurantOrderItems.kotGeneratedAt,
+          kotGeneratedAt```python
+: restaurantOrderItems.kotGeneratedAt,
           botGeneratedAt: restaurantOrderItems.botGeneratedAt,
           createdAt: restaurantOrderItems.createdAt,
           dish: {
@@ -2323,6 +2324,16 @@ export class RestaurantStorage {
     content += `${separator}\n\n`;
 
     return content;
+  }
+
+  async getRestaurantOrderItem(itemId: number) {
+    const [item] = await db
+      .select()
+      .from(restaurantOrderItems)
+      .where(eq(restaurantOrderItems.id, itemId))
+      .limit(1);
+
+    return item;
   }
 }
 

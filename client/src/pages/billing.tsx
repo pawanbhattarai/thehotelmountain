@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useSSE } from "@/hooks/useSSE";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -58,6 +59,9 @@ export default function Billing() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
   const queryClient = useQueryClient();
+  
+  // Initialize SSE for real-time updates
+  useSSE();
   const [searchTerm, setSearchTerm] = useState("");
   const [isBillModalOpen, setIsBillModalOpen] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<any>(null);

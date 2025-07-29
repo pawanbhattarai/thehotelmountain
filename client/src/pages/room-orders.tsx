@@ -153,13 +153,12 @@ export default function RoomOrders() {
       }
 
       console.log(`🕐 Formatting timestamp: "${dateString}" in timezone: "${timeZone}"`);
-      console.log(`🕐 Original UTC date: ${date.toISOString()}`);
-      console.log(`🕐 Original UTC time parts: ${date.getUTCHours()}:${date.getUTCMinutes().toString().padStart(2, '0')}`);
+      console.log(`🕐 Original date object: ${date.toString()}`);
 
-      // Ensure we have a valid timezone, fallback to Asia/Kathmandu
+      // Use the hotel's timezone to format the timestamp
       const safeTimeZone = timeZone && timeZone.trim() !== "" ? timeZone : "Asia/Kathmandu";
-      console.log(`🕐 Safe timezone being used: "${safeTimeZone}"`);
-
+      
+      // Format using Intl.DateTimeFormat with the hotel's timezone
       const formatted = new Intl.DateTimeFormat("en-GB", {
         timeZone: safeTimeZone,
         day: "2-digit",
@@ -172,34 +171,10 @@ export default function RoomOrders() {
 
       console.log(`🕐 Formatted in ${safeTimeZone}: "${formatted}"`);
 
-      // Also log what time it would be in different common timezones for comparison
-      const utcFormatted = new Intl.DateTimeFormat("en-GB", {
-        timeZone: "UTC",
-        day: "2-digit",
-        month: "2-digit", 
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      }).format(date);
-      console.log(`🕐 Same time in UTC: "${utcFormatted}"`);
-
-      // Also check what it looks like in Asia/Kathmandu specifically
-      const nepalFormatted = new Intl.DateTimeFormat("en-GB", {
-        timeZone: "Asia/Kathmandu",
-        day: "2-digit",
-        month: "2-digit", 
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      }).format(date);
-      console.log(`🕐 Same time in Asia/Kathmandu: "${nepalFormatted}"`);
-
       return formatted;
     } catch (error) {
-      console.error("Error formatting date:", error);
-      return "Error";
+      console.error("🕐 Error formatting date:", error);
+      return dateString; // Return original string if formatting fails
     }
   };
 
@@ -1332,11 +1307,25 @@ export default function RoomOrders() {
                                   return currentTime > latestTime ? current : latest;
                                 });
 
-                                console.log(`🕐 Latest order timestamp: ${latestOrder.createdAt} for reservation ${reservation.id}`);
-                                console.log(`🕐 Using timezone: ${timeZone}`);
+                                console.log(`🕐 Latest order for reservation ${reservation.id}:`);
+                                console.log(`🕐 - Raw timestamp: ${latestOrder.createdAt}`);
+                                console.log(`🕐 - Order ID: ${latestOrder.id}`);
+                                console.log(`🕐 - Order Number: ${latestOrder.orderNumber}`);
+                                console.log(`🕐 - Hotel timezone setting: ${timeZone}`);
+                                
+                                // Parse the timestamp and show what timezone it's interpreted as
+                                const parsedDate = new Date(latestOrder.createdAt);
+                                console.log(`🕐 - Parsed as Date object: ${parsedDate.toString()}`);
+                                console.log(`🕐 - UTC representation: ${parsedDate.toISOString()}`);
+                                console.log(`🕐 - Local time representation: ${parsedDate.toLocaleString()}`);
+                                
+                                // Show current time for comparison
+                                const now = new Date();
+                                console.log(`🕐 - Current server time: ${now.toString()}`);
+                                console.log(`🕐 - Current UTC time: ${now.toISOString()}`);
 
                                 const formattedTime = formatDateInTimezone(latestOrder.createdAt, timeZone);
-                                console.log(`🕐 Formatted time: ${formattedTime}`);
+                                console.log(`🕐 - Final formatted display: ${formattedTime}`);
 
                                 return formattedTime;
                               })()}

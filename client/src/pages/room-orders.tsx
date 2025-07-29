@@ -770,7 +770,7 @@ export default function RoomOrders() {
                 </Button>
 
                 {/* KOT/BOT Generation Button */}
-                {existingOrders.length > 0 && (
+                {existingOrders.length > 0 ? (
                   <Button
                     variant="default"
                     onClick={() => {
@@ -786,6 +786,10 @@ export default function RoomOrders() {
                     <FileText className="h-4 w-4 mr-2" />
                     {generateReservationKOTBOTMutation.isPending ? "Generating..." : "Generate KOT/BOT"}
                   </Button>
+                ) : (
+                  <div className="text-sm text-orange-600 bg-orange-50 border border-orange-200 rounded px-3 py-2">
+                    📋 Create an order first by adding items and clicking "Create Order" to generate KOT/BOT tickets
+                  </div>
                 )}
               </div>
             </div>

@@ -970,8 +970,7 @@ export class RestaurantStorage {
           isBot: restaurantOrderItems.isBot,
           kotNumber: restaurantOrderItems.kotNumber,
           botNumber: restaurantOrderItems.botNumber,
-          kotGeneratedAt```python
-: restaurantOrderItems.kotGeneratedAt,
+          kotGeneratedAt: restaurantOrderItems.kotGeneratedAt,
           botGeneratedAt: restaurantOrderItems.botGeneratedAt,
           createdAt: restaurantOrderItems.createdAt,
           dish: {

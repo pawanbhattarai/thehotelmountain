@@ -138,15 +138,26 @@ export default function RoomOrders() {
 
   // Utility function to format dates in hotel's timezone
   const formatDateInTimezone = (dateString: string, timeZone: string) => {
-    if (!dateString) return "N/A";
+    if (!dateString) {
+      console.log("🕐 No dateString provided");
+      return "N/A";
+    }
     
     try {
       const date = new Date(dateString);
-      console.log(`🕐 Formatting timestamp: ${dateString} in timezone: ${timeZone}`);
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.error(`🕐 Invalid date: ${dateString}`);
+        return "Invalid Date";
+      }
+      
+      console.log(`🕐 Formatting timestamp: "${dateString}" in timezone: "${timeZone}"`);
       console.log(`🕐 Original UTC date: ${date.toISOString()}`);
+      console.log(`🕐 Original UTC time parts: ${date.getUTCHours()}:${date.getUTCMinutes().toString().padStart(2, '0')}`);
       
       const formatted = new Intl.DateTimeFormat("en-GB", {
-        timeZone,
+        timeZone: timeZone,
         day: "2-digit",
         month: "2-digit", 
         year: "numeric",
@@ -155,7 +166,20 @@ export default function RoomOrders() {
         hour12: false,
       }).format(date);
       
-      console.log(`🕐 Formatted in ${timeZone}: ${formatted}`);
+      console.log(`🕐 Formatted in ${timeZone}: "${formatted}"`);
+      
+      // Also log what time it would be in different common timezones for comparison
+      const utcFormatted = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "UTC",
+        day: "2-digit",
+        month: "2-digit", 
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }).format(date);
+      console.log(`🕐 Same time in UTC: "${utcFormatted}"`);
+      
       return formatted;
     } catch (error) {
       console.error("Error formatting date:", error);
@@ -1284,10 +1308,21 @@ export default function RoomOrders() {
                             <Clock className="h-3 w-3 text-gray-400" />
                             <p className="text-xs text-gray-500">
                               {(() => {
-                                const latestOrder = reservationOrders.reduce((latest: any, current: any) =>
-                                  new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest
-                                );
-                                return formatDateInTimezone(latestOrder.createdAt, timeZone);
+                                if (reservationOrders.length === 0) return "No orders";
+                                
+                                const latestOrder = reservationOrders.reduce((latest: any, current: any) => {
+                                  const latestTime = new Date(latest.createdAt).getTime();
+                                  const currentTime = new Date(current.createdAt).getTime();
+                                  return currentTime > latestTime ? current : latest;
+                                });
+                                
+                                console.log(`🕐 Latest order timestamp: ${latestOrder.createdAt} for reservation ${reservation.id}`);
+                                console.log(`🕐 Using timezone: ${timeZone}`);
+                                
+                                const formattedTime = formatDateInTimezone(latestOrder.createdAt, timeZone);
+                                console.log(`🕐 Formatted time: ${formattedTime}`);
+                                
+                                return formattedTime;
                               })()}
                             </p>
                           </div>

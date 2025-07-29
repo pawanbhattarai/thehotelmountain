@@ -1279,7 +1279,7 @@ export default function RoomOrders() {
                               ? `Order #${latestOrderNumber}`
                               : `${reservationOrders.length} Orders (Latest: #${latestOrderNumber})`}
                           </p>
-                          {/* Show latest order timestamp in local timezone */}
+                          {/* Show latest order timestamp in hotel's timezone */}
                           <div className="flex items-center gap-1">
                             <Clock className="h-3 w-3 text-gray-400" />
                             <p className="text-xs text-gray-500">

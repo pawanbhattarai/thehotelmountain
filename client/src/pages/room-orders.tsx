@@ -138,16 +138,29 @@ export default function RoomOrders() {
 
   // Utility function to format dates in hotel's timezone
   const formatDateInTimezone = (dateString: string, timeZone: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat("en-GB", {
-      timeZone,
-      day: "2-digit",
-      month: "2-digit", 
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).format(date);
+    if (!dateString) return "N/A";
+    
+    try {
+      const date = new Date(dateString);
+      console.log(`🕐 Formatting timestamp: ${dateString} in timezone: ${timeZone}`);
+      console.log(`🕐 Original UTC date: ${date.toISOString()}`);
+      
+      const formatted = new Intl.DateTimeFormat("en-GB", {
+        timeZone,
+        day: "2-digit",
+        month: "2-digit", 
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }).format(date);
+      
+      console.log(`🕐 Formatted in ${timeZone}: ${formatted}`);
+      return formatted;
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Invalid Date";
+    }
   };
 
   // Create new order mutation
@@ -666,10 +679,28 @@ export default function RoomOrders() {
           />
           <main className="p-6">
             <div className="mb-6">
-              <Button variant="outline" onClick={resetForm} className="mb-4">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Reservations
-              </Button>
+              <div className="flex items-center gap-4 mb-4">
+                <Button variant="outline" onClick={resetForm}>
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Reservations
+                </Button>
+                
+                {/* KOT/BOT Generation Button */}
+                {existingOrders.length > 0 && (
+                  <Button
+                    variant="default"
+                    onClick={() => {
+                      const latestOrder = existingOrders[existingOrders.length - 1];
+                      generateKOTBOTMutation.mutate(latestOrder.id);
+                    }}
+                    disabled={generateKOTBOTMutation.isPending}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    {generateKOTBOTMutation.isPending ? "Generating..." : "Generate KOT/BOT"}
+                  </Button>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -791,20 +822,6 @@ export default function RoomOrders() {
                           <h4 className="font-medium text-sm text-gray-600">
                             Previous Orders ({existingOrders.length})
                           </h4>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              // Generate KOT/BOT for the latest order
-                              const latestOrder = existingOrders[existingOrders.length - 1];
-                              generateKOTBOTMutation.mutate(latestOrder.id);
-                            }}
-                            disabled={generateKOTBOTMutation.isPending}
-                            className="text-xs"
-                          >
-                            <FileText className="h-3 w-3 mr-1" />
-                            {generateKOTBOTMutation.isPending ? "Generating..." : "Generate KOT/BOT"}
-                          </Button>
                         </div>
                       </div>
                     )}

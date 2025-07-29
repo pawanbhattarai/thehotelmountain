@@ -516,13 +516,12 @@ export default function RestaurantDishes() {
                                   <FormControl>
                                     <Select
                                       value={field.value || ""}
-                                      onValueChange={(value) => field.onChange(value === "" ? undefined : value)}
+                                      onValueChange={field.onChange}
                                     >
                                       <SelectTrigger>
                                         <SelectValue placeholder="Select spice level (optional)" />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        <SelectItem value="">None</SelectItem>
                                         <SelectItem value="mild">Mild</SelectItem>
                                         <SelectItem value="medium">Medium</SelectItem>
                                         <SelectItem value="hot">Hot</SelectItem>

@@ -629,32 +629,12 @@ export default function RestaurantDishes() {
                           <TableCell className="font-medium">
                             <div className="flex items-center space-x-2">
                               <span>{dish.name}</span>
-                              {dish.category?.menuType !== "Bar" && (
-                                <div className="w-5 h-5 border-2 rounded-sm flex items-center justify-center">
-                                  {dish.isVegan ? (
-                                    <div
-                                      className="w-3 h-3 bg-green-600 rounded-full"
-                                      title="Vegan"
-                                    ></div>
-                                  ) : dish.isVegetarian ? (
-                                    <div
-                                      className="w-3 h-3 bg-green-500 rounded-full"
-                                      title="Vegetarian"
-                                    ></div>
-                                  ) : (
-                                    <div
-                                      className="w-3 h-3 bg-red-500 rounded-full"
-                                      title="Non-Vegetarian"
-                                    ></div>
-                                  )}
-                                </div>
-                              )}
                             </div>
                           </TableCell>
                           <TableCell>Rs. {dish.price}</TableCell>
                           <TableCell>{dish.category?.name || "N/A"}</TableCell>
                           <TableCell>
-                            {dish.category?.menuType === "Bar" ? (
+                            {dish.category?.menuType?.toLowerCase() === "bar" ? (
                               <span className="text-gray-400">-</span>
                             ) : (
                               <div className="flex items-center space-x-2">
@@ -690,7 +670,7 @@ export default function RestaurantDishes() {
                             )}
                           </TableCell>
                           <TableCell>
-                            {dish.category?.menuType === "Bar" ? (
+                            {dish.category?.menuType?.toLowerCase() === "bar" ? (
                               <span className="text-gray-400">-</span>
                             ) : (
                               dish.spiceLevel && (

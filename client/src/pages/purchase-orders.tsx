@@ -328,144 +328,62 @@ export default function PurchaseOrders() {
           }
         />
         <main className="p-6">
-            {/* Search and Filter Section */}
-            <div className="mb-6 flex flex-col gap-4">
-              {/* First row: Status filter and Create button */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full sm:w-48">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Orders</SelectItem>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="sent">Sent</SelectItem>
-                    <SelectItem value="confirmed">Confirmed</SelectItem>
-                    <SelectItem value="partially-received">Partially Received</SelectItem>
-                    <SelectItem value="received">Received</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
+          {/* Search and Filter Section */}
+          <div className="mb-6 flex flex-col gap-4">
+            {/* First row: Status filter and Create button in one row for desktop/tablet */}
+            <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full md:w-48">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Orders</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="sent">Sent</SelectItem>
+                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="partially-received">Partially Received</SelectItem>
+                  <SelectItem value="received">Received</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
 
-                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button onClick={openCreateDialog} className="w-full sm:w-auto bg-primary hover:bg-primary/90 shrink-0">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Create Purchase Order
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto mx-4 sm:mx-auto">
-                    {/* Dialog content remains the same */}
-                  </DialogContent>
-                </Dialog>
-              </div>
-
-              {/* Second row: Search bar */}
-              <div className="relative w-full sm:max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search purchase orders..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-full"
-                />
-              </div>
-            </div>
-
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={openCreateDialog} className="w-full md:w-auto bg-primary hover:bg-primary/90 shrink-0">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Purchase Order
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto mx-4 sm:mx-auto">
-                <DialogHeader>
-                  <DialogTitle>Create Purchase Order</DialogTitle>
-                </DialogHeader>
-                <Form {...form}>
-                  <form
-                    onSubmit={form.handleSubmit(onSubmit)}
-                    className="space-y-6"
-                  >
-                    {/* Header Information */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="supplierId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Supplier <span className="text-red-500">*</span></FormLabel>
-                            <Select
-                              onValueChange={(value) => field.onChange(parseInt(value))}
-                              value={field.value?.toString() || ""}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select supplier" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {suppliers.map((supplier: any) => (
-                                  <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                                    {supplier.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="orderDate"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Order Date <span className="text-red-500">*</span></FormLabel>
-                            <FormControl>
-                              <Input type="date" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="expectedDeliveryDate"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Expected Delivery Date</FormLabel>
-                            <FormControl>
-                              <Input type="date" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      {user?.role === "superadmin" && (
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={openCreateDialog} className="w-full md:w-auto bg-primary hover:bg-primary/90 shrink-0">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Purchase Order
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto mx-4 sm:mx-auto">
+                  <DialogHeader>
+                    <DialogTitle>Create Purchase Order</DialogTitle>
+                  </DialogHeader>
+                  <Form {...form}>
+                    <form
+                      onSubmit={form.handleSubmit(onSubmit)}
+                      className="space-y-6"
+                    >
+                      {/* Header Information */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
-                          name="branchId"
+                          name="supplierId"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Branch</FormLabel>
+                              <FormLabel>Supplier <span className="text-red-500">*</span></FormLabel>
                               <Select
                                 onValueChange={(value) => field.onChange(parseInt(value))}
-                                value={field.value?.toString()}
+                                value={field.value?.toString() || ""}
                               >
                                 <FormControl>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Select branch" />
+                                    <SelectValue placeholder="Select supplier" />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  {branches.map((branch: any) => (
-                                    <SelectItem key={branch.id} value={branch.id.toString()}>
-                                      {branch.name}
+                                  {suppliers.map((supplier: any) => (
+                                    <SelectItem key={supplier.id} value={supplier.id.toString()}>
+                                      {supplier.name}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
@@ -474,181 +392,250 @@ export default function PurchaseOrders() {
                             </FormItem>
                           )}
                         />
-                      )}
-                    </div>
 
-                    {/* Items Section */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-medium">Order Items</h3>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => append({
-                            stockItemId: undefined,
-                            quantity: "",
-                            unitPrice: "",
-                            totalPrice: "0",
-                            notes: "",
-                          })}
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Item
-                        </Button>
+                        <FormField
+                          control={form.control}
+                          name="orderDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Order Date <span className="text-red-500">*</span></FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="expectedDeliveryDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Expected Delivery Date</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        {user?.role === "superadmin" && (
+                          <FormField
+                            control={form.control}
+                            name="branchId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Branch</FormLabel>
+                                <Select
+                                  onValueChange={(value) => field.onChange(parseInt(value))}
+                                  value={field.value?.toString()}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select branch" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {branches.map((branch: any) => (
+                                      <SelectItem key={branch.id} value={branch.id.toString()}>
+                                        {branch.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
                       </div>
 
-                      {fields.map((field, index) => (
-                        <div key={field.id} className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border rounded-lg">
-                          <div className="md:col-span-2">
+                      {/* Items Section */}
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-medium">Order Items</h3>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => append({
+                              stockItemId: undefined,
+                              quantity: "",
+                              unitPrice: "",
+                              totalPrice: "0",
+                              notes: "",
+                            })}
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Item
+                          </Button>
+                        </div>
+
+                        {fields.map((field, index) => (
+                          <div key={field.id} className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border rounded-lg">
+                            <div className="md:col-span-2">
+                              <FormField
+                                control={form.control}
+                                name={`items.${index}.stockItemId`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Stock Item</FormLabel>
+                                    <Select
+                                      onValueChange={(value) => field.onChange(parseInt(value))}
+                                      value={field.value?.toString() || ""}
+                                    >
+                                      <FormControl>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select item" />
+                                        </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                        {stockItems.map((item: any) => (
+                                          <SelectItem key={item.id} value={item.id.toString()}>
+                                            {item.name} ({item.measuringUnitSymbol || item.unitSymbol || "unit"})
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+
                             <FormField
                               control={form.control}
-                              name={`items.${index}.stockItemId`}
+                              name={`items.${index}.quantity`}
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Stock Item</FormLabel>
-                                  <Select
-                                    onValueChange={(value) => field.onChange(parseInt(value))}
-                                    value={field.value?.toString() || ""}
-                                  >
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Select item" />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      {stockItems.map((item: any) => (
-                                        <SelectItem key={item.id} value={item.id.toString()}>
-                                          {item.name} ({item.measuringUnitSymbol || item.unitSymbol || "unit"})
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
+                                  <FormLabel>Quantity</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      step="0.001"
+                                      placeholder="0"
+                                      {...field}
+                                      onChange={(e) => {
+                                        field.onChange(e);
+                                        calculateItemTotal(index);
+                                      }}
+                                    />
+                                  </FormControl>
                                   <FormMessage />
                                 </FormItem>
                               )}
                             />
-                          </div>
 
-                          <FormField
-                            control={form.control}
-                            name={`items.${index}.quantity`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Quantity</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    type="number"
-                                    step="0.001"
-                                    placeholder="0"
-                                    {...field}
-                                    onChange={(e) => {
-                                      field.onChange(e);
-                                      calculateItemTotal(index);
-                                    }}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name={`items.${index}.unitPrice`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Unit Price</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    placeholder="0.00"
-                                    {...field}
-                                    onChange={(e) => {
-                                      field.onChange(e);
-                                      calculateItemTotal(index);
-                                    }}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name={`items.${index}.totalPrice`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Total</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    placeholder="0.00"
-                                    {...field}
-                                    readOnly
-                                    className="bg-gray-50"
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <div className="flex items-end">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => remove(index)}
-                              disabled={fields.length === 1}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <FormField
-                      control={form.control}
-                      name="notes"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Notes</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Enter any additional notes"
-                              rows={3}
-                              {...field}
+                            <FormField
+                              control={form.control}
+                              name={`items.${index}.unitPrice`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Unit Price</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      placeholder="0.00"
+                                      {...field}
+                                      onChange={(e) => {
+                                        field.onChange(e);
+                                        calculateItemTotal(index);
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
                             />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
 
-                    <div className="flex justify-end space-x-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setDialogOpen(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        type="submit"
-                        disabled={createMutation.isPending}
-                      >
-                        Create Purchase Order
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
+                            <FormField
+                              control={form.control}
+                              name={`items.${index}.totalPrice`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Total</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      placeholder="0.00"
+                                      {...field}
+                                      readOnly
+                                      className="bg-gray-50"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <div className="flex items-end">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => remove(index)}
+                                disabled={fields.length === 1}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="notes"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Notes</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Enter any additional notes"
+                                rows={3}
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="flex justify-end space-x-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setDialogOpen(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="submit"
+                          disabled={createMutation.isPending}
+                        >
+                          Create Purchase Order
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {/* Second row: Search bar */}
+            <div className="relative w-full md:max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search purchase orders..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 w-full"
+              />
+            </div>
           </div>
 
           {/* Purchase Orders Table */}

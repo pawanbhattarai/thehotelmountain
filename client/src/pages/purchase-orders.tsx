@@ -24,7 +24,16 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, Eye, Check, ShoppingCart, Calendar, Search } from "lucide-react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Eye,
+  Check,
+  ShoppingCart,
+  Calendar,
+  Search,
+} from "lucide-react";
 import { usePagination } from "@/hooks/usePagination";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -54,13 +63,29 @@ const formSchema = z.object({
   expectedDeliveryDate: z.string().optional(),
   notes: z.string().optional(),
   branchId: z.number().optional(),
-  items: z.array(z.object({
-    stockItemId: z.number().min(1, "Stock item is required"),
-    quantity: z.string().min(1, "Quantity is required").refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, "Quantity must be a positive number"),
-    unitPrice: z.string().min(1, "Unit price is required").refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, "Unit price must be a positive number"),
-    totalPrice: z.string(),
-    notes: z.string().optional(),
-  })).min(1, "At least one item is required"),
+  items: z
+    .array(
+      z.object({
+        stockItemId: z.number().min(1, "Stock item is required"),
+        quantity: z
+          .string()
+          .min(1, "Quantity is required")
+          .refine(
+            (val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0,
+            "Quantity must be a positive number",
+          ),
+        unitPrice: z
+          .string()
+          .min(1, "Unit price is required")
+          .refine(
+            (val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0,
+            "Unit price must be a positive number",
+          ),
+        totalPrice: z.string(),
+        notes: z.string().optional(),
+      }),
+    )
+    .min(1, "At least one item is required"),
 });
 
 export default function PurchaseOrders() {
@@ -79,7 +104,7 @@ export default function PurchaseOrders() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       supplierId: undefined,
-      orderDate: new Date().toISOString().split('T')[0],
+      orderDate: new Date().toISOString().split("T")[0],
       expectedDeliveryDate: "",
       notes: "",
       branchId: user?.branchId || undefined,
@@ -90,7 +115,7 @@ export default function PurchaseOrders() {
           unitPrice: "",
           totalPrice: "0",
           notes: "",
-        }
+        },
       ],
     },
   });
@@ -104,7 +129,7 @@ export default function PurchaseOrders() {
     queryKey: ["/api/purchase-orders", statusFilter],
     queryFn: () => {
       const params = statusFilter !== "all" ? `?status=${statusFilter}` : "";
-      return fetch(`/api/purchase-orders${params}`).then(res => res.json());
+      return fetch(`/api/purchase-orders${params}`).then((res) => res.json());
     },
   });
 
@@ -133,21 +158,27 @@ export default function PurchaseOrders() {
       console.log("Submitting purchase order data:", data);
 
       // Calculate totals
-      const subtotal = data.items.reduce((sum, item) => sum + parseFloat(item.totalPrice || "0"), 0);
+      const subtotal = data.items.reduce(
+        (sum, item) => sum + parseFloat(item.totalPrice || "0"),
+        0,
+      );
 
       const orderData = {
         supplierId: data.supplierId,
         orderDate: data.orderDate,
         expectedDeliveryDate: data.expectedDeliveryDate || null,
         notes: data.notes || "",
-        branchId: user?.role === "superadmin" ? (data.branchId || user?.branchId) : user?.branchId,
+        branchId:
+          user?.role === "superadmin"
+            ? data.branchId || user?.branchId
+            : user?.branchId,
         subtotal: subtotal.toString(),
         taxAmount: "0",
         discountAmount: "0",
         totalAmount: subtotal.toString(),
       };
 
-      const itemsData = data.items.map(item => ({
+      const itemsData = data.items.map((item) => ({
         stockItemId: item.stockItemId,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
@@ -181,7 +212,7 @@ export default function PurchaseOrders() {
       setDialogOpen(false);
       form.reset({
         supplierId: undefined,
-        orderDate: new Date().toISOString().split('T')[0],
+        orderDate: new Date().toISOString().split("T")[0],
         expectedDeliveryDate: "",
         notes: "",
         branchId: user?.branchId || undefined,
@@ -192,17 +223,17 @@ export default function PurchaseOrders() {
             unitPrice: "",
             totalPrice: "0",
             notes: "",
-          }
+          },
         ],
       });
       toast({ title: "Purchase order created successfully" });
     },
     onError: (error: any) => {
       console.error("Error creating purchase order:", error);
-      toast({ 
-        title: "Failed to create purchase order", 
+      toast({
+        title: "Failed to create purchase order",
         description: error?.message || "Please try again",
-        variant: "destructive" 
+        variant: "destructive",
       });
     },
   });
@@ -225,10 +256,10 @@ export default function PurchaseOrders() {
       toast({ title: "Purchase order approved successfully" });
     },
     onError: (error: any) => {
-      toast({ 
-        title: "Failed to approve purchase order", 
+      toast({
+        title: "Failed to approve purchase order",
         description: error?.message,
-        variant: "destructive" 
+        variant: "destructive",
       });
     },
   });
@@ -251,7 +282,10 @@ export default function PurchaseOrders() {
       toast({ title: "Purchase order deleted successfully" });
     },
     onError: () => {
-      toast({ title: "Failed to delete purchase order", variant: "destructive" });
+      toast({
+        title: "Failed to delete purchase order",
+        variant: "destructive",
+      });
     },
   });
 
@@ -267,7 +301,10 @@ export default function PurchaseOrders() {
       setViewingOrder(order);
       setViewDialogOpen(true);
     } catch (error) {
-      toast({ title: "Failed to load purchase order details", variant: "destructive" });
+      toast({
+        title: "Failed to load purchase order details",
+        variant: "destructive",
+      });
     }
   };
 
@@ -307,7 +344,12 @@ export default function PurchaseOrders() {
     };
 
     return (
-      <Badge className={statusColors[status as keyof typeof statusColors] || statusColors.draft}>
+      <Badge
+        className={
+          statusColors[status as keyof typeof statusColors] ||
+          statusColors.draft
+        }
+      >
         {status.replace("-", " ").toUpperCase()}
       </Badge>
     );
@@ -330,10 +372,10 @@ export default function PurchaseOrders() {
         <main className="p-6">
           {/* Search and Filter Section */}
           <div className="mb-6 flex flex-col gap-4">
-            {/* First row: Status filter and Create button in one row for desktop/tablet */}
-            <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+            {/* First row: Status filter and Create button */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full md:w-48">
+                <SelectTrigger className="w-full sm:w-48">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -341,7 +383,9 @@ export default function PurchaseOrders() {
                   <SelectItem value="draft">Draft</SelectItem>
                   <SelectItem value="sent">Sent</SelectItem>
                   <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="partially-received">Partially Received</SelectItem>
+                  <SelectItem value="partially-received">
+                    Partially Received
+                  </SelectItem>
                   <SelectItem value="received">Received</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
@@ -349,7 +393,10 @@ export default function PurchaseOrders() {
 
               <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button onClick={openCreateDialog} className="w-full md:w-auto bg-primary hover:bg-primary/90 shrink-0">
+                  <Button
+                    onClick={openCreateDialog}
+                    className="w-full sm:w-auto bg-primary hover:bg-primary/90 shrink-0"
+                  >
                     <Plus className="mr-2 h-4 w-4" />
                     Create Purchase Order
                   </Button>
@@ -370,9 +417,13 @@ export default function PurchaseOrders() {
                           name="supplierId"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Supplier <span className="text-red-500">*</span></FormLabel>
+                              <FormLabel>
+                                Supplier <span className="text-red-500">*</span>
+                              </FormLabel>
                               <Select
-                                onValueChange={(value) => field.onChange(parseInt(value))}
+                                onValueChange={(value) =>
+                                  field.onChange(parseInt(value))
+                                }
                                 value={field.value?.toString() || ""}
                               >
                                 <FormControl>
@@ -382,7 +433,10 @@ export default function PurchaseOrders() {
                                 </FormControl>
                                 <SelectContent>
                                   {suppliers.map((supplier: any) => (
-                                    <SelectItem key={supplier.id} value={supplier.id.toString()}>
+                                    <SelectItem
+                                      key={supplier.id}
+                                      value={supplier.id.toString()}
+                                    >
                                       {supplier.name}
                                     </SelectItem>
                                   ))}
@@ -398,7 +452,10 @@ export default function PurchaseOrders() {
                           name="orderDate"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Order Date <span className="text-red-500">*</span></FormLabel>
+                              <FormLabel>
+                                Order Date{" "}
+                                <span className="text-red-500">*</span>
+                              </FormLabel>
                               <FormControl>
                                 <Input type="date" {...field} />
                               </FormControl>
@@ -429,7 +486,9 @@ export default function PurchaseOrders() {
                               <FormItem>
                                 <FormLabel>Branch</FormLabel>
                                 <Select
-                                  onValueChange={(value) => field.onChange(parseInt(value))}
+                                  onValueChange={(value) =>
+                                    field.onChange(parseInt(value))
+                                  }
                                   value={field.value?.toString()}
                                 >
                                   <FormControl>
@@ -439,7 +498,10 @@ export default function PurchaseOrders() {
                                   </FormControl>
                                   <SelectContent>
                                     {branches.map((branch: any) => (
-                                      <SelectItem key={branch.id} value={branch.id.toString()}>
+                                      <SelectItem
+                                        key={branch.id}
+                                        value={branch.id.toString()}
+                                      >
                                         {branch.name}
                                       </SelectItem>
                                     ))}
@@ -460,13 +522,15 @@ export default function PurchaseOrders() {
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => append({
-                              stockItemId: undefined,
-                              quantity: "",
-                              unitPrice: "",
-                              totalPrice: "0",
-                              notes: "",
-                            })}
+                            onClick={() =>
+                              append({
+                                stockItemId: undefined,
+                                quantity: "",
+                                unitPrice: "",
+                                totalPrice: "0",
+                                notes: "",
+                              })
+                            }
                           >
                             <Plus className="h-4 w-4 mr-2" />
                             Add Item
@@ -474,7 +538,10 @@ export default function PurchaseOrders() {
                         </div>
 
                         {fields.map((field, index) => (
-                          <div key={field.id} className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border rounded-lg">
+                          <div
+                            key={field.id}
+                            className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border rounded-lg"
+                          >
                             <div className="md:col-span-2">
                               <FormField
                                 control={form.control}
@@ -483,7 +550,9 @@ export default function PurchaseOrders() {
                                   <FormItem>
                                     <FormLabel>Stock Item</FormLabel>
                                     <Select
-                                      onValueChange={(value) => field.onChange(parseInt(value))}
+                                      onValueChange={(value) =>
+                                        field.onChange(parseInt(value))
+                                      }
                                       value={field.value?.toString() || ""}
                                     >
                                       <FormControl>
@@ -493,8 +562,15 @@ export default function PurchaseOrders() {
                                       </FormControl>
                                       <SelectContent>
                                         {stockItems.map((item: any) => (
-                                          <SelectItem key={item.id} value={item.id.toString()}>
-                                            {item.name} ({item.measuringUnitSymbol || item.unitSymbol || "unit"})
+                                          <SelectItem
+                                            key={item.id}
+                                            value={item.id.toString()}
+                                          >
+                                            {item.name} (
+                                            {item.measuringUnitSymbol ||
+                                              item.unitSymbol ||
+                                              "unit"}
+                                            )
                                           </SelectItem>
                                         ))}
                                       </SelectContent>
@@ -627,7 +703,7 @@ export default function PurchaseOrders() {
             </div>
 
             {/* Second row: Search bar */}
-            <div className="relative w-full md:max-w-md">
+            <div className="relative w-full sm:max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 placeholder="Search purchase orders..."
@@ -676,9 +752,7 @@ export default function PurchaseOrders() {
                         <TableCell>
                           ₨. {parseFloat(order.totalAmount || "0").toFixed(2)}
                         </TableCell>
-                        <TableCell>
-                          {getStatusBadge(order.status)}
-                        </TableCell>
+                        <TableCell>{getStatusBadge(order.status)}</TableCell>
                         <TableCell>
                           <div className="flex space-x-2">
                             <Button
@@ -715,7 +789,9 @@ export default function PurchaseOrders() {
                     {pagination.paginatedData.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center py-8">
-                          {searchTerm ? "No purchase orders found matching your search." : "No purchase orders found. Create your first purchase order to get started."}
+                          {searchTerm
+                            ? "No purchase orders found matching your search."
+                            : "No purchase orders found. Create your first purchase order to get started."}
                         </TableCell>
                       </TableRow>
                     )}
@@ -747,13 +823,25 @@ export default function PurchaseOrders() {
                   {/* Header */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <h3 className="font-medium">Purchase Order: {viewingOrder.poNumber}</h3>
-                      <p className="text-sm text-gray-600">Status: {getStatusBadge(viewingOrder.status)}</p>
+                      <h3 className="font-medium">
+                        Purchase Order: {viewingOrder.poNumber}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Status: {getStatusBadge(viewingOrder.status)}
+                      </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-gray-600">Order Date: {new Date(viewingOrder.orderDate).toLocaleDateString()}</p>
+                      <p className="text-sm text-gray-600">
+                        Order Date:{" "}
+                        {new Date(viewingOrder.orderDate).toLocaleDateString()}
+                      </p>
                       {viewingOrder.expectedDeliveryDate && (
-                        <p className="text-sm text-gray-600">Expected Delivery: {new Date(viewingOrder.expectedDeliveryDate).toLocaleDateString()}</p>
+                        <p className="text-sm text-gray-600">
+                          Expected Delivery:{" "}
+                          {new Date(
+                            viewingOrder.expectedDeliveryDate,
+                          ).toLocaleDateString()}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -763,12 +851,23 @@ export default function PurchaseOrders() {
                     <h4 className="font-medium mb-2">Supplier Information</h4>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <p><strong>Name:</strong> {viewingOrder.supplierName}</p>
-                        <p><strong>Email:</strong> {viewingOrder.supplierEmail || "-"}</p>
+                        <p>
+                          <strong>Name:</strong> {viewingOrder.supplierName}
+                        </p>
+                        <p>
+                          <strong>Email:</strong>{" "}
+                          {viewingOrder.supplierEmail || "-"}
+                        </p>
                       </div>
                       <div>
-                        <p><strong>Phone:</strong> {viewingOrder.supplierPhone || "-"}</p>
-                        <p><strong>Address:</strong> {viewingOrder.supplierAddress || "-"}</p>
+                        <p>
+                          <strong>Phone:</strong>{" "}
+                          {viewingOrder.supplierPhone || "-"}
+                        </p>
+                        <p>
+                          <strong>Address:</strong>{" "}
+                          {viewingOrder.supplierAddress || "-"}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -791,12 +890,20 @@ export default function PurchaseOrders() {
                           <TableRow key={item.id}>
                             <TableCell>{item.stockItemName}</TableCell>
                             <TableCell>
-                              {parseFloat(item.quantity).toFixed(3)} {item.measuringUnitSymbol}
+                              {parseFloat(item.quantity).toFixed(3)}{" "}
+                              {item.measuringUnitSymbol}
                             </TableCell>
-                            <TableCell>₨. {parseFloat(item.unitPrice).toFixed(2)}</TableCell>
-                            <TableCell>₨. {parseFloat(item.totalPrice).toFixed(2)}</TableCell>
                             <TableCell>
-                              {parseFloat(item.receivedQuantity || 0).toFixed(3)} {item.measuringUnitSymbol}
+                              ₨. {parseFloat(item.unitPrice).toFixed(2)}
+                            </TableCell>
+                            <TableCell>
+                              ₨. {parseFloat(item.totalPrice).toFixed(2)}
+                            </TableCell>
+                            <TableCell>
+                              {parseFloat(item.receivedQuantity || 0).toFixed(
+                                3,
+                              )}{" "}
+                              {item.measuringUnitSymbol}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -810,19 +917,35 @@ export default function PurchaseOrders() {
                       <div className="w-64 space-y-2">
                         <div className="flex justify-between">
                           <span>Subtotal:</span>
-                          <span>₨. {parseFloat(viewingOrder.subtotal || 0).toFixed(2)}</span>
+                          <span>
+                            ₨.{" "}
+                            {parseFloat(viewingOrder.subtotal || 0).toFixed(2)}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span>Tax:</span>
-                          <span>₨. {parseFloat(viewingOrder.taxAmount || 0).toFixed(2)}</span>
+                          <span>
+                            ₨.{" "}
+                            {parseFloat(viewingOrder.taxAmount || 0).toFixed(2)}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span>Discount:</span>
-                          <span>₨. {parseFloat(viewingOrder.discountAmount || 0).toFixed(2)}</span>
+                          <span>
+                            ₨.{" "}
+                            {parseFloat(
+                              viewingOrder.discountAmount || 0,
+                            ).toFixed(2)}
+                          </span>
                         </div>
                         <div className="flex justify-between font-medium border-t pt-2">
                           <span>Total:</span>
-                          <span>₨. {parseFloat(viewingOrder.totalAmount || 0).toFixed(2)}</span>
+                          <span>
+                            ₨.{" "}
+                            {parseFloat(viewingOrder.totalAmount || 0).toFixed(
+                              2,
+                            )}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -831,7 +954,9 @@ export default function PurchaseOrders() {
                   {viewingOrder.notes && (
                     <div className="border-t pt-4">
                       <h4 className="font-medium mb-2">Notes</h4>
-                      <p className="text-sm text-gray-600">{viewingOrder.notes}</p>
+                      <p className="text-sm text-gray-600">
+                        {viewingOrder.notes}
+                      </p>
                     </div>
                   )}
                 </div>

@@ -329,10 +329,10 @@ export default function PurchaseOrders() {
         />
         <main className="p-6">
           {/* Search and Filter Section */}
-          <div className="mb-6 flex flex-col lg:flex-row gap-4 justify-between">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="mb-6 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-1">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-full sm:w-48">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -345,20 +345,20 @@ export default function PurchaseOrders() {
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
-              <div className="relative flex-1 max-w-md">
+              <div className="relative flex-1 w-full sm:max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   placeholder="Search purchase orders..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 w-full"
                 />
               </div>
             </div>
 
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button onClick={openCreateDialog} className="w-full lg:w-auto bg-primary hover:bg-primary/90">
+                <Button onClick={openCreateDialog} className="w-full md:w-auto bg-primary hover:bg-primary/90 shrink-0">
                   <Plus className="mr-2 h-4 w-4" />
                   Create Purchase Order
                 </Button>

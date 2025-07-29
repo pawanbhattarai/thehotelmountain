@@ -15,6 +15,7 @@ import {
   ArrowLeft,
   AlertCircle,
   Save,
+  Package,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -951,137 +952,164 @@ export default function RoomOrders() {
               </div>
 
               {/* Order Summary */}
-              <div>
-                <Card className="sticky top-4">
+              {/* Order Summary & Cart */}
+              <div className="space-y-6">
+                {/* Order Summary Section */}
+                <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center">
-                      <ShoppingCart className="h-5 w-5 mr-2" />
+                      <Package className="h-5 w-5 mr-2" />
                       Order Summary
-                      {cartItems.length > 0 && (
-                        <Badge className="ml-2">{cartItems.length}</Badge>
+                      {existingOrders.length > 0 && (
+                        <Badge className="ml-2">{existingOrders.length} Orders</Badge>
                       )}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {/* Existing Orders Summary */}
-                    {existingOrders.length > 0 && (
-                      <div className="mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-medium text-sm text-gray-600">
-                            Previous Orders ({existingOrders.length})
-                          </h4>
-                        </div>
+                    {existingOrders.length === 0 ? (
+                      <div className="text-center py-6">
+                        <Package className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                        <p className="text-gray-500 text-sm">No previous orders</p>
                       </div>
-                    )}
-
-                    {/* Existing Order Items */}
-                    {existingItems.length > 0 && (
-                      <div className="mb-4">
-                        <h4 className="font-medium mb-2 text-sm text-gray-600">
-                          Previous Order Items
-                        </h4>
-                        <div className="space-y-2">
-                          {existingItems.map((item: any) => (
-                            <div
-                              key={item.orderItemId}
-                              className="flex items-center justify-between p-2 bg-gray-50 rounded"
-                            >
-                              <div className="flex-1">
-                                <p className="font-medium text-sm">
-                                  {item.dishName}
-                                </p>
-                                <p className="text-xs text-gray-600">
-                                  {currencySymbol} {item.unitPrice} ×{" "}
-                                  {item.quantity}
-                                </p>
-                                <p className="text-xs font-semibold text-green-600">
-                                  Total: {currencySymbol}{" "}
-                                  {(
-                                    parseFloat(item.unitPrice) * item.quantity
-                                  ).toFixed(2)}
-                                </p>
+                    ) : (
+                      <div className="max-h-64 overflow-y-auto space-y-3">
+                        {existingOrders.map((order: any) => (
+                          <div key={order.id} className="p-3 bg-gray-50 rounded-lg border">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-sm">#{order.orderNumber}</span>
+                                <Badge className={getStatusColor(order.status)}>
+                                  {order.status}
+                                </Badge>
                               </div>
-                              <div className="flex items-center space-x-1">
-                                {/* Decrease quantity button */}
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    if (item.quantity > 1) {
-                                      updateExistingItemQuantity(
-                                        item.orderItemId,
-                                        item.quantity - 1,
-                                        item.unitPrice,
-                                      );
-                                    }
-                                  }}
-                                  disabled={
-                                    item.quantity <= 1 ||
-                                    updateOrderItemMutation.isPending
-                                  }
-                                  className="h-6 w-6 p-0"
-                                  title="Decrease quantity"
-                                >
-                                  <Minus className="h-3 w-3" />
-                                </Button>
-
-                                <span className="text-sm font-medium w-8 text-center">
-                                  {item.quantity}
-                                </span>
-
-                                {/* Increase quantity button */}
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() =>
-                                    updateExistingItemQuantity(
-                                      item.orderItemId,
-                                      item.quantity + 1,
-                                      item.unitPrice,
-                                    )
-                                  }
-                                  disabled={updateOrderItemMutation.isPending}
-                                  className="h-6 w-6 p-0"
-                                  title="Increase quantity"
-                                >
-                                  <Plus className="h-3 w-3" />
-                                </Button>
-
-                                {/* Delete item button */}
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    if (
-                                      confirm(
-                                        `Are you sure you want to delete "${item.dishName}" from the order?`,
-                                      )
-                                    ) {
-                                      deleteExistingItem(item.orderItemId);
-                                    }
-                                  }}
-                                  disabled={deleteOrderItemMutation.isPending}
-                                  className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                  title="Delete this item"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
+                              <span className="text-sm font-semibold text-green-600">
+                                {currencySymbol} {order.totalAmount}
+                              </span>
                             </div>
-                          ))}
-                        </div>
+                            
+                            <div className="flex items-center gap-1 mb-2">
+                              <Clock className="h-3 w-3 text-gray-400" />
+                              <span className="text-xs text-gray-500">
+                                {formatDateInTimezone(order.createdAt, timeZone)}
+                              </span>
+                            </div>
+
+                            {/* Order Items */}
+                            <div className="space-y-1">
+                              {order.items?.map((item: any) => (
+                                <div key={item.id} className="flex items-center justify-between py-1">
+                                  <div className="flex-1">
+                                    <span className="text-xs font-medium">{item.dish?.name}</span>
+                                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                                      <span>{currencySymbol} {item.unitPrice}</span>
+                                      <span>×</span>
+                                      <span>{item.quantity}</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center space-x-1">
+                                    {/* Decrease quantity button */}
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        if (item.quantity > 1) {
+                                          updateExistingItemQuantity(
+                                            item.id,
+                                            item.quantity - 1,
+                                            item.unitPrice,
+                                          );
+                                        }
+                                      }}
+                                      disabled={
+                                        item.quantity <= 1 ||
+                                        updateOrderItemMutation.isPending
+                                      }
+                                      className="h-6 w-6 p-0"
+                                      title="Decrease quantity"
+                                    >
+                                      <Minus className="h-3 w-3" />
+                                    </Button>
+
+                                    <span className="text-xs font-medium w-6 text-center">
+                                      {item.quantity}
+                                    </span>
+
+                                    {/* Increase quantity button */}
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() =>
+                                        updateExistingItemQuantity(
+                                          item.id,
+                                          item.quantity + 1,
+                                          item.unitPrice,
+                                        )
+                                      }
+                                      disabled={updateOrderItemMutation.isPending}
+                                      className="h-6 w-6 p-0"
+                                      title="Increase quantity"
+                                    >
+                                      <Plus className="h-3 w-3" />
+                                    </Button>
+
+                                    {/* Delete item button */}
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        if (
+                                          confirm(
+                                            `Are you sure you want to delete "${item.dish?.name}" from the order?`,
+                                          )
+                                        ) {
+                                          deleteExistingItem(item.id);
+                                        }
+                                      }}
+                                      disabled={deleteOrderItemMutation.isPending}
+                                      className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                      title="Delete this item"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            {order.notes && (
+                              <div className="mt-2 p-2 bg-blue-50 rounded text-xs">
+                                <span className="font-medium text-gray-600">Notes: </span>
+                                <span className="text-gray-700">{order.notes}</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     )}
+                  </CardContent>
+                </Card>
 
-                    {/* Cart Items */}
+                {/* Cart Section */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <ShoppingCart className="h-5 w-5 mr-2" />
+                      New Order Cart
+                      {cartItems.length > 0 && (
+                        <Badge className="ml-2 bg-blue-500">{cartItems.length}</Badge>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
                     {cartItems.length === 0 ? (
                       <div className="text-center py-8">
                         <ShoppingCart className="h-12 w-12 mx-auto text-gray-400 mb-2" />
                         <p className="text-gray-500">No items in cart</p>
+                        <p className="text-xs text-gray-400 mt-1">Add items from the menu to create a new order</p>
                       </div>
                     ) : (
                       <>
-                        <div className="space-y-2 mb-4">
+                        <div className="space-y-3 mb-4 max-h-48 overflow-y-auto">
                           {cartItems.map((item) => (
                             <div
                               key={`${item.dishId}-${item.isNewItem ? "new" : item.originalOrderItemId}`}
@@ -1275,7 +1303,7 @@ export default function RoomOrders() {
                                   <FormControl>
                                     <Textarea
                                       {...field}
-                                      placeholder="Special instructions..."
+                                      placeholder="Special instructions for the new order..."
                                       className="h-20"
                                     />
                                   </FormControl>

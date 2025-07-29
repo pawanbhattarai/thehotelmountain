@@ -154,17 +154,20 @@ export default function RoomOrders() {
         return "Invalid Date";
       }
 
-      console.log(`🕐 Formatting timestamp: "${dateString}" in timezone: "${timeZone}"`);
+      console.log(
+        `🕐 Formatting timestamp: "${dateString}" in timezone: "${timeZone}"`,
+      );
       console.log(`🕐 Original date object: ${date.toString()}`);
 
       // Use the hotel's timezone to format the timestamp
-      const safeTimeZone = timeZone && timeZone.trim() !== "" ? timeZone : "Asia/Kathmandu";
-      
+      const safeTimeZone =
+        timeZone && timeZone.trim() !== "" ? timeZone : "Asia/Kathmandu";
+
       // Format using Intl.DateTimeFormat with the hotel's timezone
       const formatted = new Intl.DateTimeFormat("en-GB", {
         timeZone: safeTimeZone,
         day: "2-digit",
-        month: "2-digit", 
+        month: "2-digit",
         year: "numeric",
         hour: "2-digit",
         minute: "2-digit",
@@ -299,7 +302,7 @@ export default function RoomOrders() {
   const generateKOTBOTMutation = useMutation({
     mutationFn: async (orderId: string) => {
       console.log(`🎫 Generating KOT/BOT for order ID: ${orderId}`);
-      
+
       const response = await fetch(
         `/api/restaurant/orders/${orderId}/kot-bot`,
         {
@@ -310,22 +313,22 @@ export default function RoomOrders() {
           },
         },
       );
-      
+
       console.log(`🎫 KOT/BOT response status: ${response.status}`);
-      
+
       if (!response.ok) {
         const error = await response.json();
         console.error(`🎫 KOT/BOT error:`, error);
         throw new Error(error.message || "Failed to generate KOT/BOT");
       }
-      
+
       const result = await response.json();
       console.log(`🎫 KOT/BOT result:`, result);
       return result;
     },
     onSuccess: (data) => {
       console.log(`🎫 KOT/BOT generation successful:`, data);
-      
+
       queryClient.invalidateQueries({
         queryKey: ["/api/restaurant/orders/room"],
       });
@@ -363,7 +366,7 @@ export default function RoomOrders() {
   const generateReservationKOTBOTMutation = useMutation({
     mutationFn: async (reservationId: string) => {
       console.log(`🎫 Generating KOT/BOT for reservation ID: ${reservationId}`);
-      
+
       const response = await fetch(
         `/api/restaurant/reservations/${reservationId}/kot-bot`,
         {
@@ -374,22 +377,24 @@ export default function RoomOrders() {
           },
         },
       );
-      
+
       console.log(`🎫 Reservation KOT/BOT response status: ${response.status}`);
-      
+
       if (!response.ok) {
         const error = await response.json();
         console.error(`🎫 Reservation KOT/BOT error:`, error);
-        throw new Error(error.message || "Failed to generate KOT/BOT for reservation");
+        throw new Error(
+          error.message || "Failed to generate KOT/BOT for reservation",
+        );
       }
-      
+
       const result = await response.json();
       console.log(`🎫 Reservation KOT/BOT result:`, result);
       return result;
     },
     onSuccess: (data) => {
       console.log(`🎫 Reservation KOT/BOT generation successful:`, data);
-      
+
       queryClient.invalidateQueries({
         queryKey: ["/api/restaurant/orders/room"],
       });
@@ -398,7 +403,8 @@ export default function RoomOrders() {
 
       toast({
         title: data.message || "KOT/BOT Generated Successfully",
-        description: data.description || "Tickets generated for all orders in reservation",
+        description:
+          data.description || "Tickets generated for all orders in reservation",
       });
     },
     onError: (error: any) => {
@@ -406,7 +412,8 @@ export default function RoomOrders() {
       toast({
         title: "Failed to generate KOT/BOT",
         description:
-          error.message || "An error occurred while generating KOT/BOT for reservation",
+          error.message ||
+          "An error occurred while generating KOT/BOT for reservation",
         variant: "destructive",
       });
     },
@@ -681,7 +688,9 @@ export default function RoomOrders() {
     if (searchTerm.trim() !== "") {
       const searchLower = searchTerm.toLowerCase();
       const nameMatch = dish.name?.toLowerCase().includes(searchLower);
-      const descriptionMatch = dish.description?.toLowerCase().includes(searchLower);
+      const descriptionMatch = dish.description
+        ?.toLowerCase()
+        .includes(searchLower);
       if (!nameMatch && !descriptionMatch) {
         return false;
       }
@@ -790,21 +799,32 @@ export default function RoomOrders() {
                   <Button
                     variant="default"
                     onClick={() => {
-                      console.log(`🎫 Generating KOT/BOT for reservation:`, selectedReservation.id);
-                      console.log(`🎫 Available orders:`, existingOrders.length);
-                      
+                      console.log(
+                        `🎫 Generating KOT/BOT for reservation:`,
+                        selectedReservation.id,
+                      );
+                      console.log(
+                        `🎫 Available orders:`,
+                        existingOrders.length,
+                      );
+
                       // Use the new reservation-based endpoint
-                      generateReservationKOTBOTMutation.mutate(selectedReservation.id);
+                      generateReservationKOTBOTMutation.mutate(
+                        selectedReservation.id,
+                      );
                     }}
                     disabled={generateReservationKOTBOTMutation.isPending}
                     className="bg-blue-600 hover:bg-blue-700"
                   >
                     <FileText className="h-4 w-4 mr-2" />
-                    {generateReservationKOTBOTMutation.isPending ? "Generating..." : "Generate KOT/BOT"}
+                    {generateReservationKOTBOTMutation.isPending
+                      ? "Generating..."
+                      : "Generate KOT/BOT"}
                   </Button>
                 ) : (
                   <div className="text-sm text-orange-600 bg-orange-50 border border-orange-200 rounded px-3 py-2">
-                    📋 Create an order first by adding items and clicking "Create Order" to generate KOT/BOT tickets
+                    📋 Create an order first by adding items and clicking
+                    "Create Order" to generate KOT/BOT tickets
                   </div>
                 )}
               </div>
@@ -817,7 +837,7 @@ export default function RoomOrders() {
                   <CardHeader>
                     <div className="space-y-3">
                       <CardTitle>Menu Items</CardTitle>
-                      
+
                       {/* Search Input */}
                       <div className="w-full">
                         <Input
@@ -827,7 +847,7 @@ export default function RoomOrders() {
                           className="w-full"
                         />
                       </div>
-                      
+
                       <div className="flex flex-wrap gap-3">
                         <Select
                           value={selectedCategory}
@@ -888,10 +908,11 @@ export default function RoomOrders() {
                     {/* Search Results Count */}
                     {searchTerm.trim() !== "" && (
                       <div className="mb-3 text-sm text-gray-600">
-                        {filteredDishes?.length || 0} dish(es) found for "{searchTerm}"
+                        {filteredDishes?.length || 0} dish(es) found for "
+                        {searchTerm}"
                       </div>
                     )}
-                    
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
                       {filteredDishes?.length === 0 ? (
                         <div className="col-span-2 text-center py-8">
@@ -899,10 +920,9 @@ export default function RoomOrders() {
                             <Utensils className="h-12 w-12 mx-auto" />
                           </div>
                           <p className="text-gray-500">
-                            {searchTerm.trim() !== "" 
+                            {searchTerm.trim() !== ""
                               ? `No dishes found matching "${searchTerm}"`
-                              : "No dishes available with current filters"
-                            }
+                              : "No dishes available with current filters"}
                           </p>
                           {searchTerm.trim() !== "" && (
                             <Button
@@ -961,7 +981,9 @@ export default function RoomOrders() {
                       <Package className="h-5 w-5 mr-2" />
                       Order Summary
                       {existingOrders.length > 0 && (
-                        <Badge className="ml-2">{existingOrders.length} Orders</Badge>
+                        <Badge className="ml-2">
+                          {existingOrders.length} Orders
+                        </Badge>
                       )}
                     </CardTitle>
                   </CardHeader>
@@ -969,15 +991,22 @@ export default function RoomOrders() {
                     {existingOrders.length === 0 ? (
                       <div className="text-center py-6">
                         <Package className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                        <p className="text-gray-500 text-sm">No previous orders</p>
+                        <p className="text-gray-500 text-sm">
+                          No previous orders
+                        </p>
                       </div>
                     ) : (
                       <div className="max-h-64 overflow-y-auto space-y-3">
                         {existingOrders.map((order: any) => (
-                          <div key={order.id} className="p-3 bg-gray-50 rounded-lg border">
+                          <div
+                            key={order.id}
+                            className="p-3 bg-gray-50 rounded-lg border"
+                          >
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
-                                <span className="font-medium text-sm">#{order.orderNumber}</span>
+                                <span className="font-medium text-sm">
+                                  #{order.orderNumber}
+                                </span>
                                 <Badge className={getStatusColor(order.status)}>
                                   {order.status}
                                 </Badge>
@@ -986,22 +1015,32 @@ export default function RoomOrders() {
                                 {currencySymbol} {order.totalAmount}
                               </span>
                             </div>
-                            
+
                             <div className="flex items-center gap-1 mb-2">
                               <Clock className="h-3 w-3 text-gray-400" />
                               <span className="text-xs text-gray-500">
-                                {formatDateInTimezone(order.createdAt, timeZone)}
+                                {formatDateInTimezone(
+                                  order.createdAt,
+                                  timeZone,
+                                )}
                               </span>
                             </div>
 
                             {/* Order Items */}
                             <div className="space-y-1">
                               {order.items?.map((item: any) => (
-                                <div key={item.id} className="flex items-center justify-between py-1">
+                                <div
+                                  key={item.id}
+                                  className="flex items-center justify-between py-1"
+                                >
                                   <div className="flex-1">
-                                    <span className="text-xs font-medium">{item.dish?.name}</span>
+                                    <span className="text-xs font-medium">
+                                      {item.dish?.name}
+                                    </span>
                                     <div className="flex items-center gap-1 text-xs text-gray-500">
-                                      <span>{currencySymbol} {item.unitPrice}</span>
+                                      <span>
+                                        {currencySymbol} {item.unitPrice}
+                                      </span>
                                       <span>×</span>
                                       <span>{item.quantity}</span>
                                     </div>
@@ -1045,7 +1084,9 @@ export default function RoomOrders() {
                                           item.unitPrice,
                                         )
                                       }
-                                      disabled={updateOrderItemMutation.isPending}
+                                      disabled={
+                                        updateOrderItemMutation.isPending
+                                      }
                                       className="h-6 w-6 p-0"
                                       title="Increase quantity"
                                     >
@@ -1065,7 +1106,9 @@ export default function RoomOrders() {
                                           deleteExistingItem(item.id);
                                         }
                                       }}
-                                      disabled={deleteOrderItemMutation.isPending}
+                                      disabled={
+                                        deleteOrderItemMutation.isPending
+                                      }
                                       className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
                                       title="Delete this item"
                                     >
@@ -1078,8 +1121,12 @@ export default function RoomOrders() {
 
                             {order.notes && (
                               <div className="mt-2 p-2 bg-blue-50 rounded text-xs">
-                                <span className="font-medium text-gray-600">Notes: </span>
-                                <span className="text-gray-700">{order.notes}</span>
+                                <span className="font-medium text-gray-600">
+                                  Notes:{" "}
+                                </span>
+                                <span className="text-gray-700">
+                                  {order.notes}
+                                </span>
                               </div>
                             )}
                           </div>
@@ -1096,7 +1143,9 @@ export default function RoomOrders() {
                       <ShoppingCart className="h-5 w-5 mr-2" />
                       New Order Cart
                       {cartItems.length > 0 && (
-                        <Badge className="ml-2 bg-blue-500">{cartItems.length}</Badge>
+                        <Badge className="ml-2 bg-blue-500">
+                          {cartItems.length}
+                        </Badge>
                       )}
                     </CardTitle>
                   </CardHeader>
@@ -1105,11 +1154,13 @@ export default function RoomOrders() {
                       <div className="text-center py-8">
                         <ShoppingCart className="h-12 w-12 mx-auto text-gray-400 mb-2" />
                         <p className="text-gray-500">No items in cart</p>
-                        <p className="text-xs text-gray-400 mt-1">Add items from the menu to create a new order</p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Add items from the menu to create a new order
+                        </p>
                       </div>
                     ) : (
                       <>
-                        <div className="space-y-3 mb-4 max-h-48 overflow-y-auto">
+                        <div className="space-y-3 mb-4 max-h-96 overflow-y-auto">
                           {cartItems.map((item) => (
                             <div
                               key={`${item.dishId}-${item.isNewItem ? "new" : item.originalOrderItemId}`}
@@ -1460,33 +1511,67 @@ export default function RoomOrders() {
                             <Clock className="h-3 w-3 text-gray-400" />
                             <p className="text-xs text-gray-500">
                               {(() => {
-                                if (reservationOrders.length === 0) return "No orders";
+                                if (reservationOrders.length === 0)
+                                  return "No orders";
 
-                                const latestOrder = reservationOrders.reduce((latest: any, current: any) => {
-                                  const latestTime = new Date(latest.createdAt).getTime();
-                                  const currentTime = new Date(current.createdAt).getTime();
-                                  return currentTime > latestTime ? current : latest;
-                                });
+                                const latestOrder = reservationOrders.reduce(
+                                  (latest: any, current: any) => {
+                                    const latestTime = new Date(
+                                      latest.createdAt,
+                                    ).getTime();
+                                    const currentTime = new Date(
+                                      current.createdAt,
+                                    ).getTime();
+                                    return currentTime > latestTime
+                                      ? current
+                                      : latest;
+                                  },
+                                );
 
-                                console.log(`🕐 Latest order for reservation ${reservation.id}:`);
-                                console.log(`🕐 - Raw timestamp: ${latestOrder.createdAt}`);
+                                console.log(
+                                  `🕐 Latest order for reservation ${reservation.id}:`,
+                                );
+                                console.log(
+                                  `🕐 - Raw timestamp: ${latestOrder.createdAt}`,
+                                );
                                 console.log(`🕐 - Order ID: ${latestOrder.id}`);
-                                console.log(`🕐 - Order Number: ${latestOrder.orderNumber}`);
-                                console.log(`🕐 - Hotel timezone setting: ${timeZone}`);
-                                
+                                console.log(
+                                  `🕐 - Order Number: ${latestOrder.orderNumber}`,
+                                );
+                                console.log(
+                                  `🕐 - Hotel timezone setting: ${timeZone}`,
+                                );
+
                                 // Parse the timestamp and show what timezone it's interpreted as
-                                const parsedDate = new Date(latestOrder.createdAt);
-                                console.log(`🕐 - Parsed as Date object: ${parsedDate.toString()}`);
-                                console.log(`🕐 - UTC representation: ${parsedDate.toISOString()}`);
-                                console.log(`🕐 - Local time representation: ${parsedDate.toLocaleString()}`);
-                                
+                                const parsedDate = new Date(
+                                  latestOrder.createdAt,
+                                );
+                                console.log(
+                                  `🕐 - Parsed as Date object: ${parsedDate.toString()}`,
+                                );
+                                console.log(
+                                  `🕐 - UTC representation: ${parsedDate.toISOString()}`,
+                                );
+                                console.log(
+                                  `🕐 - Local time representation: ${parsedDate.toLocaleString()}`,
+                                );
+
                                 // Show current time for comparison
                                 const now = new Date();
-                                console.log(`🕐 - Current server time: ${now.toString()}`);
-                                console.log(`🕐 - Current UTC time: ${now.toISOString()}`);
+                                console.log(
+                                  `🕐 - Current server time: ${now.toString()}`,
+                                );
+                                console.log(
+                                  `🕐 - Current UTC time: ${now.toISOString()}`,
+                                );
 
-                                const formattedTime = formatDateInTimezone(latestOrder.createdAt, timeZone);
-                                console.log(`🕐 - Final formatted display: ${formattedTime}`);
+                                const formattedTime = formatDateInTimezone(
+                                  latestOrder.createdAt,
+                                  timeZone,
+                                );
+                                console.log(
+                                  `🕐 - Final formatted display: ${formattedTime}`,
+                                );
 
                                 return formattedTime;
                               })()}
@@ -1570,7 +1655,10 @@ export default function RoomOrders() {
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-gray-400" />
                         <p className="font-semibold">
-                          {formatDateInTimezone(viewingOrder.createdAt, timeZone)}
+                          {formatDateInTimezone(
+                            viewingOrder.createdAt,
+                            timeZone,
+                          )}
                         </p>
                       </div>
                     </div>

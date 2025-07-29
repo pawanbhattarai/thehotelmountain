@@ -95,6 +95,7 @@ export default function RoomOrders() {
   const [selectedDietFilter, setSelectedDietFilter] = useState<string>("all");
   const [selectedMenuTypeFilter, setSelectedMenuTypeFilter] =
     useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState<string>("");
   const [viewingOrder, setViewingOrder] = useState<any>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const { toast } = useToast();
@@ -425,6 +426,10 @@ export default function RoomOrders() {
   const resetForm = () => {
     setSelectedReservation(null);
     setCartItems([]);
+    setSearchTerm("");
+    setSelectedCategory("all");
+    setSelectedDietFilter("all");
+    setSelectedMenuTypeFilter("all");
     form.reset();
   };
 
@@ -671,6 +676,16 @@ export default function RoomOrders() {
   };
 
   const filteredDishes = (dishes as any[])?.filter((dish: any) => {
+    // Search filter
+    if (searchTerm.trim() !== "") {
+      const searchLower = searchTerm.toLowerCase();
+      const nameMatch = dish.name?.toLowerCase().includes(searchLower);
+      const descriptionMatch = dish.description?.toLowerCase().includes(searchLower);
+      if (!nameMatch && !descriptionMatch) {
+        return false;
+      }
+    }
+
     if (
       selectedCategory !== "all" &&
       dish.categoryId !== parseInt(selectedCategory)
@@ -801,7 +816,18 @@ export default function RoomOrders() {
                   <CardHeader>
                     <div className="space-y-3">
                       <CardTitle>Menu Items</CardTitle>
-                      <div className="flex flex-wrap gap-3">
+                      
+                      {/* Search Input */}
+                      <div className="w-full">
+                        <Input
+                          placeholder="Search dishes by name or description..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="w-full"
+                        />
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-3"></div>
                         <Select
                           value={selectedCategory}
                           onValueChange={setSelectedCategory}
@@ -858,36 +884,67 @@ export default function RoomOrders() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
-                      {filteredDishes?.map((dish: any) => (
-                        <Card
-                          key={dish.id}
-                          className="hover:shadow-md transition-shadow cursor-pointer"
-                        >
-                          <CardContent className="p-4">
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <h4 className="font-medium">{dish.name}</h4>
-                                <p className="text-green-600 font-semibold">
-                                  {currencySymbol} {dish.price}
-                                </p>
-                                {dish.description && (
-                                  <p className="text-sm text-gray-500 mt-1">
-                                    {dish.description}
+                    {/* Search Results Count */}
+                    {searchTerm.trim() !== "" && (
+                      <div className="mb-3 text-sm text-gray-600">
+                        {filteredDishes?.length || 0} dish(es) found for "{searchTerm}"
+                      </div>
+                    )}
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-96 overflow-y-auto"></div>
+                      {filteredDishes?.length === 0 ? (
+                        <div className="col-span-2 text-center py-8">
+                          <div className="text-gray-400 mb-2">
+                            <Utensils className="h-12 w-12 mx-auto" />
+                          </div>
+                          <p className="text-gray-500">
+                            {searchTerm.trim() !== "" 
+                              ? `No dishes found matching "${searchTerm}"`
+                              : "No dishes available with current filters"
+                            }
+                          </p>
+                          {searchTerm.trim() !== "" && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSearchTerm("")}
+                              className="mt-2"
+                            >
+                              Clear search
+                            </Button>
+                          )}
+                        </div>
+                      ) : (
+                        filteredDishes?.map((dish: any) => (
+                          <Card
+                            key={dish.id}
+                            className="hover:shadow-md transition-shadow cursor-pointer"
+                          >
+                            <CardContent className="p-4">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <h4 className="font-medium">{dish.name}</h4>
+                                  <p className="text-green-600 font-semibold">
+                                    {currencySymbol} {dish.price}
                                   </p>
-                                )}
+                                  {dish.description && (
+                                    <p className="text-sm text-gray-500 mt-1">
+                                      {dish.description}
+                                    </p>
+                                  )}
+                                </div>
+                                <Button
+                                  size="sm"
+                                  onClick={() => addItemToCart(dish)}
+                                  className="ml-2"
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Button>
                               </div>
-                              <Button
-                                size="sm"
-                                onClick={() => addItemToCart(dish)}
-                                className="ml-2"
-                              >
-                                <Plus className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                            </CardContent>
+                          </Card>
+                        ))
+                      )}</div>
                     </div>
                   </CardContent>
                 </Card>

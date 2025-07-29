@@ -412,7 +412,7 @@ export default function RestaurantDishes() {
                       const selectedCategoryId = dishForm.watch("categoryId");
                       const selectedCategory = categories?.find((cat: any) => cat.id === selectedCategoryId);
                       const isBarCategory = selectedCategory?.menuType === "Bar";
-                      
+
                       if (isBarCategory) {
                         return (
                           <FormField
@@ -511,8 +511,8 @@ export default function RestaurantDishes() {
                                   <FormLabel>Spice Level</FormLabel>
                                   <FormControl>
                                     <Select
-                                      value={field.value}
-                                      onValueChange={field.onChange}
+                                      value={field.value || ""}
+                                      onValueChange={(value) => field.onChange(value === "" ? undefined : value)}
                                     >
                                       <SelectTrigger>
                                         <SelectValue placeholder="Select spice level" />

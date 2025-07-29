@@ -23,6 +23,10 @@ A comprehensive restaurant management system built with Node.js, Express, React,
 ## Recent Changes
 - **2025-07-29**: Successfully completed migration from Replit Agent to Replit environment  
 - **Migration Status**: Complete - PostgreSQL database configured, all systems operational
+- **Diet Column Display Logic**: Confirmed proper implementation for Bar type dishes
+  - Diet column shows "-" dash for Bar category dishes instead of diet information
+  - VEG/NON-VEG/VEGAN indicators only display for Food category dishes
+  - Maintains clean interface by hiding irrelevant diet data for beverages and bar items
 - **PWA Rotation Support Fixed**: Enhanced mobile and tablet rotation support for restaurant management system
   - Fixed PWA manifest orientation from "portrait-primary" to "any" to allow free rotation
   - Updated viewport meta tag to enable user scaling and improved touch interaction

@@ -23,8 +23,11 @@ A comprehensive restaurant management system built with Node.js, Express, React,
 ## Recent Changes
 - **2025-07-29**: Successfully completed migration from Replit Agent to Replit environment  
 - **Migration Status**: Complete - PostgreSQL database configured, all systems operational
-- **Diet Column Display Logic**: Confirmed proper implementation for Bar type dishes
-  - Diet column shows "-" dash for Bar category dishes instead of diet information
+- **Diet Column Display Logic**: Fixed display logic for Bar type dishes
+  - Problem: Diet column showing "VEG" for Bar category dishes instead of "-" dash
+  - Root cause: Backend API missing menuType field in category data, causing frontend logic to fail
+  - Solution: Added menuType field to restaurant-storage.ts getMenuDishes category selection
+  - Diet column now shows "-" dash for Bar category dishes as intended
   - VEG/NON-VEG/VEGAN indicators only display for Food category dishes
   - Maintains clean interface by hiding irrelevant diet data for beverages and bar items
 - **PWA Rotation Support Fixed**: Enhanced mobile and tablet rotation support for restaurant management system

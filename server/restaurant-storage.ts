@@ -167,6 +167,7 @@ export class RestaurantStorage {
         category: {
           id: menuCategories.id,
           name: menuCategories.name,
+          menuType: menuCategories.menuType,
           branchId: menuCategories.branchId,
           isActive: menuCategories.isActive,
           sortOrder: menuCategories.sortOrder,

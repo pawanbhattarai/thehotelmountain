@@ -184,217 +184,261 @@ export default function RestaurantKOT() {
     printWindow?.print();
   };
 
-  const generateKOTHTML = (kot: KotTicket) => {
-    // Get printer settings from hotel settings
-    const printerSettings = hotelSettings || {};
-    const paperWidth = printerSettings.printerPaperWidth || "80mm";
-    const paperHeight = printerSettings.printerPaperHeight || "auto";
-    const margins = printerSettings.printerMargins || "2mm";
-    const fontSize = printerSettings.printerFontSize || "10px";
-    const lineHeight = printerSettings.printerLineHeight || "1.2";
-    const paperSize = printerSettings.printerPaperSize || "80mm";
+  // Replace your generateKOTHTML function with this improved version:
 
-    // Determine if this is a thermal receipt printer
-    const isThermal = paperSize === "80mm" || paperSize === "58mm";
+const generateKOTHTML = (kot: KotTicket) => {
+  const printerSettings = hotelSettings || {};
+  const paperWidth = printerSettings.printerPaperWidth || "80mm";
+  const paperHeight = printerSettings.printerPaperHeight || "auto";
+  const margins = printerSettings.printerMargins || "2mm";
+  
+  // Improved font settings for better readability
+  const fontSize = printerSettings.printerFontSize || "12px"; // Increased from 10px
+  const lineHeight = printerSettings.printerLineHeight || "1.4"; // Increased from 1.2
+  const paperSize = printerSettings.printerPaperSize || "80mm";
+  
+  const isThermal = paperSize === "80mm" || paperSize === "58mm";
+  
+  const currentDateTime = new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long", 
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  
+  const showBSDate = hotelSettings?.billing?.enableBSDate || false;
+  const formattedDateTime = showBSDate
+    ? formatDateTimeWithBS(new Date())
+    : currentDateTime;
 
-    const currentDateTime = new Date().toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-    // Check if BS date is enabled in settings
-    const showBSDate = hotelSettings?.billing?.enableBSDate || false;
-    const formattedDateTime = showBSDate
-      ? formatDateTimeWithBS(new Date())
-      : currentDateTime;
-
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>KOT - ${kot.kotNumber}</title>
-        <style>
-          @page {
-            size: ${paperWidth} ${paperHeight === "auto" ? "auto" : paperHeight};
-            margin: ${margins};
-          }
-          body { 
-            font-family: ${printerSettings.printerFontFamily || (isThermal ? "monospace" : "Arial, sans-serif")}; 
-            padding: ${isThermal ? "5px" : "20px"}; 
-            margin: 0;
-            line-height: ${lineHeight};
-            color: #333;
-            font-size: ${fontSize};
-            width: 100%;
-            max-width: ${paperWidth === "80mm" ? "72mm" : paperWidth === "58mm" ? "50mm" : "100%"};
-          }
-          .header { 
-            text-align: center; 
-            margin-bottom: ${isThermal ? "10px" : "30px"}; 
-            border-bottom: ${isThermal ? "1px dashed #333" : "2px solid #333"};
-            padding-bottom: ${isThermal ? "8px" : "20px"};
-          }
-          .restaurant-name {
-            font-size: ${isThermal ? "14px" : "24px"};
-            font-weight: bold;
-            color: #333;
-            margin: ${isThermal ? "4px 0" : "10px 0"};
-            word-wrap: break-word;
-          }
-          .kot-title {
-            font-size: ${isThermal ? "12px" : "20px"};
-            font-weight: bold;
-            margin: ${isThermal ? "8px 0 4px 0" : "20px 0 10px 0"};
-            color: #333;
-          }
-          .kot-info {
-            display: ${isThermal ? "block" : "flex"};
-            justify-content: space-between;
-            margin-bottom: ${isThermal ? "8px" : "20px"};
-            padding: ${isThermal ? "4px 0" : "15px"};
-            background-color: ${isThermal ? "transparent" : "#f8f9fa"};
-            border-radius: ${isThermal ? "0" : "5px"};
-            ${isThermal ? "border-bottom: 1px dashed #333;" : ""}
-          }
-          .order-details, .table-details {
-            flex: ${isThermal ? "none" : "1"};
-            margin-bottom: ${isThermal ? "8px" : "0"};
-          }
-          .order-details {
-            margin-right: ${isThermal ? "0" : "20px"};
-          }
-          .detail-label {
-            font-weight: bold;
-            color: #333;
-          }
-          .items-section {
-            margin-bottom: 20px;
-          }
-          .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: ${isThermal ? "8px" : "20px"};
-            font-size: ${isThermal ? "8px" : "inherit"};
-          }
-          .items-table th, .items-table td {
-            border: ${isThermal ? "none" : "1px solid #ddd"};
-            padding: ${isThermal ? "2px 4px" : "8px"};
-            text-align: left;
-            ${isThermal ? "border-bottom: 1px dashed #ccc;" : ""}
-          }
-          .items-table th {
-            background-color: ${isThermal ? "transparent" : "#f2f2f2"};
-            font-weight: bold;
-            ${isThermal ? "border-bottom: 1px solid #333;" : ""}
-          }
-          .items-table td:last-child {
-            text-align: center;
-          }
-          .status-section {
-            margin-top: ${isThermal ? "8px" : "20px"};
-            text-align: center;
-            padding: ${isThermal ? "4px" : "15px"};
-            background-color: ${isThermal ? "transparent" : "#f8f9fa"};
-            border-radius: ${isThermal ? "0" : "5px"};
-            ${isThermal ? "border-top: 1px dashed #333; border-bottom: 1px dashed #333;" : ""}
-            font-weight: bold;
-            font-size: ${isThermal ? "inherit" : "16px"};
-          }
-          .table-items-line {
-            display: flex;
-            gap: 20px; /* adjust spacing between "Table" and "Items" */
-            align-items: center;
-          }
-
-          .notes-section {
-            margin: ${isThermal ? "8px 0" : "20px 0"};
-            padding: ${isThermal ? "4px" : "15px"};
-            background-color: ${isThermal ? "transparent" : "#fff3cd"};
-            border: ${isThermal ? "1px dashed #333" : "1px solid #ffeaa7"};
-            border-radius: ${isThermal ? "0" : "5px"};
-          }
-          .footer {
-            margin-top: ${isThermal ? "10px" : "30px"};
-            text-align: center;
-            font-size: ${isThermal ? "8px" : "12px"};
-            color: #666;
-            border-top: ${isThermal ? "1px dashed #ccc" : "1px solid #ddd"};
-            padding-top: ${isThermal ? "4px" : "15px"};
-          }
-          .time-info {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: ${isThermal ? "2px" : "5px"};
-            font-size: ${isThermal ? "inherit" : "14px"};
-          }
-          @media print {
-            body { margin: 0; }
-            .no-print { display: none; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <div class="kot-title">KITCHEN ORDER TICKET (KOT)</div>
-          <div style="font-size: ${isThermal ? "10px" : "14px"}; font-weight: bold;">${kot.kotNumber}</div>
-        </div>
-
-        <div class="kot-info">
-          <div class="order-details">
-            <div><span class="detail-label">Order:</span> ${kot.order.orderNumber}</div>
-            ${kot.customerName ? `<div><span class="detail-label">Customer:</span> ${kot.customerName}</div>` : ""}
-            <div><span class="detail-label">Status:</span> ${kot.status.toUpperCase()}</div>
-          </div>
-<div class="table-details">
-  <div><span class="detail-label">KOT Time:</span> ${formattedDateTime}</div>
-  <div class="table-items-line">
-    ${kot.table ? `<span><span class="detail-label">Table:</span> ${kot.table.name}</span>` : ""}
-    <span><span class="detail-label">Items:</span> ${kot.itemCount}</span>
-  </div>
-</div>
-        <div class="items-section">
-          <h3>Items to Prepare</h3>
-          <table class="items-table">
-            <thead>
-              <tr>
-                <th>Dish Name</th>
-                <th>Qty</th>
-                <th>Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${kot.items
-                .map(
-                  (item) => `
-                <tr>
-                  <td><strong>${item.dish.name}</strong></td>
-                  <td style="text-align: center; font-weight: bold;">${item.quantity}x</td>
-                  <td>${item.specialInstructions || "-"}</td>
-                </tr>
-              `,
-                )
-                .join("")}
-            </tbody>
-          </table>
-        </div>
-
-        ${
-          kot.notes
-            ? `
-          <div class="notes-section">
-            <strong>Order Notes:</strong><br>
-            ${kot.notes}
-          </div>
-        `
-            : ""
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>KOT - ${kot.kotNumber}</title>
+      <style>
+        @page {
+          size: ${paperWidth} ${paperHeight === "auto" ? "auto" : paperHeight};
+          margin: ${margins};
         }
-      </body>
-      </html>
-    `;
-  };
+        body { 
+          font-family: ${isThermal ? '"Courier New", monospace' : '"Arial", sans-serif'}; 
+          padding: ${isThermal ? "8px" : "20px"}; 
+          margin: 0;
+          line-height: ${lineHeight};
+          color: #000; /* Changed to pure black for better contrast */
+          font-size: ${fontSize};
+          width: 100%;
+          max-width: ${paperWidth === "80mm" ? "72mm" : paperWidth === "58mm" ? "50mm" : "100%"};
+          font-weight: 500; /* Slightly bolder text */
+        }
+        .header { 
+          text-align: center; 
+          margin-bottom: ${isThermal ? "12px" : "30px"}; 
+          border-bottom: ${isThermal ? "2px solid #000" : "2px solid #333"}; /* Darker border */
+          padding-bottom: ${isThermal ? "10px" : "20px"};
+        }
+        .restaurant-name {
+          font-size: ${isThermal ? "16px" : "24px"}; /* Increased font size */
+          font-weight: bold;
+          color: #000;
+          margin: ${isThermal ? "6px 0" : "10px 0"};
+          word-wrap: break-word;
+        }
+        .kot-title {
+          font-size: ${isThermal ? "14px" : "20px"}; /* Increased font size */
+          font-weight: bold;
+          margin: ${isThermal ? "10px 0 6px 0" : "20px 0 10px 0"};
+          color: #000;
+        }
+        .kot-info {
+          display: ${isThermal ? "block" : "flex"};
+          justify-content: space-between;
+          margin-bottom: ${isThermal ? "10px" : "20px"};
+          padding: ${isThermal ? "6px 0" : "15px"};
+          background-color: ${isThermal ? "transparent" : "#f8f9fa"};
+          border-radius: ${isThermal ? "0" : "5px"};
+          ${isThermal ? "border-bottom: 1px solid #000;" : ""}
+        }
+        .order-details, .table-details {
+          flex: ${isThermal ? "none" : "1"};
+          margin-bottom: ${isThermal ? "10px" : "0"};
+        }
+        .order-details {
+          margin-right: ${isThermal ? "0" : "20px"};
+        }
+        .detail-label {
+          font-weight: bold;
+          color: #000;
+        }
+        .items-section {
+          margin-bottom: 20px;
+        }
+        .items-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: ${isThermal ? "10px" : "20px"};
+          font-size: ${isThermal ? "13px" : "14px"}; /* Increased from 12px */
+        }
+        .items-table th, .items-table td {
+          border: ${isThermal ? "none" : "1px solid #333"}; /* Darker borders */
+          padding: ${isThermal ? "6px 8px" : "12px"}; /* Increased padding */
+          text-align: left;
+          ${isThermal ? "border-bottom: 1px solid #000;" : ""} /* Solid border instead of dashed */
+        }
+        .items-table th {
+          background-color: ${isThermal ? "transparent" : "#e9ecef"};
+          font-weight: bold;
+          font-size: ${isThermal ? "14px" : "15px"}; /* Increased header font */
+          ${isThermal ? "border-bottom: 2px solid #000;" : ""} /* Thicker header border */
+          color: #000;
+        }
+        .items-table td:last-child {
+          text-align: center;
+          font-weight: bold;
+          font-size: ${isThermal ? "14px" : "15px"};
+        }
+        .dish-name {
+          font-weight: bold;
+          font-size: ${isThermal ? "14px" : "15px"}; /* Increased dish name font */
+          color: #000;
+        }
+        .special-instructions {
+          font-size: ${isThermal ? "12px" : "13px"}; /* Increased instructions font */
+          color: #333; /* Darker gray for better readability */
+          font-style: italic;
+          margin-top: 2px;
+        }
+        .status-section {
+          margin-top: ${isThermal ? "10px" : "20px"};
+          text-align: center;
+          padding: ${isThermal ? "6px" : "15px"};
+          background-color: ${isThermal ? "transparent" : "#f8f9fa"};
+          border-radius: ${isThermal ? "0" : "5px"};
+          ${isThermal ? "border-top: 2px solid #000; border-bottom: 2px solid #000;" : ""}
+          font-weight: bold;
+          font-size: ${isThermal ? "inherit" : "16px"};
+          color: #000;
+        }
+        .table-items-line {
+          display: flex;
+          gap: 20px;
+          align-items: center;
+        }
+        .notes-section {
+          margin: ${isThermal ? "10px 0" : "20px 0"};
+          padding: ${isThermal ? "6px" : "15px"};
+          background-color: ${isThermal ? "transparent" : "#fff3cd"};
+          border: ${isThermal ? "2px solid #000" : "1px solid #ffeaa7"};
+          border-radius: ${isThermal ? "0" : "5px"};
+          font-weight: 500;
+          color: #000;
+        }
+        .footer {
+          margin-top: ${isThermal ? "12px" : "30px"};
+          text-align: center;
+          font-size: ${isThermal ? "10px" : "12px"}; /* Increased footer font */
+          color: #333; /* Darker footer color */
+          border-top: ${isThermal ? "1px solid #000" : "1px solid #333"};
+          padding-top: ${isThermal ? "6px" : "15px"};
+        }
+        .time-info {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: ${isThermal ? "4px" : "5px"};
+          font-size: ${isThermal ? "inherit" : "14px"};
+        }
+        
+        /* Additional improvements */
+        .qty-cell {
+          font-size: ${isThermal ? "15px" : "16px"} !important; /* Larger quantity display */
+          font-weight: bold;
+          background-color: ${isThermal ? "transparent" : "#f8f9fa"};
+        }
+        
+        .item-row {
+          min-height: ${isThermal ? "25px" : "30px"}; /* Minimum row height */
+        }
+        
+        @media print {
+          body { 
+            margin: 0; 
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .no-print { display: none; }
+          * {
+            color: #000 !important; /* Force black text in print */
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div class="kot-title">KITCHEN ORDER TICKET (KOT)</div>
+        <div style="font-size: ${isThermal ? "12px" : "14px"}; font-weight: bold; margin-top: 5px;">${kot.kotNumber}</div>
+      </div>
+
+      <div class="kot-info">
+        <div class="order-details">
+          <div style="margin-bottom: 4px;"><span class="detail-label">Order:</span> ${kot.order.orderNumber}</div>
+          ${kot.customerName ? `<div style="margin-bottom: 4px;"><span class="detail-label">Customer:</span> ${kot.customerName}</div>` : ""}
+          <div><span class="detail-label">Status:</span> ${kot.status.toUpperCase()}</div>
+        </div>
+        <div class="table-details">
+          <div style="margin-bottom: 4px;"><span class="detail-label">KOT Time:</span> ${formattedDateTime}</div>
+          <div class="table-items-line">
+            ${kot.table ? `<span><span class="detail-label">Table:</span> ${kot.table.name}</span>` : ""}
+            <span><span class="detail-label">Items:</span> ${kot.itemCount}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="items-section">
+        <h3 style="margin-bottom: 8px; font-size: ${isThermal ? "14px" : "16px"}; color: #000;">Items to Prepare</h3>
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th style="width: 50%;">Dish Name</th>
+              <th style="width: 15%; text-align: center;">Qty</th>
+              <th style="width: 35%;">Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${kot.items
+              .map(
+                (item) => `
+              <tr class="item-row">
+                <td class="dish-name">${item.dish.name}</td>
+                <td class="qty-cell">${item.quantity}x</td>
+                <td class="special-instructions">${item.specialInstructions || "-"}</td>
+              </tr>
+            `,
+              )
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+
+      ${
+        kot.notes
+          ? `
+        <div class="notes-section">
+          <strong style="font-size: ${isThermal ? "13px" : "14px"};">Order Notes:</strong><br>
+          <span style="font-size: ${isThermal ? "12px" : "13px"};">${kot.notes}</span>
+        </div>
+      `
+          : ""
+      }
+      
+      <div class="footer">
+        <div>Printed: ${new Date().toLocaleString()}</div>
+      </div>
+    </body>
+    </html>
+  `;
+};
 
   const getTimeDuration = (startTime: string, endTime?: string) => {
     const start = new Date(startTime);

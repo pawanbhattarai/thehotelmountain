@@ -57,7 +57,7 @@ const dishSchema = z.object({
   description: z.string().optional(),
   ingredients: z.string().optional(),
   dietType: z.enum(["vegetarian", "non-vegetarian", "vegan"]).optional(),
-  spiceLevel: z.enum(["mild", "medium", "hot", "extra-hot"]).optional(),
+  spiceLevel: z.enum(["mild", "medium", "hot", "extra-hot"]).optional().nullable(),
   preparationTime: z.number().optional(),
   image: z.string().optional(),
 });
@@ -172,10 +172,12 @@ export default function RestaurantDishes() {
     defaultValues: {
       name: "",
       price: "",
-      branchId: user?.role !== "superadmin" ? user?.branchId : undefined,
+      categoryId: 1,
+      branchId: user?.role !== "superadmin" ? user?.branchId : 1,
       description: "",
       ingredients: "",
       dietType: "vegetarian",
+      spiceLevel: undefined,
       preparationTime: 0,
     },
   });
@@ -184,10 +186,12 @@ export default function RestaurantDishes() {
     dishForm.reset({
       name: "",
       price: "",
-      branchId: user?.role !== "superadmin" ? user?.branchId : undefined,
+      categoryId: 1,
+      branchId: user?.role !== "superadmin" ? user?.branchId : 1,
       description: "",
       ingredients: "",
       dietType: "vegetarian",
+      spiceLevel: undefined,
       preparationTime: 0,
     });
     setEditingDish(null);
@@ -515,9 +519,10 @@ export default function RestaurantDishes() {
                                       onValueChange={(value) => field.onChange(value === "" ? undefined : value)}
                                     >
                                       <SelectTrigger>
-                                        <SelectValue placeholder="Select spice level" />
+                                        <SelectValue placeholder="Select spice level (optional)" />
                                       </SelectTrigger>
                                       <SelectContent>
+                                        <SelectItem value="">None</SelectItem>
                                         <SelectItem value="mild">Mild</SelectItem>
                                         <SelectItem value="medium">Medium</SelectItem>
                                         <SelectItem value="hot">Hot</SelectItem>

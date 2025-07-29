@@ -359,6 +359,25 @@ export class RestaurantStorage {
     return result;
   }
 
+  async updateOrderItem(itemId: number, updates: { quantity: number; totalPrice: string }): Promise<RestaurantOrderItem> {
+    const [result] = await db
+      .update(restaurantOrderItems)
+      .set({
+        quantity: updates.quantity,
+        totalPrice: updates.totalPrice,
+        updatedAt: sql`NOW()`
+      })
+      .where(eq(restaurantOrderItems.id, itemId))
+      .returning();
+    return result;
+  }
+
+  async deleteOrderItem(itemId: number): Promise<void> {
+    await db
+      .delete(restaurantOrderItems)
+      .where(eq(restaurantOrderItems.id, itemId));
+  }
+
   async addItemsToExistingOrder(
     orderId: string,
     items: InsertRestaurantOrderItem[],
@@ -367,7 +386,7 @@ export class RestaurantStorage {
   ): Promise<RestaurantOrder> {
     return await db.transaction(async (tx) => {
       console.log("Adding items to existing order:", orderId);
-      
+
       // Add the new items
       const itemsWithOrderId = items.map((item) => ({
         ...item,
@@ -545,7 +564,7 @@ export class RestaurantStorage {
 
           if (orderResults.length > 0) {
             order = orderResults[0];
-            
+
             // Get order items with dish details
             try {
               const items = await this.getRestaurantOrderItems(order.id);
@@ -1063,11 +1082,11 @@ export class RestaurantStorage {
       // Auto-print KOT to KOT printers
       if (kotGenerated && kotData?.kotTicket) {
         const kotPrinters = enabledPrinters.filter(p => p.printerType === 'kot');
-        
+
         for (const printer of kotPrinters) {
           try {
             console.log(`📄 Auto-printing KOT ${kotData.kotNumber} to ${printer.printerName} (${printer.ipAddress}:${printer.port})`);
-            
+
             // Generate KOT ticket content
             const kotContent = this.generateKOTContent({
               kotNumber: kotData.kotNumber,
@@ -1089,7 +1108,7 @@ export class RestaurantStorage {
               content: kotContent,
               branchId: order.branchId
             });
-            
+
             if (printResult.success) {
               // Mark KOT as printed
               await tx
@@ -1115,11 +1134,11 @@ export class RestaurantStorage {
       // Auto-print BOT to BOT printers
       if (botGenerated && botData?.botTicket) {
         const botPrinters = enabledPrinters.filter(p => p.printerType === 'bot');
-        
+
         for (const printer of botPrinters) {
           try {
             console.log(`🍸 Auto-printing BOT ${botData.botNumber} to ${printer.printerName} (${printer.ipAddress}:${printer.port})`);
-            
+
             // Generate BOT ticket content
             const botContent = this.generateBOTContent({
               botNumber: botData.botNumber,
@@ -1141,7 +1160,7 @@ export class RestaurantStorage {
               content: botContent,
               branchId: order.branchId
             });
-            
+
             if (printResult.success) {
               // Mark BOT as printed
               await tx
@@ -1164,40 +1183,38 @@ export class RestaurantStorage {
         }
       }
 
-      let message = '';
-      let printingSummary = '';
-
-      // Build printing summary
-      if (autoPrintResults.kotPrinted || autoPrintResults.botPrinted) {
-        const printedItems = [];
-        if (autoPrintResults.kotPrinted) printedItems.push('KOT auto-printed to kitchen');
-        if (autoPrintResults.botPrinted) printedItems.push('BOT auto-printed to bar');
-        printingSummary = ` (${printedItems.join(', ')})`;
-      }
-
+      let message = "";
       if (kotGenerated && botGenerated) {
-        message = `Both KOT and BOT generated successfully${printingSummary}`;
+        message = "KOT and BOT generated successfully";
       } else if (kotGenerated) {
-        message = `KOT generated successfully for food items${printingSummary}`;
+        message = "KOT generated successfully";
       } else if (botGenerated) {
-        message = `BOT generated successfully for bar items${printingSummary}`;
+        message = "BOT generated successfully";
       } else {
-        message = 'No items available for KOT/BOT generation';
+        // Check if there are any items at all
+        const allOrderItems = await tx
+          .select()
+          .from(restaurantOrderItems)
+          .where(eq(restaurantOrderItems.orderId, orderId));
+
+        if (allOrderItems.length === 0) {
+          message = "This order has no items";
+        } else {
+          const alreadyGeneratedItems = allOrderItems.filter(item => item.isKot || item.isBot);
+          if (alreadyGeneratedItems.length === allOrderItems.length) {
+            message = "All items have already been generated for KOT/BOT";
+          } else {
+            message = "No items available for KOT/BOT generation - check if dishes have correct category menu types (Food/Bar)";
+          }
+        }
       }
 
-      // Add error information if there were print failures
-      if (autoPrintResults.printErrors.length > 0) {
-        message += ` (Print warnings: ${autoPrintResults.printErrors.join(', ')})`;
-      }
-
-      return { 
+      return {
         kotGenerated,
         botGenerated,
         kotData,
         botData,
         message,
-        autoPrinted: autoPrintResults.kotPrinted || autoPrintResults.botPrinted,
-        printResults: autoPrintResults
       };
     });
   }
@@ -1893,7 +1910,7 @@ export class RestaurantStorage {
     };
   }
 
-  async getOrderAnalytics(branchId?: number, period: string = '30d'): Promise<{
+  async getOrderAnalytics(branchId?: number, period:string = '30d'): Promise<{
     totalOrders: number;
     ordersToday: number;
     averageOrderValue: number;
@@ -2209,7 +2226,7 @@ export class RestaurantStorage {
   }): string {
     const separator = '================================';
     const location = data.tableNumber || data.roomNumber || 'Takeaway';
-    
+
     let content = `${separator}\n`;
     content += `           KOT - KITCHEN\n`;
     content += `${separator}\n`;
@@ -2255,7 +2272,7 @@ export class RestaurantStorage {
   }): string {
     const separator = '================================';
     const location = data.tableNumber || data.roomNumber || 'Takeaway';
-    
+
     let content = `${separator}\n`;
     content += `            BOT - BAR\n`;
     content += `${separator}\n`;

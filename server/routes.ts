@@ -6232,6 +6232,118 @@ Thank you!
     }
   });
 
+  // Order Item Management Endpoints
+  app.put("/api/restaurant/order-items/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.session.user.id);
+      if (!user) return res.status(401).json({ message: "User not found" });
+
+      const itemId = req.params.id;
+      const { quantity, totalPrice } = req.body;
+
+      // Get the order item to check permissions
+      const [orderItem] = await db
+        .select({
+          id: restaurantOrderItems.id,
+          orderId: restaurantOrderItems.orderId,
+          dishId: restaurantOrderItems.dishId,
+          unitPrice: restaurantOrderItems.unitPrice,
+          branchId: sql`(SELECT branch_id FROM restaurant_orders WHERE id = ${restaurantOrderItems.orderId})`,
+        })
+        .from(restaurantOrderItems)
+        .where(eq(restaurantOrderItems.id, parseInt(itemId)));
+
+      if (!orderItem) {
+        return res.status(404).json({ message: "Order item not found" });
+      }
+
+      if (!checkBranchPermissions(user.role, user.branchId, orderItem.branchId)) {
+        return res.status(403).json({ message: "Insufficient permissions for this order item" });
+      }
+
+      // Update the order item
+      const [updatedItem] = await db
+        .update(restaurantOrderItems)
+        .set({
+          quantity: quantity,
+          totalPrice: totalPrice
+        })
+        .where(eq(restaurantOrderItems.id, parseInt(itemId)))
+        .returning();
+
+      // Recalculate order totals
+      const allItems = await restaurantStorage.getRestaurantOrderItems(orderItem.orderId);
+      const newSubtotal = allItems.reduce((sum, item) => sum + parseFloat(item.totalPrice), 0);
+
+      await restaurantStorage.updateRestaurantOrder(orderItem.orderId, {
+        subtotal: newSubtotal.toString(),
+        totalAmount: newSubtotal.toString(),
+      });
+
+      // Broadcast order update
+      wsManager.broadcastDataUpdate("restaurant-orders", orderItem.branchId?.toString());
+      wsManager.broadcastDataUpdate("restaurant-dashboard", orderItem.branchId?.toString());
+
+      res.json({ 
+        ...updatedItem, 
+        message: "Order item updated successfully" 
+      });
+    } catch (error) {
+      console.error("Error updating order item:", error);
+      res.status(500).json({ message: "Failed to update order item" });
+    }
+  });
+
+  app.delete("/api/restaurant/order-items/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.session.user.id);
+      if (!user) return res.status(401).json({ message: "User not found" });
+
+      const itemId = req.params.id;
+
+      // Get the order item to check permissions
+      const [orderItem] = await db
+        .select({
+          id: restaurantOrderItems.id,
+          orderId: restaurantOrderItems.orderId,
+          branchId: sql`(SELECT branch_id FROM restaurant_orders WHERE id = ${restaurantOrderItems.orderId})`,
+        })
+        .from(restaurantOrderItems)
+        .where(eq(restaurantOrderItems.id, parseInt(itemId)));
+
+      if (!orderItem) {
+        return res.status(404).json({ message: "Order item not found" });
+      }
+
+      if (!checkBranchPermissions(user.role, user.branchId, orderItem.branchId)) {
+        return res.status(403).json({ message: "Insufficient permissions for this order item" });
+      }
+
+      // Delete the order item
+      await db
+        .delete(restaurantOrderItems)
+        .where(eq(restaurantOrderItems.id, parseInt(itemId)));
+
+      // Recalculate order totals
+      const remainingItems = await restaurantStorage.getRestaurantOrderItems(orderItem.orderId);
+      const newSubtotal = remainingItems.reduce((sum, item) => sum + parseFloat(item.totalPrice), 0);
+
+      await restaurantStorage.updateRestaurantOrder(orderItem.orderId, {
+        subtotal: newSubtotal.toString(),
+        totalAmount: newSubtotal.toString(),
+      });
+
+      // Broadcast order update
+      wsManager.broadcastDataUpdate("restaurant-orders", orderItem.branchId?.toString());
+      wsManager.broadcastDataUpdate("restaurant-dashboard", orderItem.branchId?.toString());
+
+      res.json({ message: "Order item deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting order item:", error);
+      res.status(500).json({ message: "Failed to delete order item" });
+    }
+  });
+
   // Room Orders API
   app.post(
     "/api/restaurant/orders/room",
@@ -6771,6 +6883,47 @@ Thank you!
       }
     },
   );
+
+  // Order Item Management
+  app.put("/api/restaurant/order-items/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.session.user.id);
+      if (!user) return res.status(401).json({ message: "User not found" });
+
+      const itemId = parseInt(req.params.id);
+      const { quantity, totalPrice } = req.body;
+
+      if (!quantity || quantity <= 0) {
+        return res.status(400).json({ message: "Invalid quantity" });
+      }
+
+      const updatedItem = await restaurantStorage.updateOrderItem(itemId, {
+        quantity,
+        totalPrice,
+      });
+
+      res.json(updatedItem);
+    } catch (error) {
+      console.error("Error updating order item:", error);
+      res.status(500).json({ message: "Failed to update order item" });
+    }
+  });
+
+  app.delete("/api/restaurant/order-items/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.session.user.id);
+      if (!user) return res.status(401).json({ message: "User not found" });
+
+      const itemId = parseInt(req.params.id);
+      
+      await restaurantStorage.deleteOrderItem(itemId);
+
+      res.json({ message: "Order item deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting order item:", error);
+      res.status(500).json({ message: "Failed to delete order item" });
+    }
+  });
 
   // Restaurant Bills
   app.get("/api/restaurant/bills", isAuthenticated, async (req: any, res) => {

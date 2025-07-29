@@ -407,118 +407,154 @@ export default function RestaurantDishes() {
                       )}
                     />
 
-                    {/* Diet Type - Single row with smaller height */}
-                    <FormField
-                      control={dishForm.control}
-                      name="dietType"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Diet Type</FormLabel>
-                          <FormControl>
-                            <div className="flex gap-3 max-w-md">
-                              <div
-                                className={`flex items-center px-3 py-2 border-2 rounded-md cursor-pointer transition-all ${
-                                  field.value === "vegetarian"
-                                    ? "border-green-500 bg-green-50"
-                                    : "border-gray-200 hover:border-green-300"
-                                }`}
-                                onClick={() => field.onChange("vegetarian")}
-                              >
-                                <div className="w-4 h-4 border-2 border-green-500 rounded-sm flex items-center justify-center mr-2">
-                                  <div className="w-2.5 h-2.5 bg-green-500 rounded-full"></div>
-                                </div>
-                                <span className="text-sm font-medium text-green-600">
-                                  VEG
-                                </span>
-                              </div>
-                              <div
-                                className={`flex items-center px-3 py-2 border-2 rounded-md cursor-pointer transition-all ${
-                                  field.value === "non-vegetarian"
-                                    ? "border-red-500 bg-red-50"
-                                    : "border-gray-200 hover:border-red-300"
-                                }`}
-                                onClick={() => field.onChange("non-vegetarian")}
-                              >
-                                <div className="w-4 h-4 border-2 border-red-500 rounded-sm flex items-center justify-center mr-2">
-                                  <div className="w-2.5 h-2.5 bg-red-500 rounded-full"></div>
-                                </div>
-                                <span className="text-sm font-medium text-red-600">
-                                  NON-VEG
-                                </span>
-                              </div>
-                              <div
-                                className={`flex items-center px-3 py-2 border-2 rounded-md cursor-pointer transition-all ${
-                                  field.value === "vegan"
-                                    ? "border-green-600 bg-green-50"
-                                    : "border-gray-200 hover:border-green-400"
-                                }`}
-                                onClick={() => field.onChange("vegan")}
-                              >
-                                <div className="w-4 h-4 border-2 border-green-600 rounded-sm flex items-center justify-center mr-2">
-                                  <div className="w-2.5 h-2.5 bg-green-600 rounded-full"></div>
-                                </div>
-                                <span className="text-sm font-medium text-green-700">
-                                  VEGAN
-                                </span>
-                              </div>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {/* Conditionally render Diet Type and Spice Level only for non-bar categories */}
+                    {(() => {
+                      const selectedCategoryId = dishForm.watch("categoryId");
+                      const selectedCategory = categories?.find((cat: any) => cat.id === selectedCategoryId);
+                      const isBarCategory = selectedCategory?.menuType === "Bar";
+                      
+                      if (isBarCategory) {
+                        return (
+                          <FormField
+                            control={dishForm.control}
+                            name="preparationTime"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Preparation Time (minutes)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    type="number"
+                                    onChange={(e) =>
+                                      field.onChange(parseInt(e.target.value))
+                                    }
+                                    placeholder="e.g., 15"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        );
+                      }
 
-                    {/* Spice Level and Preparation Time - Same row */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <FormField
-                        control={dishForm.control}
-                        name="spiceLevel"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Spice Level</FormLabel>
-                            <FormControl>
-                              <Select
-                                value={field.value}
-                                onValueChange={field.onChange}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select spice level" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="mild">Mild</SelectItem>
-                                  <SelectItem value="medium">Medium</SelectItem>
-                                  <SelectItem value="hot">Hot</SelectItem>
-                                  <SelectItem value="extra-hot">
-                                    Extra Hot
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={dishForm.control}
-                        name="preparationTime"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Preparation Time (minutes)</FormLabel>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                type="number"
-                                onChange={(e) =>
-                                  field.onChange(parseInt(e.target.value))
-                                }
-                                placeholder="e.g., 15"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                      return (
+                        <>
+                          {/* Diet Type - Single row with smaller height */}
+                          <FormField
+                            control={dishForm.control}
+                            name="dietType"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Diet Type</FormLabel>
+                                <FormControl>
+                                  <div className="flex gap-3 max-w-md">
+                                    <div
+                                      className={`flex items-center px-3 py-2 border-2 rounded-md cursor-pointer transition-all ${
+                                        field.value === "vegetarian"
+                                          ? "border-green-500 bg-green-50"
+                                          : "border-gray-200 hover:border-green-300"
+                                      }`}
+                                      onClick={() => field.onChange("vegetarian")}
+                                    >
+                                      <div className="w-4 h-4 border-2 border-green-500 rounded-sm flex items-center justify-center mr-2">
+                                        <div className="w-2.5 h-2.5 bg-green-500 rounded-full"></div>
+                                      </div>
+                                      <span className="text-sm font-medium text-green-600">
+                                        VEG
+                                      </span>
+                                    </div>
+                                    <div
+                                      className={`flex items-center px-3 py-2 border-2 rounded-md cursor-pointer transition-all ${
+                                        field.value === "non-vegetarian"
+                                          ? "border-red-500 bg-red-50"
+                                          : "border-gray-200 hover:border-red-300"
+                                      }`}
+                                      onClick={() => field.onChange("non-vegetarian")}
+                                    >
+                                      <div className="w-4 h-4 border-2 border-red-500 rounded-sm flex items-center justify-center mr-2">
+                                        <div className="w-2.5 h-2.5 bg-red-500 rounded-full"></div>
+                                      </div>
+                                      <span className="text-sm font-medium text-red-600">
+                                        NON-VEG
+                                      </span>
+                                    </div>
+                                    <div
+                                      className={`flex items-center px-3 py-2 border-2 rounded-md cursor-pointer transition-all ${
+                                        field.value === "vegan"
+                                          ? "border-green-600 bg-green-50"
+                                          : "border-gray-200 hover:border-green-400"
+                                      }`}
+                                      onClick={() => field.onChange("vegan")}
+                                    >
+                                      <div className="w-4 h-4 border-2 border-green-600 rounded-sm flex items-center justify-center mr-2">
+                                        <div className="w-2.5 h-2.5 bg-green-600 rounded-full"></div>
+                                      </div>
+                                      <span className="text-sm font-medium text-green-700">
+                                        VEGAN
+                                      </span>
+                                    </div>
+                                  </div>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          {/* Spice Level and Preparation Time - Same row */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <FormField
+                              control={dishForm.control}
+                              name="spiceLevel"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Spice Level</FormLabel>
+                                  <FormControl>
+                                    <Select
+                                      value={field.value}
+                                      onValueChange={field.onChange}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select spice level" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="mild">Mild</SelectItem>
+                                        <SelectItem value="medium">Medium</SelectItem>
+                                        <SelectItem value="hot">Hot</SelectItem>
+                                        <SelectItem value="extra-hot">
+                                          Extra Hot
+                                        </SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={dishForm.control}
+                              name="preparationTime"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Preparation Time (minutes)</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      {...field}
+                                      type="number"
+                                      onChange={(e) =>
+                                        field.onChange(parseInt(e.target.value))
+                                      }
+                                      placeholder="e.g., 15"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </>
+                      );
+                    })()}
 
                     <div className="flex justify-end gap-2">
                       <Button
@@ -593,59 +629,65 @@ export default function RestaurantDishes() {
                           <TableCell className="font-medium">
                             <div className="flex items-center space-x-2">
                               <span>{dish.name}</span>
-                              <div className="w-5 h-5 border-2 rounded-sm flex items-center justify-center">
-                                {dish.isVegan ? (
-                                  <div
-                                    className="w-3 h-3 bg-green-600 rounded-full"
-                                    title="Vegan"
-                                  ></div>
-                                ) : dish.isVegetarian ? (
-                                  <div
-                                    className="w-3 h-3 bg-green-500 rounded-full"
-                                    title="Vegetarian"
-                                  ></div>
-                                ) : (
-                                  <div
-                                    className="w-3 h-3 bg-red-500 rounded-full"
-                                    title="Non-Vegetarian"
-                                  ></div>
-                                )}
-                              </div>
+                              {dish.category?.menuType !== "Bar" && (
+                                <div className="w-5 h-5 border-2 rounded-sm flex items-center justify-center">
+                                  {dish.isVegan ? (
+                                    <div
+                                      className="w-3 h-3 bg-green-600 rounded-full"
+                                      title="Vegan"
+                                    ></div>
+                                  ) : dish.isVegetarian ? (
+                                    <div
+                                      className="w-3 h-3 bg-green-500 rounded-full"
+                                      title="Vegetarian"
+                                    ></div>
+                                  ) : (
+                                    <div
+                                      className="w-3 h-3 bg-red-500 rounded-full"
+                                      title="Non-Vegetarian"
+                                    ></div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell>Rs. {dish.price}</TableCell>
                           <TableCell>{dish.category?.name || "N/A"}</TableCell>
                           <TableCell>
-                            <div className="flex items-center space-x-2">
-                              {dish.isVegan ? (
-                                <>
-                                  <div className="w-5 h-5 border-2 border-green-600 rounded-sm flex items-center justify-center">
-                                    <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-                                  </div>
-                                  <span className="text-xs font-medium text-green-700">
-                                    VEGAN
-                                  </span>
-                                </>
-                              ) : dish.isVegetarian ? (
-                                <>
-                                  <div className="w-5 h-5 border-2 border-green-500 rounded-sm flex items-center justify-center">
-                                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                                  </div>
-                                  <span className="text-xs font-medium text-green-600">
-                                    VEG
-                                  </span>
-                                </>
-                              ) : (
-                                <>
-                                  <div className="w-5 h-5 border-2 border-red-500 rounded-sm flex items-center justify-center">
-                                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                                  </div>
-                                  <span className="text-xs font-medium text-red-600">
-                                    NON-VEG
-                                  </span>
-                                </>
-                              )}
-                            </div>
+                            {dish.category?.menuType === "Bar" ? (
+                              <span className="text-gray-400">-</span>
+                            ) : (
+                              <div className="flex items-center space-x-2">
+                                {dish.isVegan ? (
+                                  <>
+                                    <div className="w-5 h-5 border-2 border-green-600 rounded-sm flex items-center justify-center">
+                                      <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+                                    </div>
+                                    <span className="text-xs font-medium text-green-700">
+                                      VEGAN
+                                    </span>
+                                  </>
+                                ) : dish.isVegetarian ? (
+                                  <>
+                                    <div className="w-5 h-5 border-2 border-green-500 rounded-sm flex items-center justify-center">
+                                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                    </div>
+                                    <span className="text-xs font-medium text-green-600">
+                                      VEG
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div className="w-5 h-5 border-2 border-red-500 rounded-sm flex items-center justify-center">
+                                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                                    </div>
+                                    <span className="text-xs font-medium text-red-600">
+                                      NON-VEG
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            )}
                           </TableCell>
                           <TableCell>
                             {dish.spiceLevel && (

@@ -59,15 +59,14 @@
   /* iOS Safari specific styles */
   body {
     -webkit-touch-callout: none;
-    -webkit-user-select: none;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }
 
   /* Fix iOS Safari address bar hiding/showing */
   .ios-pwa-viewport {
-    height: 100vh;
-    height: -webkit-fill-available;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
   }
 
   /* iOS PWA status bar padding */
@@ -79,14 +78,34 @@
   }
 }
 
-/* Global layout fixes */
+/* Global layout fixes - FIXED FOR ROTATION */
 body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
-  /* iOS PWA viewport fix */
-  height: 100vh;
-  height: -webkit-fill-available;
+  /* iOS PWA viewport fix - Use min-height for rotation support */
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  width: 100%;
+  /* Allow natural reflow on rotation */
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Force layout recalculation on orientation change */
+@media screen and (orientation: landscape) {
+  html, body {
+    width: 100vw;
+    min-height: 100vh;
+  }
+}
+
+@media screen and (orientation: portrait) {
+  html, body {
+    width: 100vw;
+    min-height: 100vh;
+  }
 }
 
 /* Main content container */
@@ -234,6 +253,9 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
 body {
@@ -271,15 +293,14 @@ body {
   }
 }
 
-/* iOS PWA specific styles */
+/* iOS PWA specific styles - FIXED FOR ROTATION */
 .ios-pwa-standalone {
   /* iOS PWA standalone mode styles */
-  -webkit-user-select: none;
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
   /* Ensure scrolling works in PWA mode */
   overflow-y: auto !important;
-  height: auto !important;
+  min-height: auto !important;
   position: relative !important;
 }
 
@@ -551,12 +572,12 @@ body {
   @apply min-h-[calc(100vh-200px)];
 }
 
-/* iOS PWA Support */
+/* iOS PWA Support - FIXED FOR ROTATION */
 .ios-pwa-viewport {
   /* iOS Safari viewport fix */
-  width: 100vw;
-  height: 100vh;
-  height: 100dvh;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   /* Dynamic viewport height for modern browsers */
   overflow-x: hidden;
 }
@@ -569,13 +590,13 @@ body {
   padding-right: env(safe-area-inset-right);
 }
 
-/* iOS PWA Display Mode Detection */
+/* iOS PWA Display Mode Detection - FIXED FOR ROTATION */
 @media (display-mode: standalone) {
   body {
-    /* Hide address bar in standalone mode */
+    /* Hide address bar in standalone mode but allow rotation */
     -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    /* Allow user selection for proper rotation behavior */
   }
 }
 

@@ -248,88 +248,93 @@ export default function Branches() {
           }
         />
         <main className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={handleAddBranch} className="shrink-0">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Branch
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingBranch ? "Edit Branch" : "Add New Branch"}
-                  </DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Branch Name</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="address">Address</Label>
-                    <Textarea
-                      id="address"
-                      value={formData.address}
-                      onChange={(e) =>
-                        setFormData({ ...formData, address: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input
-                      id="phone"
-                      value={formData.phone}
-                      onChange={(e) =>
-                        setFormData({ ...formData, phone: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) =>
-                        setFormData({ ...formData, email: e.target.value })
-                      }
-                    />
-                  </div>
+          <div className="mb-6 flex w-full gap-2 justify-between">
+            <div className="flex-1 max-w-xs">
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
                   <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={
-                      createBranchMutation.isPending ||
-                      updateBranchMutation.isPending
-                    }
+                    onClick={handleAddBranch}
+                    className="w-full h-11 bg-primary hover:bg-primary/90"
                   >
-                    {createBranchMutation.isPending ||
-                    updateBranchMutation.isPending
-                      ? "Saving..."
-                      : editingBranch
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Branch
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingBranch ? "Edit Branch" : "Add New Branch"}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                      <Label htmlFor="name">Branch Name</Label>
+                      <Input
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) =>
+                          setFormData({ ...formData, name: e.target.value })
+                        }
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="address">Address</Label>
+                      <Textarea
+                        id="address"
+                        value={formData.address}
+                        onChange={(e) =>
+                          setFormData({ ...formData, address: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="phone">Phone</Label>
+                      <Input
+                        id="phone"
+                        value={formData.phone}
+                        onChange={(e) =>
+                          setFormData({ ...formData, phone: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) =>
+                          setFormData({ ...formData, email: e.target.value })
+                        }
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      disabled={
+                        createBranchMutation.isPending ||
+                        updateBranchMutation.isPending
+                      }
+                    >
+                      {createBranchMutation.isPending ||
+                      updateBranchMutation.isPending
+                        ? "Saving..."
+                        : editingBranch
                         ? "Update Branch"
                         : "Create Branch"}
-                  </Button>
-                </form>
-              </DialogContent>
-            </Dialog>
-            <div className="relative max-w-md flex-1">
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+            <div className="relative flex-1 max-w-xs">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Search branches..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 w-full h-11"
               />
             </div>
           </div>

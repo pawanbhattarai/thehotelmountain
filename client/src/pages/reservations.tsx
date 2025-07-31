@@ -403,18 +403,23 @@ export default function Reservations() {
           }
         />
         <main className="flex-1 overflow-y-auto p-3 sm:p-6">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
-            <Button onClick={() => setIsModalOpen(true)} className="shrink-0">
-              <Plus className="h-4 w-4 mr-2" />
-              New Reservation
-            </Button>
-            <div className="relative max-w-md flex-1">
+          <div className="flex w-full mb-6 gap-2 justify-between">
+            <div className="flex-1 max-w-xs">
+              <Button
+                onClick={() => setIsModalOpen(true)}
+                className="w-full h-11 bg-primary hover:bg-primary/90"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                New Reservation
+              </Button>
+            </div>
+            <div className="relative flex-1 max-w-xs ml-auto">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Search reservations..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 w-full h-11"
               />
             </div>
           </div>

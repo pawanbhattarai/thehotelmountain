@@ -245,160 +245,165 @@ export default function Suppliers() {
         />
         <main className="p-6">
           {/* Search and Add Button Section */}
-          <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between">
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={openCreateDialog} className="w-full sm:w-auto bg-primary hover:bg-primary/90">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Supplier
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingSupplier ? "Edit Supplier" : "Create Supplier"}
-                  </DialogTitle>
-                </DialogHeader>
-                <Form {...form}>
-                  <form
-                    onSubmit={form.handleSubmit(onSubmit)}
-                    className="space-y-4"
+          <div className="mb-6 flex w-full gap-2 justify-between">
+            <div className="flex-1 max-w-xs">
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    onClick={openCreateDialog}
+                    className="w-full h-11 bg-primary hover:bg-primary/90"
                   >
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Supplier Name</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Enter supplier name"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="email"
-                              placeholder="Enter email"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Phone</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Enter phone number"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="contactPerson"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Contact Person</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Enter contact person"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    {user?.role === "superadmin" && (
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Supplier
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingSupplier ? "Edit Supplier" : "Create Supplier"}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <Form {...form}>
+                    <form
+                      onSubmit={form.handleSubmit(onSubmit)}
+                      className="space-y-4"
+                    >
                       <FormField
                         control={form.control}
-                        name="branchId"
+                        name="name"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Branch</FormLabel>
+                            <FormLabel>Supplier Name</FormLabel>
                             <FormControl>
-                              <Select 
-                                value={field.value?.toString()} 
-                                onValueChange={(value) => field.onChange(value === "null" ? null : parseInt(value))}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select branch (optional for global supplier)" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="null">All Branches (Global)</SelectItem>
-                                  {Array.isArray(branches) && branches.map((branch: any) => (
-                                    <SelectItem key={branch.id} value={branch.id.toString()}>
-                                      {branch.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <Input
+                                placeholder="Enter supplier name"
+                                {...field}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                    )}
-                    <div className="flex justify-end space-x-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setDialogOpen(false)}
-                      >
-                        Cancel
-                      </Button>
-                      {!editingSupplier && (
-                        <Button 
-                          type="button" 
-                          variant="secondary" 
-                          onClick={() => {
-                            setDialogOpen(false);
-                            setIsBulkDialogOpen(true);
-                          }}
-                        >
-                          Add Bulk
-                        </Button>
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="email"
+                                placeholder="Enter email"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Phone</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Enter phone number"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="contactPerson"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Contact Person</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Enter contact person"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      {user?.role === "superadmin" && (
+                        <FormField
+                          control={form.control}
+                          name="branchId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Branch</FormLabel>
+                              <FormControl>
+                                <Select 
+                                  value={field.value?.toString()} 
+                                  onValueChange={(value) => field.onChange(value === "null" ? null : parseInt(value))}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select branch (optional for global supplier)" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="null">All Branches (Global)</SelectItem>
+                                    {Array.isArray(branches) && branches.map((branch: any) => (
+                                      <SelectItem key={branch.id} value={branch.id.toString()}>
+                                        {branch.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                       )}
-                      <Button
-                        type="submit"
-                        disabled={
-                          createMutation.isPending || updateMutation.isPending
-                        }
-                      >
-                        {editingSupplier ? "Update" : "Create Supplier"}
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
-            <div className="relative flex-1 max-w-md">
+                      <div className="flex justify-end space-x-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setDialogOpen(false)}
+                        >
+                          Cancel
+                        </Button>
+                        {!editingSupplier && (
+                          <Button 
+                            type="button" 
+                            variant="secondary" 
+                            onClick={() => {
+                              setDialogOpen(false);
+                              setIsBulkDialogOpen(true);
+                            }}
+                          >
+                            Add Bulk
+                          </Button>
+                        )}
+                        <Button
+                          type="submit"
+                          disabled={
+                            createMutation.isPending || updateMutation.isPending
+                          }
+                        >
+                          {editingSupplier ? "Update" : "Create Supplier"}
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </DialogContent>
+              </Dialog>
+            </div>
+            <div className="relative flex-1 max-w-xs">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 placeholder="Search suppliers..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 w-full h-11"
               />
             </div>
           </div>

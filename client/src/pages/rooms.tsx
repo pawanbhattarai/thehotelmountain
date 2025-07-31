@@ -289,172 +289,174 @@ export default function Rooms() {
           }
         />
         <main className="flex-1 overflow-y-auto p-6">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
-            {(user?.role === "superadmin" || user?.role === "branch-admin") && (
-              <div className="flex flex-wrap gap-2">
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button
-                      onClick={resetForm}
-                      className="shrink-0 w-full sm:w-auto bg-primary hover:bg-primary/90"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Room
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>
-                        {editingRoom ? "Edit Room" : "Add New Room"}
-                      </DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                      <div>
-                        <Label htmlFor="number">Room Number</Label>
-                        <Input
-                          id="number"
-                          value={formData.number}
-                          onChange={(e) =>
-                            setFormData({ ...formData, number: e.target.value })
-                          }
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="floor">Floor</Label>
-                        <Input
-                          id="floor"
-                          type="number"
-                          value={formData.floor}
-                          onChange={(e) =>
-                            setFormData({ ...formData, floor: e.target.value })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="roomTypeId">Room Type</Label>
-                        <Select
-                          value={formData.roomTypeId}
-                          onValueChange={(value) =>
-                            setFormData({ ...formData, roomTypeId: value })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select room type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {roomTypes?.map((roomType: any) => (
-                              <SelectItem
-                                key={roomType.id}
-                                value={roomType.id.toString()}
-                              >
-                                {roomType.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      {user?.role === "superadmin" && (
+          <div className="flex flex-col gap-4 mb-6">
+            <div className="flex w-full gap-2 justify-between">
+              {(user?.role === "superadmin" || user?.role === "branch-admin") && (
+                <div className="flex-1 max-w-xs">
+                  <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button
+                        onClick={resetForm}
+                        className="w-full h-11 bg-primary hover:bg-primary/90"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Room
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>
+                          {editingRoom ? "Edit Room" : "Add New Room"}
+                        </DialogTitle>
+                      </DialogHeader>
+                      <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                          <Label htmlFor="branchId">Branch</Label>
+                          <Label htmlFor="number">Room Number</Label>
+                          <Input
+                            id="number"
+                            value={formData.number}
+                            onChange={(e) =>
+                              setFormData({ ...formData, number: e.target.value })
+                            }
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="floor">Floor</Label>
+                          <Input
+                            id="floor"
+                            type="number"
+                            value={formData.floor}
+                            onChange={(e) =>
+                              setFormData({ ...formData, floor: e.target.value })
+                            }
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="roomTypeId">Room Type</Label>
                           <Select
-                            value={formData.branchId}
+                            value={formData.roomTypeId}
                             onValueChange={(value) =>
-                              setFormData({ ...formData, branchId: value })
+                              setFormData({ ...formData, roomTypeId: value })
                             }
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder="Select branch" />
+                              <SelectValue placeholder="Select room type" />
                             </SelectTrigger>
                             <SelectContent>
-                              {branches?.map((branch: any) => (
+                              {roomTypes?.map((roomType: any) => (
                                 <SelectItem
-                                  key={branch.id}
-                                  value={branch.id.toString()}
+                                  key={roomType.id}
+                                  value={roomType.id.toString()}
                                 >
-                                  {branch.name}
+                                  {roomType.name}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         </div>
-                      )}
-                      <div>
-                        <Label htmlFor="status">Status</Label>
-                        <Select
-                          value={formData.status}
-                          onValueChange={(value) =>
-                            setFormData({ ...formData, status: value })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="available">Available</SelectItem>
-                            <SelectItem value="occupied">Occupied</SelectItem>
-                            <SelectItem value="maintenance">
-                              Maintenance
-                            </SelectItem>
-                            <SelectItem value="housekeeping">
-                              Housekeeping
-                            </SelectItem>
-                            <SelectItem value="out-of-order">
-                              Out of Order
-                            </SelectItem>
-                            <SelectItem value="reserved">Reserved</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                        {user?.role === "superadmin" && (
+                          <div>
+                            <Label htmlFor="branchId">Branch</Label>
+                            <Select
+                              value={formData.branchId}
+                              onValueChange={(value) =>
+                                setFormData({ ...formData, branchId: value })
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select branch" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {branches?.map((branch: any) => (
+                                  <SelectItem
+                                    key={branch.id}
+                                    value={branch.id.toString()}
+                                  >
+                                    {branch.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                        <div>
+                          <Label htmlFor="status">Status</Label>
+                          <Select
+                            value={formData.status}
+                            onValueChange={(value) =>
+                              setFormData({ ...formData, status: value })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="available">Available</SelectItem>
+                              <SelectItem value="occupied">Occupied</SelectItem>
+                              <SelectItem value="maintenance">
+                                Maintenance
+                              </SelectItem>
+                              <SelectItem value="housekeeping">
+                                Housekeeping
+                              </SelectItem>
+                              <SelectItem value="out-of-order">
+                                Out of Order
+                              </SelectItem>
+                              <SelectItem value="reserved">Reserved</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setIsDialogOpen(false)}
-                        >
-                          Cancel
-                        </Button>
-                        {!editingRoom && (
+                        <div className="flex justify-end gap-2">
                           <Button
                             type="button"
-                            variant="secondary"
-                            onClick={() => {
-                              setIsDialogOpen(false);
-                              setIsBulkRoomDialogOpen(true);
-                            }}
+                            variant="outline"
+                            onClick={() => setIsDialogOpen(false)}
                           >
-                            Add Bulk
+                            Cancel
                           </Button>
-                        )}
-                        <Button
-                          type="submit"
-                          disabled={
-                            createRoomMutation.isPending ||
+                          {!editingRoom && (
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              onClick={() => {
+                                setIsDialogOpen(false);
+                                setIsBulkRoomDialogOpen(true);
+                              }}
+                            >
+                              Add Bulk
+                            </Button>
+                          )}
+                          <Button
+                            type="submit"
+                            disabled={
+                              createRoomMutation.isPending ||
+                              updateRoomMutation.isPending
+                            }
+                          >
+                            {createRoomMutation.isPending ||
                             updateRoomMutation.isPending
-                          }
-                        >
-                          {createRoomMutation.isPending ||
-                          updateRoomMutation.isPending
-                            ? "Saving..."
-                            : editingRoom
+                              ? "Saving..."
+                              : editingRoom
                               ? "Update Room"
                               : "Create Room"}
-                        </Button>
-                      </div>
-                    </form>
-                  </DialogContent>
-                </Dialog>
+                          </Button>
+                        </div>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              )}
+              <div className="relative flex-1 max-w-xs ml-auto">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search rooms..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-full h-11"
+                />
               </div>
-            )}
-            <div className="relative max-w-md flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search rooms..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
             </div>
           </div>
           <Card>

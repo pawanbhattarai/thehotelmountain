@@ -327,8 +327,8 @@ export default function RoomTypes() {
           }
         />
         <main className="flex-1 overflow-y-auto p-6">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
-            <div className="flex gap-2">
+          <div className="flex w-full mb-6 gap-2 justify-between">
+            <div className="flex-1 max-w-xs">
               <Dialog
                 open={isCreateOpen || !!editingRoomType}
                 onOpenChange={handleCloseDialog}
@@ -336,11 +336,10 @@ export default function RoomTypes() {
                 <DialogTrigger asChild>
                   <Button
                     onClick={() => {
-                      console.log("Add Room Type button clicked");
                       resetForm();
                       setIsCreateOpen(true);
                     }}
-                    className="shrink-0"
+                    className="w-full h-11"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Room Type
@@ -531,13 +530,13 @@ export default function RoomTypes() {
                 </DialogContent>
               </Dialog>
             </div>
-            <div className="relative max-w-md flex-1">
+            <div className="relative flex-1 max-w-xs ml-auto">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Search room types..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 w-full h-11"
               />
             </div>
           </div>

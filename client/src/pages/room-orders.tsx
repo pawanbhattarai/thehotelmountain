@@ -838,69 +838,77 @@ export default function RoomOrders() {
                     <div className="space-y-3">
                       <CardTitle>Menu Items</CardTitle>
 
-                      {/* Search Input */}
-                      <div className="w-full">
-                        <Input
-                          placeholder="Search dishes by name or description..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="w-full"
-                        />
-                      </div>
-
-                      <div className="flex flex-wrap gap-3">
-                        <Select
-                          value={selectedCategory}
-                          onValueChange={setSelectedCategory}
-                        >
-                          <SelectTrigger className="w-44">
-                            <SelectValue placeholder="All Categories" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Categories</SelectItem>
-                            {(categories as any[])?.map((category: any) => (
-                              <SelectItem
-                                key={category.id}
-                                value={category.id.toString()}
-                              >
-                                {category.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-
-                        <Select
-                          value={selectedDietFilter}
-                          onValueChange={setSelectedDietFilter}
-                        >
-                          <SelectTrigger className="w-44">
-                            <SelectValue placeholder="All Diet Types" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Diet Types</SelectItem>
-                            <SelectItem value="vegetarian">
-                              Vegetarian
-                            </SelectItem>
-                            <SelectItem value="vegan">Vegan</SelectItem>
-                            <SelectItem value="non-vegetarian">
-                              Non-Vegetarian
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-
-                        <Select
-                          value={selectedMenuTypeFilter}
-                          onValueChange={setSelectedMenuTypeFilter}
-                        >
-                          <SelectTrigger className="w-36">
-                            <SelectValue placeholder="All Menus" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Menus</SelectItem>
-                            <SelectItem value="Food">Food</SelectItem>
-                            <SelectItem value="Bar">Bar</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      <div className="flex flex-col gap-2">
+                        {/* First row: All Categories & All Diet Types */}
+                        <div className="flex gap-2 w-full">
+                          <div className="flex-1">
+                            <Select
+                              value={selectedCategory}
+                              onValueChange={setSelectedCategory}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="All Categories" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All Categories</SelectItem>
+                                {(categories as any[])?.map((category: any) => (
+                                  <SelectItem
+                                    key={category.id}
+                                    value={category.id.toString()}
+                                  >
+                                    {category.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex-1">
+                            <Select
+                              value={selectedDietFilter}
+                              onValueChange={setSelectedDietFilter}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="All Diet Types" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All Diet Types</SelectItem>
+                                <SelectItem value="vegetarian">
+                                  Vegetarian
+                                </SelectItem>
+                                <SelectItem value="vegan">Vegan</SelectItem>
+                                <SelectItem value="non-vegetarian">
+                                  Non-Vegetarian
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        {/* Second row: All Menus & Search */}
+                        <div className="flex gap-2 w-full">
+                          <div className="flex-1">
+                            <Select
+                              value={selectedMenuTypeFilter}
+                              onValueChange={setSelectedMenuTypeFilter}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="All Menus" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All Menus</SelectItem>
+                                <SelectItem value="Food">Food</SelectItem>
+                                <SelectItem value="Bar">Bar</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex-1">
+                            <Input
+                              placeholder="Search dishes by name or description..."
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                              className="w-full"
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </CardHeader>
@@ -943,13 +951,13 @@ export default function RoomOrders() {
                           >
                             <CardContent className="p-4">
                               <div className="flex justify-between items-start">
-                                <div className="flex-1">
+                                <div className="flex-1 min-w-0"> {/* Add min-w-0 */}
                                   <h4 className="font-medium">{dish.name}</h4>
                                   <p className="text-green-600 font-semibold">
                                     {currencySymbol} {dish.price}
                                   </p>
                                   {dish.description && (
-                                    <p className="text-sm text-gray-500 mt-1">
+                                    <p className="text-sm text-gray-500 mt-1 break-words"> {/* Added break-words */}
                                       {dish.description}
                                     </p>
                                   )}
@@ -957,7 +965,7 @@ export default function RoomOrders() {
                                 <Button
                                   size="sm"
                                   onClick={() => addItemToCart(dish)}
-                                  className="ml-2"
+                                  className="ml-2 flex-shrink-0"
                                 >
                                   <Plus className="h-4 w-4" />
                                 </Button>
@@ -970,9 +978,6 @@ export default function RoomOrders() {
                   </CardContent>
                 </Card>
               </div>
-
-              {/* Order Summary */}
-              {/* Order Summary & Cart */}
               <div className="space-y-6">
                 {/* Order Summary Section */}
                 <Card>
@@ -1345,24 +1350,7 @@ export default function RoomOrders() {
                             onSubmit={form.handleSubmit(onSubmit)}
                             className="mt-4 space-y-4"
                           >
-                            <FormField
-                              control={form.control}
-                              name="notes"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Order Notes</FormLabel>
-                                  <FormControl>
-                                    <Textarea
-                                      {...field}
-                                      placeholder="Special instructions for the new order..."
-                                      className="h-20"
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
+                            
                             <div className="flex space-x-2">
                               <Button
                                 type="submit"
@@ -1450,11 +1438,10 @@ export default function RoomOrders() {
               return (
                 <Card
                   key={reservation.id}
-                  className={`cursor-pointer transition-all hover:shadow-lg ${
-                    hasOrder
+                  className={`cursor-pointer transition-all hover:shadow-lg ${hasOrder
                       ? "border-l-4 border-l-orange-500 bg-orange-50"
                       : "border-l-4 border-l-green-500 bg-green-50"
-                  }`}
+                    }`}
                   onClick={() => handleReservationClick(reservation)}
                 >
                   <CardContent className="p-6">

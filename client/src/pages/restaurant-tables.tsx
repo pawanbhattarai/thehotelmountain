@@ -210,87 +210,118 @@ export default function RestaurantTables() {
         />
         <main className="p-6">
           {/* Search and Add Button Section */}
-          <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between">
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  onClick={resetForm}
-                  className="w-full sm:w-auto bg-primary hover:bg-primary/90"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Table
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingTable ? "Edit Table" : "Add New Table"}
-                  </DialogTitle>
-                </DialogHeader>
-                <Form {...form}>
-                  <form
-                    onSubmit={form.handleSubmit(onSubmit)}
-                    className="space-y-4"
+          <div className="flex w-full mb-6 gap-2 justify-between">
+            <div className="flex-1 max-w-xs">
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    onClick={resetForm}
+                    className="w-full h-11 bg-primary hover:bg-primary/90"
                   >
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Table Name</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="e.g., Table 1" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="capacity"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Capacity</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              type="number"
-                              min={1}
-                              onChange={(e) =>
-                                field.onChange(parseInt(e.target.value))
-                              }
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    {user?.role === "superadmin" && (
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Table
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingTable ? "Edit Table" : "Add New Table"}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <Form {...form}>
+                    <form
+                      onSubmit={form.handleSubmit(onSubmit)}
+                      className="space-y-4"
+                    >
                       <FormField
                         control={form.control}
-                        name="branchId"
+                        name="name"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Branch</FormLabel>
+                            <FormLabel>Table Name</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="e.g., Table 1" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="capacity"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Capacity</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                type="number"
+                                min={1}
+                                onChange={(e) =>
+                                  field.onChange(parseInt(e.target.value))
+                                }
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      {user?.role === "superadmin" && (
+                        <FormField
+                          control={form.control}
+                          name="branchId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Branch</FormLabel>
+                              <FormControl>
+                                <Select
+                                  value={field.value?.toString()}
+                                  onValueChange={(value) =>
+                                    field.onChange(parseInt(value))
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select branch" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {branches?.map((branch: any) => (
+                                      <SelectItem
+                                        key={branch.id}
+                                        value={branch.id.toString()}
+                                      >
+                                        {branch.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+                      <FormField
+                        control={form.control}
+                        name="status"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Status</FormLabel>
                             <FormControl>
                               <Select
-                                value={field.value?.toString()}
-                                onValueChange={(value) =>
-                                  field.onChange(parseInt(value))
-                                }
+                                value={field.value}
+                                onValueChange={field.onChange}
                               >
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Select branch" />
+                                  <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {branches?.map((branch: any) => (
-                                    <SelectItem
-                                      key={branch.id}
-                                      value={branch.id.toString()}
-                                    >
-                                      {branch.name}
-                                    </SelectItem>
-                                  ))}
+                                  <SelectItem value="open">Open</SelectItem>
+                                  <SelectItem value="occupied">
+                                    Occupied
+                                  </SelectItem>
+                                  <SelectItem value="maintenance">
+                                    Maintenance
+                                  </SelectItem>
                                 </SelectContent>
                               </Select>
                             </FormControl>
@@ -298,76 +329,47 @@ export default function RestaurantTables() {
                           </FormItem>
                         )}
                       />
-                    )}
-                    <FormField
-                      control={form.control}
-                      name="status"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Status</FormLabel>
-                          <FormControl>
-                            <Select
-                              value={field.value}
-                              onValueChange={field.onChange}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="open">Open</SelectItem>
-                                <SelectItem value="occupied">
-                                  Occupied
-                                </SelectItem>
-                                <SelectItem value="maintenance">
-                                  Maintenance
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setIsDialogOpen(false)}
-                      >
-                        Cancel
-                      </Button>
-                      {!editingTable && (
+                      <div className="flex justify-end gap-2">
                         <Button
                           type="button"
-                          variant="secondary"
-                          onClick={() => {
-                            setIsDialogOpen(false);
-                            setIsBulkTableDialogOpen(true);
-                          }}
+                          variant="outline"
+                          onClick={() => setIsDialogOpen(false)}
                         >
-                          Add Bulk
+                          Cancel
                         </Button>
-                      )}
-                      <Button
-                        type="submit"
-                        disabled={
-                          createMutation.isPending || updateMutation.isPending
-                        }
-                      >
-                        {editingTable ? "Update" : "Create"} Table
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
-            <div className="relative flex-1 max-w-md">
+                        {!editingTable && (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => {
+                              setIsDialogOpen(false);
+                              setIsBulkTableDialogOpen(true);
+                            }}
+                          >
+                            Add Bulk
+                          </Button>
+                        )}
+                        <Button
+                          type="submit"
+                          disabled={
+                            createMutation.isPending || updateMutation.isPending
+                          }
+                        >
+                          {editingTable ? "Update" : "Create"} Table
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </DialogContent>
+              </Dialog>
+            </div>
+            <div className="relative flex-1 max-w-xs">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 placeholder="Search tables..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 w-full h-11"
               />
             </div>
           </div>

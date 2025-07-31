@@ -247,119 +247,124 @@ export default function MeasuringUnits() {
         />
         <main className="p-6">
           {/* Search and Add Button Section */}
-          <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between">
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={openCreateDialog} className="w-full sm:w-auto bg-primary hover:bg-primary/90">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Unit
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingUnit
-                      ? "Edit Measuring Unit"
-                      : "Create Measuring Unit"}
-                  </DialogTitle>
-                </DialogHeader>
-                <Form {...form}>
-                  <form
-                    onSubmit={form.handleSubmit(onSubmit)}
-                    className="space-y-4"
+          <div className="mb-6 flex w-full gap-2 justify-between">
+            <div className="flex-1 max-w-xs">
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    onClick={openCreateDialog}
+                    className="w-full h-11 bg-primary hover:bg-primary/90"
                   >
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Unit Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g., Kilogram" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="symbol"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Symbol</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g., kg" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="baseUnit"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Base Unit (Optional)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g., Gram" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="conversionFactor"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Conversion Factor</FormLabel>
-                          <FormControl>
-                            <Input placeholder="1" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <div className="flex justify-end space-x-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setDialogOpen(false)}
-                      >
-                        Cancel
-                      </Button>
-                      {!editingUnit && (
-                        <Button 
-                          type="button" 
-                          variant="secondary" 
-                          onClick={() => {
-                            setDialogOpen(false);
-                            setIsBulkDialogOpen(true);
-                          }}
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Unit
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingUnit
+                        ? "Edit Measuring Unit"
+                        : "Create Measuring Unit"}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <Form {...form}>
+                    <form
+                      onSubmit={form.handleSubmit(onSubmit)}
+                      className="space-y-4"
+                    >
+                      <FormField
+                        control={form.control}
+                        name="name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Unit Name</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g., Kilogram" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="symbol"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Symbol</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g., kg" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="baseUnit"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Base Unit (Optional)</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g., Gram" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="conversionFactor"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Conversion Factor</FormLabel>
+                            <FormControl>
+                              <Input placeholder="1" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="flex justify-end space-x-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setDialogOpen(false)}
                         >
-                          Add Bulk
+                          Cancel
                         </Button>
-                      )}
-                      <Button
-                        type="submit"
-                        disabled={
-                          createMutation.isPending || updateMutation.isPending
-                        }
-                      >
-                        {editingUnit ? "Update" : "Create Unit"}
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
-            <div className="relative flex-1 max-w-md">
+                        {!editingUnit && (
+                          <Button 
+                            type="button" 
+                            variant="secondary" 
+                            onClick={() => {
+                              setDialogOpen(false);
+                              setIsBulkDialogOpen(true);
+                            }}
+                          >
+                            Add Bulk
+                          </Button>
+                        )}
+                        <Button
+                          type="submit"
+                          disabled={
+                            createMutation.isPending || updateMutation.isPending
+                          }
+                        >
+                          {editingUnit ? "Update" : "Create Unit"}
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </DialogContent>
+              </Dialog>
+            </div>
+            <div className="relative flex-1 max-w-xs">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 placeholder="Search units..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 w-full h-11"
               />
             </div>
           </div>

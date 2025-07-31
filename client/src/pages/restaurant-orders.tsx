@@ -96,6 +96,7 @@ export default function RestaurantOrders() {
     useState<string>("all");
   const [viewingOrder, setViewingOrder] = useState<any>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState<string>("");
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -656,6 +657,16 @@ export default function RestaurantOrders() {
         }
       }
 
+      // Filter by search term (name or description)
+      if (searchTerm.trim() !== "") {
+        const lowerSearch = searchTerm.toLowerCase();
+        const nameMatch = item.name?.toLowerCase().includes(lowerSearch);
+        const descMatch = item.description?.toLowerCase().includes(lowerSearch);
+        if (!nameMatch && !descMatch) {
+          return false;
+        }
+      }
+
       return true;
     });
   };
@@ -679,9 +690,6 @@ export default function RestaurantOrders() {
     // If table has an existing order, load its items for display only
     const existingOrder = getTableOrder(table.id);
     if (existingOrder && existingOrder.items) {
-      // When loading existing items, assign them a uniqueId based on their `id` from the backend
-      // or a new client-side uniqueId if the backend doesn't provide an item-specific ID.
-      // For this example, let's assume `item.id` from the backend can serve as uniqueId for existing items.
       const orderItems: SelectedOrderItem[] = existingOrder.items.map(
         (item: any) => ({
           uniqueId: `existing-${item.id}`, // Use a prefix to differentiate from new items
@@ -865,65 +873,77 @@ export default function RestaurantOrders() {
                       <CardTitle>Menu Items</CardTitle>
 
                       {/* Filter Controls */}
-                      <div className="flex flex-wrap gap-3">
-                        {/* Category Filter */}
-                        <Select
-                          value={selectedCategory}
-                          onValueChange={setSelectedCategory}
-                        >
-                          <SelectTrigger className="w-44">
-                            <SelectValue placeholder="All Categories" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Categories</SelectItem>
-                            {categories?.map((category: any) => (
-                              <SelectItem
-                                key={category.id}
-                                value={category.id.toString()}
-                              >
-                                {category.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-
-                        {/* Diet Type Filter */}
-                        <Select
-                          value={selectedDietFilter}
-                          onValueChange={setSelectedDietFilter}
-                        >
-                          <SelectTrigger className="w-44">
-                            <SelectValue placeholder="All Diet Types" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Diet Types</SelectItem>
-                            <SelectItem value="vegetarian">
-                              Vegetarian
-                            </SelectItem>
-                            <SelectItem value="vegan">Vegan</SelectItem>
-                            <SelectItem value="non-vegetarian">
-                              Non-Vegetarian
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-
-                        {/* Menu Type Filter */}
-                        <Select
-                          value={selectedMenuTypeFilter}
-                          onValueChange={setSelectedMenuTypeFilter}
-                        >
-                          <SelectTrigger className="w-36">
-                            <SelectValue placeholder="All Menus" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Menus</SelectItem>
-                            <SelectItem value="Food">Food</SelectItem>
-                            <SelectItem value="Bar">Bar</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
+                        {/* First row: All Categories & All Diet Types */}
+                        <div className="flex gap-2 w-full">
+                          <div className="flex-1">
+                            <Select
+                              value={selectedCategory}
+                              onValueChange={setSelectedCategory}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="All Categories" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All Categories</SelectItem>
+                                {categories?.map((category: any) => (
+                                  <SelectItem
+                                    key={category.id}
+                                    value={category.id.toString()}
+                                  >
+                                    {category.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex-1">
+                            <Select
+                              value={selectedDietFilter}
+                              onValueChange={setSelectedDietFilter}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="All Diet Types" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All Diet Types</SelectItem>
+                                <SelectItem value="vegetarian">Vegetarian</SelectItem>
+                                <SelectItem value="vegan">Vegan</SelectItem>
+                                <SelectItem value="non-vegetarian">Non-Vegetarian</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        {/* Second row: All Menus & Search */}
+                        <div className="flex gap-2 w-full">
+                          <div className="flex-1">
+                            <Select
+                              value={selectedMenuTypeFilter}
+                              onValueChange={setSelectedMenuTypeFilter}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="All Menus" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All Menus</SelectItem>
+                                <SelectItem value="Food">Food</SelectItem>
+                                <SelectItem value="Bar">Bar</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex-1">
+                            <Input
+                              placeholder="Search dishes by name or description..."
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                              className="w-full"
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </CardHeader>
+                  
                   <CardContent>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
                       {getFilteredDishes().map((dish: any) => (
@@ -933,7 +953,8 @@ export default function RestaurantOrders() {
                         >
                           <CardContent className="p-4">
                             <div className="flex justify-between items-start">
-                              <div className="flex-1">
+                              {/* THIS IS THE KEY DIV FOR THE TEXT CONTENT */}
+                              <div className="flex-1 min-w-0">
                                 <div className="flex items-center space-x-2 mb-1">
                                   <h4 className="font-medium">{dish.name}</h4>
                                   {dish.isVegetarian && (
@@ -959,15 +980,16 @@ export default function RestaurantOrders() {
                                   Rs. {dish.price}
                                 </p>
                                 {dish.description && (
-                                  <p className="text-sm text-gray-500 mt-1">
+                                  <p className="text-sm text-gray-500 mt-1 break-words">
                                     {dish.description}
                                   </p>
                                 )}
                               </div>
+                              {/* THIS IS THE BUTTON */}
                               <Button
                                 size="sm"
                                 onClick={() => addItem(dish)}
-                                className="ml-2"
+                                className="ml-2 flex-shrink-0"
                               >
                                 <Plus className="h-4 w-4" />
                               </Button>
@@ -1209,11 +1231,10 @@ export default function RestaurantOrders() {
               return (
                 <Card
                   key={table.id}
-                  className={`cursor-pointer transition-all hover:shadow-lg ${
-                    isOccupied
-                      ? "border-l-4 border-l-orange-500 bg-orange-50"
-                      : "border-l-4 border-l-green-500 bg-green-50"
-                  }`}
+                  className={`cursor-pointer transition-all hover:shadow-lg ${isOccupied
+                    ? "border-l-4 border-l-orange-500 bg-orange-50"
+                    : "border-l-4 border-l-green-500 bg-green-50"
+                    }`}
                   onClick={() => handleTableClick(table)}
                 >
                   <CardContent className="p-6">
@@ -1222,7 +1243,7 @@ export default function RestaurantOrders() {
                         <Utensils
                           className={`h-5 w-5 ${isOccupied ? "text-orange-600" : "text-green-600"}`}
                         />
-                        <h3 className="font-semibold text-lg">
+                        <h3 className="font-semibold text-sm md:text-lg">
                           Table {table.name}
                         </h3>
                       </div>
@@ -1235,7 +1256,7 @@ export default function RestaurantOrders() {
                       <div className="flex items-center justify-between text-sm text-gray-600">
                         <div className="flex items-center">
                           <Users className="h-4 w-4 mr-2" />
-                          <span>Capacity: {table.capacity}</span>
+                          <span> {table.capacity}</span>
                         </div>
                         {isOccupied && tableOrder && (
                           <Badge className={getStatusColor(tableOrder.status)}>

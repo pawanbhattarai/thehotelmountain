@@ -329,157 +329,39 @@ export default function StockItems() {
         />
         <main className="p-6">
           {/* Search and Add Button Section */}
-          <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between">
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={openCreateDialog} className="w-full sm:w-auto bg-primary hover:bg-primary/90">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Item
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingItem ? "Edit Stock Item" : "Create Stock Item"}
-                  </DialogTitle>
-                </DialogHeader>
-                <Form {...form}>
-                  <form
-                    onSubmit={form.handleSubmit(onSubmit)}
-                    className="space-y-4"
+          <div className="mb-6 flex w-full gap-2 justify-between">
+            <div className="flex-1 max-w-xs">
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    onClick={openCreateDialog}
+                    className="w-full h-11 bg-primary hover:bg-primary/90"
                   >
-                    {/* Row 1: Item Name and Measuring Unit */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Item Name <span className="text-red-500">*</span></FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter name of Stock" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="measuringUnitId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Measuring Unit <span className="text-red-500">*</span></FormLabel>
-                            <Select
-                              onValueChange={(value) =>
-                                field.onChange(parseInt(value))
-                              }
-                              value={field.value?.toString()}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select Measuring Unit of the item" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {measuringUnits.map((unit: any) => (
-                                  <SelectItem
-                                    key={unit.id}
-                                    value={unit.id.toString()}
-                                  >
-                                    {unit.name} ({unit.symbol})
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    {/* Row 2: Default Price and Group (Category) */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="defaultPrice"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Default Price</FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">Rs</span>
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  placeholder="0"
-                                  className="pl-10"
-                                  {...field}
-                                />
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="categoryId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Group</FormLabel>
-                            <Select
-                              onValueChange={(value) =>
-                                field.onChange(parseInt(value))
-                              }
-                              value={field.value?.toString()}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select Group for Item" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {stockCategories.map((category: any) => (
-                                  <SelectItem
-                                    key={category.id}
-                                    value={category.id.toString()}
-                                  >
-                                    {category.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    {/* Opening Stock Section */}
-                    <div className="space-y-4">
-                      <h3 className="text-sm font-medium">Opening Stock</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Item
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingItem ? "Edit Stock Item" : "Create Stock Item"}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <Form {...form}>
+                    <form
+                      onSubmit={form.handleSubmit(onSubmit)}
+                      className="space-y-4"
+                    >
+                      {/* Row 1: Item Name and Measuring Unit */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
-                          name="openingQuantity"
+                          name="name"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Quantity</FormLabel>
+                              <FormLabel>Item Name <span className="text-red-500">*</span></FormLabel>
                               <FormControl>
-                                <Input
-                                  type="number"
-                                  step="0.001"
-                                  placeholder="00.00"
-                                  {...field}
-                                  onChange={(e) => {
-                                    field.onChange(e);
-                                    // Calculate value when quantity or rate changes
-                                    const quantity = parseFloat(e.target.value) || 0;
-                                    const rate = parseFloat(form.getValues('openingRate')) || 0;
-                                    const value = quantity * rate;
-                                    form.setValue('currentStock', quantity.toString());
-                                  }}
-                                />
+                                <Input placeholder="Enter name of Stock" {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -487,10 +369,46 @@ export default function StockItems() {
                         />
                         <FormField
                           control={form.control}
-                          name="openingRate"
+                          name="measuringUnitId"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Rate</FormLabel>
+                              <FormLabel>Measuring Unit <span className="text-red-500">*</span></FormLabel>
+                              <Select
+                                onValueChange={(value) =>
+                                  field.onChange(parseInt(value))
+                                }
+                                value={field.value?.toString()}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select Measuring Unit of the item" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {measuringUnits.map((unit: any) => (
+                                    <SelectItem
+                                      key={unit.id}
+                                      value={unit.id.toString()}
+                                    >
+                                      {unit.name} ({unit.symbol})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      {/* Row 2: Default Price and Group (Category) */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="defaultPrice"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Default Price</FormLabel>
                               <FormControl>
                                 <div className="relative">
                                   <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">Rs</span>
@@ -500,14 +418,6 @@ export default function StockItems() {
                                     placeholder="0"
                                     className="pl-10"
                                     {...field}
-                                    onChange={(e) => {
-                                      field.onChange(e);
-                                      // Calculate value when quantity or rate changes
-                                      const rate = parseFloat(e.target.value) || 0;
-                                      const quantity = parseFloat(form.getValues('openingQuantity')) || 0;
-                                      const value = quantity * rate;
-                                      form.setValue('defaultPrice', rate.toString());
-                                    }}
                                   />
                                 </div>
                               </FormControl>
@@ -517,48 +427,198 @@ export default function StockItems() {
                         />
                         <FormField
                           control={form.control}
-                          name="currentStock"
+                          name="categoryId"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Value</FormLabel>
-                              <FormControl>
-                                <div className="relative">
-                                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">Rs</span>
+                              <FormLabel>Group</FormLabel>
+                              <Select
+                                onValueChange={(value) =>
+                                  field.onChange(parseInt(value))
+                                }
+                                value={field.value?.toString()}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select Group for Item" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {stockCategories.map((category: any) => (
+                                    <SelectItem
+                                      key={category.id}
+                                      value={category.id.toString()}
+                                    >
+                                      {category.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      {/* Opening Stock Section */}
+                      <div className="space-y-4">
+                        <h3 className="text-sm font-medium">Opening Stock</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="openingQuantity"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Quantity</FormLabel>
+                                <FormControl>
                                   <Input
                                     type="number"
-                                    step="0.01"
-                                    placeholder="0"
-                                    className="pl-10 bg-gray-50"
+                                    step="0.001"
+                                    placeholder="00.00"
                                     {...field}
-                                    readOnly
-                                    value={(() => {
-                                      const quantity = parseFloat(form.watch('openingQuantity')) || 0;
-                                      const rate = parseFloat(form.watch('openingRate')) || 0;
-                                      return (quantity * rate).toFixed(2);
-                                    })()}
+                                    onChange={(e) => {
+                                      field.onChange(e);
+                                      // Calculate value when quantity or rate changes
+                                      const quantity = parseFloat(e.target.value) || 0;
+                                      const rate = parseFloat(form.getValues('openingRate')) || 0;
+                                      const value = quantity * rate;
+                                      form.setValue('currentStock', quantity.toString());
+                                    }}
                                   />
-                                </div>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="openingRate"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Rate</FormLabel>
+                                <FormControl>
+                                  <div className="relative">
+                                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">Rs</span>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      placeholder="0"
+                                      className="pl-10"
+                                      {...field}
+                                      onChange={(e) => {
+                                        field.onChange(e);
+                                        // Calculate value when quantity or rate changes
+                                        const rate = parseFloat(e.target.value) || 0;
+                                        const quantity = parseFloat(form.getValues('openingQuantity')) || 0;
+                                        const value = quantity * rate;
+                                        form.setValue('defaultPrice', rate.toString());
+                                      }}
+                                    />
+                                  </div>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="currentStock"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Value</FormLabel>
+                                <FormControl>
+                                  <div className="relative">
+                                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">Rs</span>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      placeholder="0"
+                                      className="pl-10 bg-gray-50"
+                                      {...field}
+                                      readOnly
+                                      value={(() => {
+                                        const quantity = parseFloat(form.watch('openingQuantity')) || 0;
+                                        const rate = parseFloat(form.watch('openingRate')) || 0;
+                                        return (quantity * rate).toFixed(2);
+                                      })()}
+                                    />
+                                  </div>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Row 3: Reorder Level and Reorder QTY */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="reorderLevel"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Reorder Level</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  step="0.001"
+                                  placeholder="Enter reorder level"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="reorderQuantity"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Reorder QTY</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  step="0.001"
+                                  placeholder="Enter reorder quantity"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="minimumStock"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Minimum Stock</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  step="0.001"
+                                  placeholder="0"
+                                  {...field}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
                       </div>
-                    </div>
 
-                    {/* Row 3: Reorder Level and Reorder QTY */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Description Field */}
                       <FormField
                         control={form.control}
-                        name="reorderLevel"
+                        name="description"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Reorder Level</FormLabel>
+                            <FormLabel>Description</FormLabel>
                             <FormControl>
-                              <Input
-                                type="number"
-                                step="0.001"
-                                placeholder="Enter reorder level"
+                              <Textarea
+                                placeholder="Enter description"
+                                rows={3}
                                 {...field}
                               />
                             </FormControl>
@@ -566,106 +626,51 @@ export default function StockItems() {
                           </FormItem>
                         )}
                       />
-                      <FormField
-                        control={form.control}
-                        name="reorderQuantity"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Reorder QTY</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                step="0.001"
-                                placeholder="Enter reorder quantity"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="minimumStock"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Minimum Stock</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                step="0.001"
-                                placeholder="0"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
 
-                    {/* Description Field */}
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Description</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Enter description"
-                              rows={3}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setDialogOpen(false)}
-                        className="w-full sm:w-auto"
-                      >
-                        Cancel
-                      </Button>
-                      {!editingItem && (
-                        <Button 
-                          type="button" 
-                          variant="secondary" 
-                          onClick={() => {
-                            setDialogOpen(false);
-                            setIsBulkDialogOpen(true);
-                          }}
+                      <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setDialogOpen(false)}
                           className="w-full sm:w-auto"
                         >
-                          Add Bulk
+                          Cancel
                         </Button>
-                      )}
-                      <Button
-                        type="submit"
-                        disabled={
-                          createMutation.isPending || updateMutation.isPending
-                        }
-                        className="w-full sm:w-auto"
-                      >
-                        {editingItem ? "Update" : "Create Item"}
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
-            <div className="relative flex-1 max-w-md">
+                        {!editingItem && (
+                          <Button 
+                            type="button" 
+                            variant="secondary" 
+                            onClick={() => {
+                              setDialogOpen(false);
+                              setIsBulkDialogOpen(true);
+                            }}
+                            className="w-full sm:w-auto"
+                          >
+                            Add Bulk
+                          </Button>
+                        )}
+                        <Button
+                          type="submit"
+                          disabled={
+                            createMutation.isPending || updateMutation.isPending
+                          }
+                          className="w-full sm:w-auto"
+                        >
+                          {editingItem ? "Update" : "Create Item"}
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </DialogContent>
+              </Dialog>
+            </div>
+            <div className="relative flex-1 max-w-xs">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 placeholder="Search stock items..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 w-full h-11"
               />
             </div>
           </div>

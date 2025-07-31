@@ -297,192 +297,197 @@ export default function Users() {
           }
         />
         <main className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={resetForm} className="shrink-0">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add User
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingUser ? "Edit User" : "Add New User"}
-                  </DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <Label htmlFor="id">User ID</Label>
-                    <Input
-                      id="id"
-                      value={formData.id}
-                      onChange={(e) =>
-                        setFormData({ ...formData, id: e.target.value })
-                      }
-                      required
-                      disabled={!!editingUser}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) =>
-                        setFormData({ ...formData, email: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="password">Password</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) =>
-                        setFormData({ ...formData, password: e.target.value })
-                      }
-                      required={!editingUser}
-                      placeholder={
-                        editingUser
-                          ? "Leave blank to keep current password"
-                          : "Enter password"
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input
-                      id="firstName"
-                      value={formData.firstName}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          firstName: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input
-                      id="lastName"
-                      value={formData.lastName}
-                      onChange={(e) =>
-                        setFormData({ ...formData, lastName: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="role">Role</Label>
-                    <Select
-                      value={formData.role}
-                      onValueChange={(value) => {
-                        setFormData({ 
-                          ...formData, 
-                          role: value,
-                          customRoleIds: value === "custom" ? formData.customRoleIds : []
-                        });
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="front-desk">Front Desk</SelectItem>
-                        <SelectItem value="branch-admin">
-                          Branch Admin
-                        </SelectItem>
-                        <SelectItem value="superadmin">Super Admin</SelectItem>
-                        <SelectItem value="custom">Custom Role</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {formData.role === "custom" && (
-                    <div>
-                      <Label>Custom Roles</Label>
-                      <div className="space-y-2 mt-2">
-                        {customRoles?.map((role: any) => (
-                          <div key={role.id} className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              id={`role-${role.id}`}
-                              checked={formData.customRoleIds.includes(role.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setFormData({
-                                    ...formData,
-                                    customRoleIds: [...formData.customRoleIds, role.id]
-                                  });
-                                } else {
-                                  setFormData({
-                                    ...formData,
-                                    customRoleIds: formData.customRoleIds.filter(id => id !== role.id)
-                                  });
-                                }
-                              }}
-                              className="rounded"
-                            />
-                            <label htmlFor={`role-${role.id}`} className="text-sm">
-                              {role.name}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <div>
-                    <Label htmlFor="branchId">Branch</Label>
-                    <Select
-                      value={formData.branchId}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, branchId: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a branch" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="unassigned">Unassigned</SelectItem>
-                        {branches?.map((branch: any) => (
-                          <SelectItem
-                            key={branch.id}
-                            value={branch.id.toString()}
-                          >
-                            {branch.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+          <div className="mb-6 flex w-full gap-2 justify-between">
+            <div className="flex-1 max-w-xs">
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
                   <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={
-                      createUserMutation.isPending ||
-                      updateUserMutation.isPending
-                    }
+                    onClick={resetForm}
+                    className="w-full h-11 bg-primary hover:bg-primary/90"
                   >
-                    {createUserMutation.isPending ||
-                    updateUserMutation.isPending
-                      ? "Saving..."
-                      : editingUser
-                        ? "Update User"
-                        : "Create User"}
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add User
                   </Button>
-                </form>
-              </DialogContent>
-            </Dialog>
-            <div className="relative max-w-md flex-1">
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingUser ? "Edit User" : "Add New User"}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                      <Label htmlFor="id">User ID</Label>
+                      <Input
+                        id="id"
+                        value={formData.id}
+                        onChange={(e) =>
+                          setFormData({ ...formData, id: e.target.value })
+                        }
+                        required
+                        disabled={!!editingUser}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) =>
+                          setFormData({ ...formData, email: e.target.value })
+                        }
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="password">Password</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        value={formData.password}
+                        onChange={(e) =>
+                          setFormData({ ...formData, password: e.target.value })
+                        }
+                        required={!editingUser}
+                        placeholder={
+                          editingUser
+                            ? "Leave blank to keep current password"
+                            : "Enter password"
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="firstName">First Name</Label>
+                      <Input
+                        id="firstName"
+                        value={formData.firstName}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            firstName: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="lastName">Last Name</Label>
+                      <Input
+                        id="lastName"
+                        value={formData.lastName}
+                        onChange={(e) =>
+                          setFormData({ ...formData, lastName: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="role">Role</Label>
+                      <Select
+                        value={formData.role}
+                        onValueChange={(value) => {
+                          setFormData({ 
+                            ...formData, 
+                            role: value,
+                            customRoleIds: value === "custom" ? formData.customRoleIds : []
+                          });
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="front-desk">Front Desk</SelectItem>
+                          <SelectItem value="branch-admin">
+                            Branch Admin
+                          </SelectItem>
+                          <SelectItem value="superadmin">Super Admin</SelectItem>
+                          <SelectItem value="custom">Custom Role</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {formData.role === "custom" && (
+                      <div>
+                        <Label>Custom Roles</Label>
+                        <div className="space-y-2 mt-2">
+                          {customRoles?.map((role: any) => (
+                            <div key={role.id} className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={`role-${role.id}`}
+                                checked={formData.customRoleIds.includes(role.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setFormData({
+                                      ...formData,
+                                      customRoleIds: [...formData.customRoleIds, role.id]
+                                    });
+                                  } else {
+                                    setFormData({
+                                      ...formData,
+                                      customRoleIds: formData.customRoleIds.filter(id => id !== role.id)
+                                    });
+                                  }
+                                }}
+                                className="rounded"
+                              />
+                              <label htmlFor={`role-${role.id}`} className="text-sm">
+                                {role.name}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div>
+                      <Label htmlFor="branchId">Branch</Label>
+                      <Select
+                        value={formData.branchId}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, branchId: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a branch" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="unassigned">Unassigned</SelectItem>
+                          {branches?.map((branch: any) => (
+                            <SelectItem
+                              key={branch.id}
+                              value={branch.id.toString()}
+                            >
+                              {branch.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      disabled={
+                        createUserMutation.isPending ||
+                        updateUserMutation.isPending
+                      }
+                    >
+                      {createUserMutation.isPending ||
+                      updateUserMutation.isPending
+                        ? "Saving..."
+                        : editingUser
+                          ? "Update User"
+                          : "Create User"}
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+            <div className="relative flex-1 max-w-xs">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Search users..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 w-full h-11"
               />
             </div>
           </div>

@@ -353,7 +353,7 @@ export class InventoryStorage {
   async getLowStockItems(branchId?: number): Promise<any[]> {
     const conditions = [
       eq(stockItems.isActive, true),
-      sql`CAST(${stockItems.currentStock} AS DECIMAL) <= CAST(${stockItems.reorderLevel} AS DECIMAL)`
+      sql`CAST(${stockItems.currentStock} AS DECIMAL) <= CAST(${stockItems.minimumStock} AS DECIMAL)`
     ];
     if (branchId) {
       conditions.push(eq(stockItems.branchId, branchId));
@@ -381,7 +381,7 @@ export class InventoryStorage {
   async getLowStockItemsWithBranches(): Promise<any[]> {
     const conditions = [
       eq(stockItems.isActive, true),
-      sql`CAST(${stockItems.currentStock} AS DECIMAL) <= CAST(${stockItems.reorderLevel} AS DECIMAL)`
+      sql`CAST(${stockItems.currentStock} AS DECIMAL) <= CAST(${stockItems.minimumStock} AS DECIMAL)`
     ];
 
     return await db

@@ -194,7 +194,6 @@ export default function Sidebar({
                         className="lg:hidden h-8 w-8 p-0"
                         onClick={() => setMenuOpen(false)}
                     >
-                        <X className="h-4 w-4" />
                     </Button>
                 </div>
             </div>

@@ -157,78 +157,51 @@ export default function RestaurantCategories() {
         />
         <main className="p-6">
           {/* Search and Add Button Section for Categories */}
-          <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between">
-            <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  onClick={resetCategoryForm}
-                  className="w-full sm:w-auto bg-primary hover:bg-primary/90"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Category
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>{editingCategory ? 'Edit Category' : 'Add New Category'}</DialogTitle>
-                </DialogHeader>
-                <Form {...categoryForm}>
-                  <form onSubmit={categoryForm.handleSubmit(onCategorySubmit)} className="space-y-4">
-                    <FormField
-                      control={categoryForm.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Category Name</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="e.g., Appetizers" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={categoryForm.control}
-                      name="menuType"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Menu Type</FormLabel>
-                          <FormControl>
-                            <Select value={field.value} onValueChange={field.onChange}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select menu type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Food">Food</SelectItem>
-                                <SelectItem value="Bar">Bar</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    {user?.role === "superadmin" && (
+          <div className="flex w-full mb-6 gap-2 justify-between">
+            <div className="flex-1 max-w-xs">
+              <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    onClick={resetCategoryForm}
+                    className="w-full h-11 bg-primary hover:bg-primary/90"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Category
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>{editingCategory ? 'Edit Category' : 'Add New Category'}</DialogTitle>
+                  </DialogHeader>
+                  <Form {...categoryForm}>
+                    <form onSubmit={categoryForm.handleSubmit(onCategorySubmit)} className="space-y-4">
                       <FormField
                         control={categoryForm.control}
-                        name="branchId"
+                        name="name"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Branch</FormLabel>
+                            <FormLabel>Category Name</FormLabel>
                             <FormControl>
-                              <Select 
-                                value={field.value?.toString()} 
-                                onValueChange={(value) => field.onChange(parseInt(value))}
-                              >
+                              <Input {...field} placeholder="e.g., Appetizers" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={categoryForm.control}
+                        name="menuType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Menu Type</FormLabel>
+                            <FormControl>
+                              <Select value={field.value} onValueChange={field.onChange}>
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Select branch" />
+                                  <SelectValue placeholder="Select menu type" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {branches?.map((branch: any) => (
-                                    <SelectItem key={branch.id} value={branch.id.toString()}>
-                                      {branch.name}
-                                    </SelectItem>
-                                  ))}
+                                  <SelectItem value="Food">Food</SelectItem>
+                                  <SelectItem value="Bar">Bar</SelectItem>
                                 </SelectContent>
                               </Select>
                             </FormControl>
@@ -236,55 +209,84 @@ export default function RestaurantCategories() {
                           </FormItem>
                         )}
                       />
-                    )}
-                    <FormField
-                      control={categoryForm.control}
-                      name="sortOrder"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Sort Order</FormLabel>
-                          <FormControl>
-                            <Input 
-                              {...field} 
-                              type="number" 
-                              onChange={(e) => field.onChange(parseInt(e.target.value))}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
+                      {user?.role === "superadmin" && (
+                        <FormField
+                          control={categoryForm.control}
+                          name="branchId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Branch</FormLabel>
+                              <FormControl>
+                                <Select 
+                                  value={field.value?.toString()} 
+                                  onValueChange={(value) => field.onChange(parseInt(value))}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select branch" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {branches?.map((branch: any) => (
+                                      <SelectItem key={branch.id} value={branch.id.toString()}>
+                                        {branch.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                       )}
-                    />
-                    <div className="flex justify-end gap-2">
-                      <Button type="button" variant="outline" onClick={() => setIsCategoryDialogOpen(false)}>
-                        Cancel
-                      </Button>
-                      {!editingCategory && (
-                        <Button 
-                          type="button" 
-                          variant="secondary" 
-                          onClick={() => {
-                            setIsCategoryDialogOpen(false);
-                            setIsBulkCategoryDialogOpen(true);
-                          }}
-                        >
-                          Add Bulk
+                      <FormField
+                        control={categoryForm.control}
+                        name="sortOrder"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Sort Order</FormLabel>
+                            <FormControl>
+                              <Input 
+                                {...field} 
+                                type="number" 
+                                onChange={(e) => field.onChange(parseInt(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="flex justify-end gap-2">
+                        <Button type="button" variant="outline" onClick={() => setIsCategoryDialogOpen(false)}>
+                          Cancel
                         </Button>
-                      )}
-                      <Button type="submit" disabled={createCategoryMutation.isPending || updateCategoryMutation.isPending}>
-                        {editingCategory ? 'Update' : 'Create'} Category
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
-            <div className="relative flex-1 max-w-md">
+                        {!editingCategory && (
+                          <Button 
+                            type="button" 
+                            variant="secondary" 
+                            onClick={() => {
+                              setIsCategoryDialogOpen(false);
+                              setIsBulkCategoryDialogOpen(true);
+                            }}
+                          >
+                            Add Bulk
+                          </Button>
+                        )}
+                        <Button type="submit" disabled={createCategoryMutation.isPending || updateCategoryMutation.isPending}>
+                          {editingCategory ? 'Update' : 'Create'} Category
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </DialogContent>
+              </Dialog>
+            </div>
+            <div className="relative flex-1 max-w-xs">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 placeholder="Search categories..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 w-full h-11"
               />
             </div>
           </div>

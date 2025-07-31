@@ -892,7 +892,7 @@ export class DatabaseStorage implements IStorage {
 
     const [settings] = await db.select().from(hotelSettings).limit(1);
 
-    const result = settings[0] || undefined;
+    const result = settings || undefined;
     console.log(`🔍 Hotel settings from DB:`, result);
     console.log(`🕐 Timezone from DB: "${result?.timeZone}"`);
 

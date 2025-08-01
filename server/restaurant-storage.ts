@@ -2259,11 +2259,9 @@ export class RestaurantStorage {
     content += `      KITCHEN ORDER TICKET\n`;
     content += `${separator}\n`;
     content += `KOT Number: ${data.kotNumber}\n`;
-    content += `Order Number: ${data.orderNumber}\n`;
-    content += `Location: ${location}\n`;
+    content += `\n***** ${location.toUpperCase()} *****\n`;
     content += `Customer: ${data.customerName}\n`;
     content += `Time: ${currentDateTime}\n`;
-    content += `Status: PENDING\n`;
     content += `${separator}\n`;
     content += `DISHES TO PREPARE:\n`;
     content += `${separator}\n`;

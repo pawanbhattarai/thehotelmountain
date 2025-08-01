@@ -818,10 +818,7 @@ export class RestaurantStorage {
         .where(and(
           eq(restaurantOrderItems.orderId, orderId),
           eq(restaurantOrderItems.isKot, false), // Only items not yet generated for KOT
-          or(
-            sql`${restaurantOrderItems.kotNumber} IS NULL`,
-            sql`${restaurantOrderItems.kotNumber} = ''`
-          ), // Ensure no KOT number assigned
+          sql`(${restaurantOrderItems.kotNumber} IS NULL OR ${restaurantOrderItems.kotNumber} = '')`, // Ensure no KOT number assigned
           eq(menuCategories.menuType, "Food")
         ));
 
@@ -855,17 +852,16 @@ export class RestaurantStorage {
         .returning();
 
       // Mark items as KOT generated with KOT number
-      await tx
-        .update(restaurantOrderItems)
-        .set({ 
-          isKot: true, 
-          kotNumber,
-          kotGeneratedAt: sql`NOW()`,
-        })
-        .where(and(
-          eq(restaurantOrderItems.orderId, orderId),
-          eq(restaurantOrderItems.isKot, false)
-        ));
+      if (kotItems.length > 0) {
+        await tx
+          .update(restaurantOrderItems)
+          .set({ 
+            isKot: true, 
+            kotNumber,
+            kotGeneratedAt: sql`NOW()`,
+          })
+          .where(inArray(restaurantOrderItems.id, kotItems.map(item => item.id)));
+      }
 
       // Update order status to confirmed when first KOT is generated
       await tx
@@ -957,10 +953,7 @@ export class RestaurantStorage {
         .where(and(
           eq(restaurantOrderItems.orderId, orderId),
           eq(restaurantOrderItems.isKot, false), // Only items not yet generated for KOT
-          or(
-            sql`${restaurantOrderItems.kotNumber} IS NULL`,
-            sql`${restaurantOrderItems.kotNumber} = ''`
-          ), // Ensure no KOT number assigned
+          sql`(${restaurantOrderItems.kotNumber} IS NULL OR ${restaurantOrderItems.kotNumber} = '')`, // Ensure no KOT number assigned
           eq(menuCategories.menuType, "Food")
         ));
 
@@ -992,10 +985,7 @@ export class RestaurantStorage {
         .where(and(
           eq(restaurantOrderItems.orderId, orderId),
           eq(restaurantOrderItems.isBot, false), // Only items not yet generated for BOT
-          or(
-            sql`${restaurantOrderItems.botNumber} IS NULL`,
-            sql`${restaurantOrderItems.botNumber} = ''`
-          ), // Ensure no BOT number assigned
+          sql`(${restaurantOrderItems.botNumber} IS NULL OR ${restaurantOrderItems.botNumber} = '')`, // Ensure no BOT number assigned
           eq(menuCategories.menuType, "Bar")
         ));
 
@@ -1024,18 +1014,17 @@ export class RestaurantStorage {
           })
           .returning();
 
-        await tx
-          .update(restaurantOrderItems)
-          .set({ 
-            isKot: true, 
-            kotNumber,
-            kotGeneratedAt: sql`NOW()`,
-          })
-          .where(and(
-            eq(restaurantOrderItems.orderId, orderId),
-            eq(restaurantOrderItems.isKot, false),
-            inArray(restaurantOrderItems.id, kotItems.map(item => item.id))
-          ));
+        // Only update the specific items that were selected for this KOT
+        if (kotItems.length > 0) {
+          await tx
+            .update(restaurantOrderItems)
+            .set({ 
+              isKot: true, 
+              kotNumber,
+              kotGeneratedAt: sql`NOW()`,
+            })
+            .where(inArray(restaurantOrderItems.id, kotItems.map(item => item.id)));
+        }
 
         kotGenerated = true;
         kotData = { kotNumber, kotItems, kotTicket };
@@ -1066,18 +1055,17 @@ export class RestaurantStorage {
           })
           .returning();
 
-        await tx
-          .update(restaurantOrderItems)
-          .set({ 
-            isBot: true, 
-            botNumber,
-            botGeneratedAt: sql`NOW()`,
-          })
-          .where(and(
-            eq(restaurantOrderItems.orderId, orderId),
-            eq(restaurantOrderItems.isBot, false),
-            inArray(restaurantOrderItems.id, botItems.map(item => item.id))
-          ));
+        // Only update the specific items that were selected for this BOT
+        if (botItems.length > 0) {
+          await tx
+            .update(restaurantOrderItems)
+            .set({ 
+              isBot: true, 
+              botNumber,
+              botGeneratedAt: sql`NOW()`,
+            })
+            .where(inArray(restaurantOrderItems.id, botItems.map(item => item.id)));
+        }
 
         botGenerated = true;
         botData = { botNumber, botItems, botTicket };
@@ -1309,10 +1297,7 @@ export class RestaurantStorage {
         .where(and(
           eq(restaurantOrderItems.orderId, orderId),
           eq(restaurantOrderItems.isBot, false), // Only items not yet generated for BOT
-          or(
-            sql`${restaurantOrderItems.botNumber} IS NULL`,
-            sql`${restaurantOrderItems.botNumber} = ''`
-          ), // Ensure no BOT number assigned
+          sql`(${restaurantOrderItems.botNumber} IS NULL OR ${restaurantOrderItems.botNumber} = '')`, // Ensure no BOT number assigned
           eq(menuCategories.menuType, "Bar")
         ));
 
@@ -1346,18 +1331,16 @@ export class RestaurantStorage {
         .returning();
 
       // Mark items as BOT generated with BOT number
-      await tx
-        .update(restaurantOrderItems)
-        .set({ 
-          isBot: true, 
-          botNumber,
-          botGeneratedAt: sql`NOW()`,
-        })
-        .where(and(
-          eq(restaurantOrderItems.orderId, orderId),
-          eq(restaurantOrderItems.isBot, false),
-          inArray(restaurantOrderItems.id, botItems.map(item => item.id))
-        ));
+      if (botItems.length > 0) {
+        await tx
+          .update(restaurantOrderItems)
+          .set({ 
+            isBot: true, 
+            botNumber,
+            botGeneratedAt: sql`NOW()`,
+          })
+          .where(inArray(restaurantOrderItems.id, botItems.map(item => item.id)));
+      }
 
       // Check if order should be marked as confirmed
       const [orderStatus] = await tx

@@ -969,7 +969,8 @@ export class RestaurantStorage {
           status: restaurantOrderItems.status,
           isKot: restaurantOrderItems.isKot,
           isBot: restaurantOrderItems.isBot,
-          kotNumber: restaurantOrderItems.kotNumber,
+          ```text
+kotNumber: restaurantOrderItems.kotNumber,
           botNumber: restaurantOrderItems.botNumber,
           kotGeneratedAt: restaurantOrderItems.kotGeneratedAt,
           botGeneratedAt: restaurantOrderItems.botGeneratedAt,
@@ -2269,20 +2270,20 @@ export class RestaurantStorage {
     content += `DISHES TO PREPARE:\n`;
     content += `${separator}\n`;
 
-    // Format items with better spacing
+    // Format items in compact ITEM QTY NOTE layout
     data.items.forEach((item, index) => {
-      content += `${index + 1}. ${item.name}\n`;
-      content += `   Qty: ${item.quantity}\n`;
+      const itemLine = `${index + 1}. ${item.name} - ${item.quantity}x`;
       if (item.specialInstructions) {
-        content += `   Special: ${item.specialInstructions}\n`;
+        content += `${itemLine}\n   Note: ${item.specialInstructions}\n`;
+      } else {
+        content += `${itemLine}\n`;
       }
-      content += `\n`;
     });
 
     if (data.notes) {
       content += `${separator}\n`;
-      content += `ORDER NOTES:\n`;
-      content += `${data.notes}\n`;
+      content += `**ORDER NOTES:**\n`;
+      content += `**${data.notes}**\n`;
       content += `\n`;
     }
 
@@ -2331,20 +2332,20 @@ export class RestaurantStorage {
     content += `BEVERAGES TO PREPARE:\n`;
     content += `${separator}\n`;
 
-    // Format items with better spacing
+    // Format items in compact ITEM QTY NOTE layout
     data.items.forEach((item, index) => {
-      content += `${index + 1}. ${item.name}\n`;
-      content += `   Qty: ${item.quantity}\n`;
+      const itemLine = `${index + 1}. ${item.name} - ${item.quantity}x`;
       if (item.specialInstructions) {
-        content += `   Special: ${item.specialInstructions}\n`;
+        content += `${itemLine}\n   Note: ${item.specialInstructions}\n`;
+      } else {
+        content += `${itemLine}\n`;
       }
-      content += `\n`;
     });
 
     if (data.notes) {
       content += `${separator}\n`;
-      content += `ORDER NOTES:\n`;
-      content += `${data.notes}\n`;
+      content += `**ORDER NOTES:**\n`;
+      content += `**${data.notes}**\n`;
       content += `\n`;
     }
 

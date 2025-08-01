@@ -465,6 +465,9 @@ class NetworkPrinterBridge {
       } else if (line.includes('*****') && (line.includes('TABLE') || line.includes('ROOM') || line.includes('TAKEAWAY'))) {
         // Location with big font and bold
         thermalContent += commands.ALIGN_CENTER + commands.BOLD_ON + commands.DOUBLE_HEIGHT + line.replace(/\*/g, '') + commands.BOLD_OFF + commands.NORMAL + commands.FEED;
+      } else if (line.includes('**ORDER NOTES:**') || line.startsWith('**') && line.endsWith('**')) {
+        // Bold order notes
+        thermalContent += commands.ALIGN_LEFT + commands.BOLD_ON + line.replace(/\*\*/g, '') + commands.BOLD_OFF + commands.FEED;
       } else if (line.trim() === '') {
         // Empty line
         thermalContent += commands.FEED;

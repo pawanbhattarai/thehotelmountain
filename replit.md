@@ -88,6 +88,14 @@ A comprehensive restaurant management system built with Node.js, Express, React,
   - Real-time billing updates combining all orders for accurate totals
   - Table-style layout matching restaurant table orders interface
   - Users can now manage complete order history for each reservation
+- **Critical Reprint Bug Fixed**: Resolved issue where system reprinted all items instead of only new unprinted items
+  - Problem: When adding new items to existing orders, KOT/BOT generation reprinted ALL items (including previously printed ones)
+  - Root cause: Item filtering logic not properly handling new items added to existing orders
+  - Solution: Enhanced filtering in generateKOTAndBOT function to only process items with isKot=false/isBot=false or NULL values
+  - Fixed item creation to explicitly set isKot=false and isBot=false for all new items
+  - Added robust SQL filtering using OR conditions to catch both false values and NULL legacy data
+  - Updated item marking logic to handle NULL values properly during KOT/BOT generation
+  - Now only prints new unprinted items when adding to existing orders, preventing kitchen conflicts
 - **Automatic KOT/BOT Printing System Implemented**: Fully integrated automatic printing with comprehensive printer configuration
   - Complete KOT/BOT printer configuration system with TCP/IP network support
   - **Automatic Printing**: KOT items automatically print to KOT printers, BOT items to BOT printers

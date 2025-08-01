@@ -817,8 +817,10 @@ export class RestaurantStorage {
         .innerJoin(menuCategories, eq(menuDishes.categoryId, menuCategories.id))
         .where(and(
           eq(restaurantOrderItems.orderId, orderId),
-          eq(restaurantOrderItems.isKot, false), // Only items not yet generated for KOT
-          sql`(${restaurantOrderItems.kotNumber} IS NULL OR ${restaurantOrderItems.kotNumber} = '')`, // Ensure no KOT number assigned
+          // Only items that have NEVER been printed for KOT
+          eq(restaurantOrderItems.isKot, false),
+          sql`${restaurantOrderItems.kotNumber} IS NULL`,
+          sql`${restaurantOrderItems.kotGeneratedAt} IS NULL`,
           eq(menuCategories.menuType, "Food")
         ));
 
@@ -952,9 +954,10 @@ export class RestaurantStorage {
         .innerJoin(menuCategories, eq(menuDishes.categoryId, menuCategories.id))
         .where(and(
           eq(restaurantOrderItems.orderId, orderId),
-          // Only items that have never been printed for KOT (isKot = false AND no kotNumber)
+          // Only items that have NEVER been printed (both flags must be false AND no numbers assigned)
           eq(restaurantOrderItems.isKot, false),
-          sql`(${restaurantOrderItems.kotNumber} IS NULL OR ${restaurantOrderItems.kotNumber} = '')`,
+          sql`${restaurantOrderItems.kotNumber} IS NULL`,
+          sql`${restaurantOrderItems.kotGeneratedAt} IS NULL`,
           eq(menuCategories.menuType, "Food")
         ));
 
@@ -985,9 +988,10 @@ export class RestaurantStorage {
         .innerJoin(menuCategories, eq(menuDishes.categoryId, menuCategories.id))
         .where(and(
           eq(restaurantOrderItems.orderId, orderId),
-          // Only items that have never been printed for BOT (isBot = false AND no botNumber)
+          // Only items that have NEVER been printed (both flags must be false AND no numbers assigned)
           eq(restaurantOrderItems.isBot, false),
-          sql`(${restaurantOrderItems.botNumber} IS NULL OR ${restaurantOrderItems.botNumber} = '')`,
+          sql`${restaurantOrderItems.botNumber} IS NULL`,
+          sql`${restaurantOrderItems.botGeneratedAt} IS NULL`,
           eq(menuCategories.menuType, "Bar")
         ));
 
@@ -1300,8 +1304,10 @@ export class RestaurantStorage {
         .innerJoin(menuCategories, eq(menuDishes.categoryId, menuCategories.id))
         .where(and(
           eq(restaurantOrderItems.orderId, orderId),
-          eq(restaurantOrderItems.isBot, false), // Only items not yet generated for BOT
-          sql`(${restaurantOrderItems.botNumber} IS NULL OR ${restaurantOrderItems.botNumber} = '')`, // Ensure no BOT number assigned
+          // Only items that have NEVER been printed for BOT
+          eq(restaurantOrderItems.isBot, false),
+          sql`${restaurantOrderItems.botNumber} IS NULL`,
+          sql`${restaurantOrderItems.botGeneratedAt} IS NULL`,
           eq(menuCategories.menuType, "Bar")
         ));
 

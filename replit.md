@@ -21,8 +21,13 @@ A comprehensive restaurant management system built with Node.js, Express, React,
 - File upload capabilities
 
 ## Recent Changes
-- **2025-07-29**: Successfully completed migration from Replit Agent to Replit environment  
+- **2025-08-01**: Successfully completed migration from Replit Agent to Replit environment  
 - **Migration Status**: Complete - PostgreSQL database configured, all systems operational
+- **BORE Printer Integration**: Successfully configured cloud-based printer system via BORE tunnel
+  - Configured KOT and BOT printers with bore.pub:32384 for cloud-to-local printing
+  - Automatic printing enabled for both table orders and room orders
+  - Connection tested and verified working with BORE tunnel setup
+  - Raw TCP/Socket protocol established for thermal printer communication
 - **Inventory Enhancement**: Added pagination and search functionality to all inventory pages
   - Implemented consistent pagination controls across stock items, categories, suppliers, and purchase orders
   - Added search functionality with customizable search fields for each inventory module

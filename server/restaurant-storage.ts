@@ -482,15 +482,66 @@ export class RestaurantStorage {
     items: InsertRestaurantOrderItem[],
   ): Promise<void> {
     await db.transaction(async (tx) => {
+      // Get existing items with their KOT/BOT information
+      const existingItems = await tx
+        .select({
+          id: restaurantOrderItems.id,
+          dishId: restaurantOrderItems.dishId,
+          isKot: restaurantOrderItems.isKot,
+          isBot: restaurantOrderItems.isBot,
+          kotNumber: restaurantOrderItems.kotNumber,
+          botNumber: restaurantOrderItems.botNumber,
+          kotGeneratedAt: restaurantOrderItems.kotGeneratedAt,
+          botGeneratedAt: restaurantOrderItems.botGeneratedAt,
+        })
+        .from(restaurantOrderItems)
+        .where(eq(restaurantOrderItems.orderId, orderId));
+
+      // Create a map for quick lookup of existing items by dishId
+      const existingItemsMap = new Map();
+      existingItems.forEach(item => {
+        const key = `${item.dishId}`;
+        if (!existingItemsMap.has(key)) {
+          existingItemsMap.set(key, []);
+        }
+        existingItemsMap.get(key).push(item);
+      });
+
       // Delete existing items
       await tx.delete(restaurantOrderItems).where(eq(restaurantOrderItems.orderId, orderId));
 
-      // Insert new items
+      // Insert new items, preserving KOT/BOT information where applicable
       if (items.length > 0) {
-        const itemsWithOrderId = items.map(item => ({
-          ...item,
-          orderId
-        }));
+        const itemsWithOrderId = items.map(item => {
+          const key = `${item.dishId}`;
+          const existingForDish = existingItemsMap.get(key);
+          
+          // If there's an existing item for this dish that was already printed, preserve its info
+          if (existingForDish && existingForDish.length > 0) {
+            const existingItem = existingForDish.shift(); // Take the first one and remove it from array
+            
+            // Only preserve KOT/BOT info if the item was actually printed
+            if (existingItem.isKot || existingItem.isBot) {
+              return {
+                ...item,
+                orderId,
+                isKot: existingItem.isKot,
+                isBot: existingItem.isBot,
+                kotNumber: existingItem.kotNumber,
+                botNumber: existingItem.botNumber,
+                kotGeneratedAt: existingItem.kotGeneratedAt,
+                botGeneratedAt: existingItem.botGeneratedAt,
+              };
+            }
+          }
+          
+          // For new items or items that weren't printed, don't include KOT/BOT info
+          return {
+            ...item,
+            orderId
+          };
+        });
+        
         await tx.insert(restaurantOrderItems).values(itemsWithOrderId);
       }
     });

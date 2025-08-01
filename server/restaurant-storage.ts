@@ -2260,7 +2260,10 @@ export class RestaurantStorage {
     content += `${separator}\n`;
     content += `KOT Number: ${data.kotNumber}\n`;
     content += `\n***** ${location.toUpperCase()} *****\n`;
-    content += `Customer: ${data.customerName}\n`;
+    // Only show customer for non-table orders
+    if (!data.tableNumber) {
+      content += `Customer: ${data.customerName}\n`;
+    }
     content += `Time: ${currentDateTime}\n`;
     content += `${separator}\n`;
     content += `DISHES TO PREPARE:\n`;

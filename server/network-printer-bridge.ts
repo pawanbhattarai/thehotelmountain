@@ -459,8 +459,8 @@ class NetworkPrinterBridge {
       } else if (line.toUpperCase().includes('KOT') || line.toUpperCase().includes('BOT') || line.toUpperCase().includes('BILL')) {
         // Headers
         thermalContent += commands.ALIGN_CENTER + commands.BOLD_ON + commands.DOUBLE_HEIGHT + line + commands.BOLD_OFF + commands.NORMAL + commands.FEED;
-      } else if (line.includes('Table:') || line.includes('Room:') || line.includes('Customer:') || line.includes('Order #')) {
-        // Important info
+      } else if (line.includes('Room:') || line.includes('Customer:') || line.includes('Order #')) {
+        // Important info (removed Table: since customer won't show for table orders)
         thermalContent += commands.ALIGN_LEFT + commands.BOLD_ON + line + commands.BOLD_OFF + commands.FEED;
       } else if (line.includes('*****') && (line.includes('TABLE') || line.includes('ROOM') || line.includes('TAKEAWAY'))) {
         // Location with big font and bold

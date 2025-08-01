@@ -388,12 +388,10 @@ export class RestaurantStorage {
     return await db.transaction(async (tx) => {
       console.log("Adding items to existing order:", orderId);
 
-      // Add the new items with explicit KOT/BOT flags set to false for new items
+      // Add the new items
       const itemsWithOrderId = items.map((item) => ({
         ...item,
         orderId: orderId,
-        isKot: false, // Explicitly set to false for new items
-        isBot: false, // Explicitly set to false for new items
       }));
 
       console.log("Adding order items:", itemsWithOrderId);
@@ -437,8 +435,6 @@ export class RestaurantStorage {
         const itemsWithOrderId = items.map((item) => ({
           ...item,
           orderId: newOrder.id,
-          isKot: false, // Explicitly set to false for new items
-          isBot: false, // Explicitly set to false for new items
         }));
 
         console.log("Creating order items:", itemsWithOrderId);
@@ -493,9 +489,7 @@ export class RestaurantStorage {
       if (items.length > 0) {
         const itemsWithOrderId = items.map(item => ({
           ...item,
-          orderId,
-          isKot: false, // Explicitly set to false for new items
-          isBot: false, // Explicitly set to false for new items
+          orderId
         }));
         await tx.insert(restaurantOrderItems).values(itemsWithOrderId);
       }
@@ -962,10 +956,7 @@ export class RestaurantStorage {
         .innerJoin(menuCategories, eq(menuDishes.categoryId, menuCategories.id))
         .where(and(
           eq(restaurantOrderItems.orderId, orderId),
-          or(
-            eq(restaurantOrderItems.isKot, false), // Items explicitly marked as not generated
-            sql`${restaurantOrderItems.isKot} IS NULL` // Items where isKot is null (legacy data)
-          ), // Only items not yet generated for KOT
+          eq(restaurantOrderItems.isKot, false), // Only items not yet generated for KOT
           or(
             sql`${restaurantOrderItems.kotNumber} IS NULL`,
             sql`${restaurantOrderItems.kotNumber} = ''`
@@ -1000,10 +991,7 @@ export class RestaurantStorage {
         .innerJoin(menuCategories, eq(menuDishes.categoryId, menuCategories.id))
         .where(and(
           eq(restaurantOrderItems.orderId, orderId),
-          or(
-            eq(restaurantOrderItems.isBot, false), // Items explicitly marked as not generated
-            sql`${restaurantOrderItems.isBot} IS NULL` // Items where isBot is null (legacy data)
-          ), // Only items not yet generated for BOT
+          eq(restaurantOrderItems.isBot, false), // Only items not yet generated for BOT
           or(
             sql`${restaurantOrderItems.botNumber} IS NULL`,
             sql`${restaurantOrderItems.botNumber} = ''`
@@ -1045,10 +1033,7 @@ export class RestaurantStorage {
           })
           .where(and(
             eq(restaurantOrderItems.orderId, orderId),
-            or(
-              eq(restaurantOrderItems.isKot, false),
-              sql`${restaurantOrderItems.isKot} IS NULL`
-            ),
+            eq(restaurantOrderItems.isKot, false),
             inArray(restaurantOrderItems.id, kotItems.map(item => item.id))
           ));
 
@@ -1090,10 +1075,7 @@ export class RestaurantStorage {
           })
           .where(and(
             eq(restaurantOrderItems.orderId, orderId),
-            or(
-              eq(restaurantOrderItems.isBot, false),
-              sql`${restaurantOrderItems.isBot} IS NULL`
-            ),
+            eq(restaurantOrderItems.isBot, false),
             inArray(restaurantOrderItems.id, botItems.map(item => item.id))
           ));
 

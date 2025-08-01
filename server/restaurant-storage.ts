@@ -817,7 +817,11 @@ export class RestaurantStorage {
         .innerJoin(menuCategories, eq(menuDishes.categoryId, menuCategories.id))
         .where(and(
           eq(restaurantOrderItems.orderId, orderId),
-          eq(restaurantOrderItems.isKot, false),
+          eq(restaurantOrderItems.isKot, false), // Only items not yet generated for KOT
+          or(
+            sql`${restaurantOrderItems.kotNumber} IS NULL`,
+            sql`${restaurantOrderItems.kotNumber} = ''`
+          ), // Ensure no KOT number assigned
           eq(menuCategories.menuType, "Food")
         ));
 
@@ -925,7 +929,7 @@ export class RestaurantStorage {
       let kotData = undefined;
       let botData = undefined;
 
-      // Check for food items that need KOT
+      // Check for food items that need KOT (only items not yet generated)
       const kotItems = await tx
         .select({
           id: restaurantOrderItems.id,
@@ -952,11 +956,15 @@ export class RestaurantStorage {
         .innerJoin(menuCategories, eq(menuDishes.categoryId, menuCategories.id))
         .where(and(
           eq(restaurantOrderItems.orderId, orderId),
-          eq(restaurantOrderItems.isKot, false),
+          eq(restaurantOrderItems.isKot, false), // Only items not yet generated for KOT
+          or(
+            sql`${restaurantOrderItems.kotNumber} IS NULL`,
+            sql`${restaurantOrderItems.kotNumber} = ''`
+          ), // Ensure no KOT number assigned
           eq(menuCategories.menuType, "Food")
         ));
 
-      // Check for bar items that need BOT
+      // Check for bar items that need BOT (only items not yet generated)
       const botItems = await tx
         .select({
           id: restaurantOrderItems.id,
@@ -983,7 +991,11 @@ export class RestaurantStorage {
         .innerJoin(menuCategories, eq(menuDishes.categoryId, menuCategories.id))
         .where(and(
           eq(restaurantOrderItems.orderId, orderId),
-          eq(restaurantOrderItems.isBot, false),
+          eq(restaurantOrderItems.isBot, false), // Only items not yet generated for BOT
+          or(
+            sql`${restaurantOrderItems.botNumber} IS NULL`,
+            sql`${restaurantOrderItems.botNumber} = ''`
+          ), // Ensure no BOT number assigned
           eq(menuCategories.menuType, "Bar")
         ));
 
@@ -1269,7 +1281,7 @@ export class RestaurantStorage {
 
       if (!order) throw new Error('Order not found');
 
-      // Get bar items that need BOT (only items from Bar categories)
+      // Get bar items that need BOT (only items from Bar categories, not already generated)
       const botItems = await tx
         .select({
           id: restaurantOrderItems.id,
@@ -1296,7 +1308,11 @@ export class RestaurantStorage {
         .innerJoin(menuCategories, eq(menuDishes.categoryId, menuCategories.id))
         .where(and(
           eq(restaurantOrderItems.orderId, orderId),
-          eq(restaurantOrderItems.isBot, false),
+          eq(restaurantOrderItems.isBot, false), // Only items not yet generated for BOT
+          or(
+            sql`${restaurantOrderItems.botNumber} IS NULL`,
+            sql`${restaurantOrderItems.botNumber} = ''`
+          ), // Ensure no BOT number assigned
           eq(menuCategories.menuType, "Bar")
         ));
 

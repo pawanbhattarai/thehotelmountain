@@ -827,7 +827,7 @@ export class RestaurantStorage {
       }
 
       // Generate KOT number
-      const kotNumber = `KOT-${Date.now()}`;
+      const kotNumber = `KOT-${Date.now().toString().slice(-8)}-${Math.random().toString(36).substr(2, 3)}`;
 
       // Create customer name with room number for room orders
       let customerDisplayName = order.customerName;
@@ -993,7 +993,7 @@ export class RestaurantStorage {
 
       // Generate KOT if there are food items
       if (kotItems.length > 0) {
-        const kotNumber = `KOT-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+        const kotNumber = `KOT-${Date.now().toString().slice(-8)}-${Math.random().toString(36).substr(2, 3)}`;
 
         // Create customer name with room number for room orders
         let customerDisplayName = order.customerName;
@@ -1035,7 +1035,7 @@ export class RestaurantStorage {
 
       // Generate BOT if there are bar items
       if (botItems.length > 0) {
-        const botNumber = `BOT-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+        const botNumber = `BOT-${Date.now().toString().slice(-8)}-${Math.random().toString(36).substr(2, 3)}`;
 
         // Create customer name with room number for room orders
         let customerDisplayName = order.customerName;
@@ -1310,7 +1310,7 @@ export class RestaurantStorage {
       }
 
       // Generate BOT number
-      const botNumber = `BOT-${Date.now()}`;
+      const botNumber = `BOT-${Date.now().toString().slice(-8)}-${Math.random().toString(36).substr(2, 3)}`;
 
       // Create customer name with room number for room orders
       let customerDisplayName = order.customerName;

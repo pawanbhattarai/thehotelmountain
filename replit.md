@@ -23,6 +23,10 @@ A comprehensive restaurant management system built with Node.js, Express, React,
 ## Recent Changes
 - **2025-08-01**: Successfully completed migration from Replit Agent to Replit environment  
 - **Migration Status**: Complete - PostgreSQL database configured, all systems operational
+- **Default BORE Printer Configuration**: Configured default KOT printer with BORE cloud system
+  - Host/IP: bore.pub, Port: 32384, Protocol: Raw TCP/Socket
+  - Automatic direct printing enabled for KOT orders
+  - Ready for cloud-to-local thermal printer communication
 - **BORE Printer Integration**: Successfully configured cloud-based printer system via BORE tunnel
   - Configured KOT and BOT printers with bore.pub:32384 for cloud-to-local printing
   - Automatic printing enabled for both table orders and room orders

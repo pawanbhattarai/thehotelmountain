@@ -439,6 +439,8 @@ class NetworkPrinterBridge {
       BOLD_ON: '\x1B\x45\x01', // Bold on
       BOLD_OFF: '\x1B\x45\x00', // Bold off
       DOUBLE_HEIGHT: '\x1B\x21\x10', // Double height
+      DOUBLE_WIDTH: '\x1B\x21\x20', // Double width
+      DOUBLE_SIZE: '\x1B\x21\x30', // Double height + width
       NORMAL: '\x1B\x21\x00', // Normal text
       CUT: '\x1D\x56\x00', // Partial cut
       FEED: '\n',
@@ -468,6 +470,9 @@ class NetworkPrinterBridge {
       } else if (line.includes('**ORDER NOTES:**') || line.startsWith('**') && line.endsWith('**')) {
         // Bold order notes
         thermalContent += commands.ALIGN_LEFT + commands.BOLD_ON + line.replace(/\*\*/g, '') + commands.BOLD_OFF + commands.FEED;
+      } else if (line.match(/^\d+\.\s+/) || line.match(/^-\s+\d+x\s+/) || line.match(/^\s*\d+x\s+/)) {
+        // Dish items and quantities - make them larger and bold
+        thermalContent += commands.ALIGN_LEFT + commands.BOLD_ON + commands.DOUBLE_SIZE + line + commands.BOLD_OFF + commands.NORMAL + commands.FEED;
       } else if (line.trim() === '') {
         // Empty line
         thermalContent += commands.FEED;

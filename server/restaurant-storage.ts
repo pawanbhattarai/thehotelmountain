@@ -967,6 +967,7 @@ export class RestaurantStorage {
       // Check for bar items that need BOT (only items not yet generated)
       const botItems = await tx
         .select({
+```text
           id: restaurantOrderItems.id,
           orderId: restaurantOrderItems.orderId,
           dishId: restaurantOrderItems.dishId,
@@ -1899,7 +1900,7 @@ export class RestaurantStorage {
           sql`${restaurantBills.createdAt} >= ${startDate.toISOString()}`,
           eq(restaurantBills.paymentStatus, 'paid')
         )
-      )
+      )```text
       .groupBy(sql`EXTRACT(HOUR FROM ${restaurantBills.createdAt})`)
       .orderBy(sql`EXTRACT(HOUR FROM ${restaurantBills.createdAt})`);
 

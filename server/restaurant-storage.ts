@@ -2244,38 +2244,54 @@ export class RestaurantStorage {
     notes?: string;
     timestamp: Date;
   }): string {
+    // Enhanced thermal printer format matching manual KOT layout
     const separator = '================================';
     const location = data.tableNumber || data.roomNumber || 'Takeaway';
+    const currentDateTime = data.timestamp.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long", 
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
-    let content = `${separator}\n`;
-    content += `           KOT - KITCHEN\n`;
+    let content = `\n${separator}\n`;
+    content += `      KITCHEN ORDER TICKET\n`;
     content += `${separator}\n`;
     content += `KOT Number: ${data.kotNumber}\n`;
-    content += `Order: ${data.orderNumber}\n`;
+    content += `Order Number: ${data.orderNumber}\n`;
     content += `Location: ${location}\n`;
     content += `Customer: ${data.customerName}\n`;
-    content += `Time: ${data.timestamp.toLocaleString()}\n`;
+    content += `Time: ${currentDateTime}\n`;
+    content += `Status: PENDING\n`;
     content += `${separator}\n`;
-    content += `ITEMS:\n`;
+    content += `DISHES TO PREPARE:\n`;
     content += `${separator}\n`;
 
-    data.items.forEach(item => {
-      content += `${item.quantity}x ${item.name}\n`;
+    // Format items with better spacing
+    data.items.forEach((item, index) => {
+      content += `${index + 1}. ${item.name}\n`;
+      content += `   Qty: ${item.quantity}\n`;
       if (item.specialInstructions) {
-        content += `   Note: ${item.specialInstructions}\n`;
+        content += `   Special: ${item.specialInstructions}\n`;
       }
       content += `\n`;
     });
 
     if (data.notes) {
       content += `${separator}\n`;
-      content += `SPECIAL NOTES:\n`;
+      content += `ORDER NOTES:\n`;
       content += `${data.notes}\n`;
+      content += `\n`;
     }
 
     content += `${separator}\n`;
-    content += `Total Items: ${data.items.reduce((sum, item) => sum + item.quantity, 0)}\n`;
-    content += `${separator}\n\n`;
+    content += `Total Dishes: ${data.items.length}\n`;
+    content += `Total Quantity: ${data.items.reduce((sum, item) => sum + item.quantity, 0)}\n`;
+    content += `${separator}\n`;
+    content += `Please prepare these items\n`;
+    content += `and mark ready when complete.\n`;
+    content += `${separator}\n\n\n`;
 
     return content;
   }
@@ -2290,38 +2306,54 @@ export class RestaurantStorage {
     notes?: string;
     timestamp: Date;
   }): string {
+    // Enhanced thermal printer format matching manual BOT layout
     const separator = '================================';
     const location = data.tableNumber || data.roomNumber || 'Takeaway';
+    const currentDateTime = data.timestamp.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
-    let content = `${separator}\n`;
-    content += `            BOT - BAR\n`;
+    let content = `\n${separator}\n`;
+    content += `       BAR ORDER TICKET\n`;
     content += `${separator}\n`;
     content += `BOT Number: ${data.botNumber}\n`;
-    content += `Order: ${data.orderNumber}\n`;
+    content += `Order Number: ${data.orderNumber}\n`;
     content += `Location: ${location}\n`;
     content += `Customer: ${data.customerName}\n`;
-    content += `Time: ${data.timestamp.toLocaleString()}\n`;
+    content += `Time: ${currentDateTime}\n`;
+    content += `Status: PENDING\n`;
     content += `${separator}\n`;
-    content += `BEVERAGES:\n`;
+    content += `BEVERAGES TO PREPARE:\n`;
     content += `${separator}\n`;
 
-    data.items.forEach(item => {
-      content += `${item.quantity}x ${item.name}\n`;
+    // Format items with better spacing
+    data.items.forEach((item, index) => {
+      content += `${index + 1}. ${item.name}\n`;
+      content += `   Qty: ${item.quantity}\n`;
       if (item.specialInstructions) {
-        content += `   Note: ${item.specialInstructions}\n`;
+        content += `   Special: ${item.specialInstructions}\n`;
       }
       content += `\n`;
     });
 
     if (data.notes) {
       content += `${separator}\n`;
-      content += `SPECIAL NOTES:\n`;
+      content += `ORDER NOTES:\n`;
       content += `${data.notes}\n`;
+      content += `\n`;
     }
 
     content += `${separator}\n`;
-    content += `Total Items: ${data.items.reduce((sum, item) => sum + item.quantity, 0)}\n`;
-    content += `${separator}\n\n`;
+    content += `Total Beverages: ${data.items.length}\n`;
+    content += `Total Quantity: ${data.items.reduce((sum, item) => sum + item.quantity, 0)}\n`;
+    content += `${separator}\n`;
+    content += `Please prepare these drinks\n`;
+    content += `and mark ready when complete.\n`;
+    content += `${separator}\n\n\n`;
 
     return content;
   }

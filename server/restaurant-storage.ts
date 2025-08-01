@@ -925,7 +925,7 @@ export class RestaurantStorage {
       let kotData = undefined;
       let botData = undefined;
 
-      // Check for food items that need KOT (only items not yet generated)
+      // Check for food items that need KOT (only NEW items that haven't been printed yet)
       const kotItems = await tx
         .select({
           id: restaurantOrderItems.id,
@@ -952,12 +952,13 @@ export class RestaurantStorage {
         .innerJoin(menuCategories, eq(menuDishes.categoryId, menuCategories.id))
         .where(and(
           eq(restaurantOrderItems.orderId, orderId),
-          eq(restaurantOrderItems.isKot, false), // Only items not yet generated for KOT
-          sql`(${restaurantOrderItems.kotNumber} IS NULL OR ${restaurantOrderItems.kotNumber} = '')`, // Ensure no KOT number assigned
+          // Only items that have never been printed for KOT (isKot = false AND no kotNumber)
+          eq(restaurantOrderItems.isKot, false),
+          sql`(${restaurantOrderItems.kotNumber} IS NULL OR ${restaurantOrderItems.kotNumber} = '')`,
           eq(menuCategories.menuType, "Food")
         ));
 
-      // Check for bar items that need BOT (only items not yet generated)
+      // Check for bar items that need BOT (only NEW items that haven't been printed yet)
       const botItems = await tx
         .select({
           id: restaurantOrderItems.id,
@@ -984,14 +985,15 @@ export class RestaurantStorage {
         .innerJoin(menuCategories, eq(menuDishes.categoryId, menuCategories.id))
         .where(and(
           eq(restaurantOrderItems.orderId, orderId),
-          eq(restaurantOrderItems.isBot, false), // Only items not yet generated for BOT
-          sql`(${restaurantOrderItems.botNumber} IS NULL OR ${restaurantOrderItems.botNumber} = '')`, // Ensure no BOT number assigned
+          // Only items that have never been printed for BOT (isBot = false AND no botNumber)
+          eq(restaurantOrderItems.isBot, false),
+          sql`(${restaurantOrderItems.botNumber} IS NULL OR ${restaurantOrderItems.botNumber} = '')`,
           eq(menuCategories.menuType, "Bar")
         ));
 
       // Generate KOT if there are food items
       if (kotItems.length > 0) {
-        const kotNumber = `KOT-${Date.now()}`;
+        const kotNumber = `KOT-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
 
         // Create customer name with room number for room orders
         let customerDisplayName = order.customerName;
@@ -1014,8 +1016,9 @@ export class RestaurantStorage {
           })
           .returning();
 
-        // Only update the specific items that were selected for this KOT
+        // Mark ONLY the specific new items as printed with this unique KOT number
         if (kotItems.length > 0) {
+          console.log(`🖨️ Marking ${kotItems.length} new food items as printed with KOT ${kotNumber}`);
           await tx
             .update(restaurantOrderItems)
             .set({ 
@@ -1032,7 +1035,7 @@ export class RestaurantStorage {
 
       // Generate BOT if there are bar items
       if (botItems.length > 0) {
-        const botNumber = `BOT-${Date.now()}`;
+        const botNumber = `BOT-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
 
         // Create customer name with room number for room orders
         let customerDisplayName = order.customerName;
@@ -1055,8 +1058,9 @@ export class RestaurantStorage {
           })
           .returning();
 
-        // Only update the specific items that were selected for this BOT
+        // Mark ONLY the specific new items as printed with this unique BOT number
         if (botItems.length > 0) {
+          console.log(`🍸 Marking ${botItems.length} new bar items as printed with BOT ${botNumber}`);
           await tx
             .update(restaurantOrderItems)
             .set({ 

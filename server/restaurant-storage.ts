@@ -969,8 +969,7 @@ export class RestaurantStorage {
           status: restaurantOrderItems.status,
           isKot: restaurantOrderItems.isKot,
           isBot: restaurantOrderItems.isBot,
-          ```text
-kotNumber: restaurantOrderItems.kotNumber,
+          kotNumber: restaurantOrderItems.kotNumber,
           botNumber: restaurantOrderItems.botNumber,
           kotGeneratedAt: restaurantOrderItems.kotGeneratedAt,
           botGeneratedAt: restaurantOrderItems.botGeneratedAt,
